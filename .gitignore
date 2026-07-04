@@ -11,3 +11,6 @@ coverage/
 # Artifact thiết kế thô (đã giải nén vào docs/design/)
 Designapp.zip
 Designapp/
+
+# Scratch của quy trình subagent-driven (ledger, brief, report)
+.superpowers/
