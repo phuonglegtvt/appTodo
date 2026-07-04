@@ -7,3 +7,7 @@ coverage/
 *.local
 *.log
 .DS_Store
+
+# Artifact thiết kế thô (đã giải nén vào docs/design/)
+Designapp.zip
+Designapp/
