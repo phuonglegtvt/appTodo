@@ -49,7 +49,10 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
   const [tag, setTag] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
+  // Ngày hôm nay theo giờ ĐỊA PHƯƠNG (không dùng toISOString vì nó theo UTC —
+  // với giờ VN (UTC+7) lúc 0–7h sáng sẽ ra "hôm qua", làm smart view phân loại sai).
+  // 'en-CA' cho định dạng YYYY-MM-DD.
+  const today = new Date().toLocaleDateString('en-CA');
 
   const visible = useMemo(() => {
     let list = applySmartView(todos, view, today);

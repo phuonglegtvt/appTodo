@@ -67,7 +67,15 @@ export function useTodos(userId: string): UseTodos {
           });
         },
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        // Không nuốt lỗi im lặng: CRUD dựa vào echo realtime để cập nhật UI, nên nếu
+        // kênh rớt phải báo cho người dùng, không để họ thao tác mà "không thấy gì".
+        const s = String(status);
+        if (s === 'CHANNEL_ERROR' || s === 'TIMED_OUT') {
+          console.error('Lỗi kênh đồng bộ realtime:', status, err);
+          setError('Mất kết nối đồng bộ thời gian thực — hãy tải lại trang.');
+        }
+      });
     return () => {
       supabase.removeChannel(channel);
     };
@@ -109,9 +117,11 @@ export function useTodos(userId: string): UseTodos {
     }
   }, []);
 
-  // Cập nhật lạc quan thứ tự, rồi lưu sort_order mới lên server.
+  // Cập nhật lạc quan thứ tự, rồi lưu sort_order mới lên server. Gán luôn sort_order
+  // mới vào state để UI giữ đúng thứ tự ngay (nếu không, sortByOrder ở tầng trên đọc
+  // sort_order cũ và kéo danh sách nhảy về chỗ cũ cho tới khi echo realtime về).
   const reorderTodos = useCallback(async (ordered: Todo[]) => {
-    setTodos(ordered);
+    setTodos(ordered.map((t, index) => ({ ...t, sort_order: index + 1 })));
     const updates = ordered.map((t, index) =>
       supabase.from('todos').update({ sort_order: index + 1 }).eq('id', t.id),
     );
