@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;width:100%;height:100%;background:var(--bg);color:var(--text);overflow:hidden;">
+
+  <!-- SIDEBAR -->
+  <aside style="width:258px;flex:none;background:var(--surface);border-right:1px solid var(--border);padding:18px 14px;display:flex;flex-direction:column;gap:4px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:2px 6px 14px;">
+      <div style="width:30px;height:30px;border-radius:9px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;">✓</div>
+      <div style="font-size:15.5px;font-weight:700;letter-spacing:-.01em;">Việc của tôi</div>
+    </div>
+
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--muted);padding:8px 8px 6px;">SMART VIEWS</div>
+
+    <div style="display:flex;align-items:center;padding:8px 10px;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-weight:600;">
+      <span style="flex:1;font-size:14px;">Hôm nay</span>
+      <span style="font-size:12px;font-weight:700;">4</span>
+    </div>
+    <div style="display:flex;align-items:center;padding:8px 10px;border-radius:9px;color:var(--text);">
+      <span style="flex:1;font-size:14px;font-weight:500;">Sắp tới</span>
+      <span style="font-size:12px;font-weight:600;color:var(--muted);">7</span>
+    </div>
+    <div style="display:flex;align-items:center;padding:8px 10px;border-radius:9px;color:var(--text);">
+      <span style="flex:1;font-size:14px;font-weight:500;">Tất cả</span>
+      <span style="font-size:12px;font-weight:600;color:var(--muted);">12</span>
+    </div>
+    <div style="display:flex;align-items:center;padding:8px 10px;border-radius:9px;color:var(--text);">
+      <span style="flex:1;font-size:14px;font-weight:500;">Đã xong</span>
+      <span style="font-size:12px;font-weight:600;color:var(--muted);">28</span>
+    </div>
+
+    <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--muted);padding:16px 8px 6px;">NHÃN</div>
+    <div style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:50%;background:#5b57e0;"></span><span style="flex:1;font-size:13.5px;font-weight:500;">Công việc</span><span style="font-size:12px;color:var(--muted);">8</span></div>
+    <div style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:50%;background:#12a150;"></span><span style="flex:1;font-size:13.5px;font-weight:500;">Cá nhân</span><span style="font-size:12px;color:var(--muted);">5</span></div>
+    <div style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:50%;background:#eab308;"></span><span style="flex:1;font-size:13.5px;font-weight:500;">Mua sắm</span><span style="font-size:12px;color:var(--muted);">3</span></div>
+    <div style="display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:9px;"><span style="width:8px;height:8px;border-radius:50%;background:#e5484d;"></span><span style="flex:1;font-size:13.5px;font-weight:500;">Sức khỏe</span><span style="font-size:12px;color:var(--muted);">2</span></div>
+
+    <div style="flex:1;"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 8px 4px;border-top:1px solid var(--border);margin-top:8px;">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;">A</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;">Nguyễn An</div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">an.nguyen@email.com</div>
+      </div>
+      <button title="Đăng xuất" style="width:30px;height:30px;flex:none;display:flex;align-items:center;justify-content:center;background:transparent;border:none;border-radius:8px;color:var(--muted);font-size:15px;cursor:pointer;" style-hover="background:var(--surface2);color:var(--text);">⏻</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--surface);">
+      <div style="flex:1;max-width:380px;display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;">
+        <span style="color:var(--muted);font-size:14px;">⌕</span>
+        <span style="color:var(--muted);font-size:13.5px;">Tìm kiếm việc...</span>
+      </div>
+      <button style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;">Trạng thái ▾</button>
+      <button style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;">Nhãn ▾</button>
+      <button style="background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:7px 11px;font-size:12.5px;font-weight:500;color:var(--muted);cursor:pointer;">Ưu tiên ▾</button>
+
+      <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:2px;gap:2px;">
+        <sc-if value="{{ light }}"><span style="width:28px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:var(--surface);font-size:13px;color:var(--text);box-shadow:var(--shadow);">☀</span></sc-if>
+        <sc-if value="{{ dark }}"><span style="width:28px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:13px;color:var(--muted);">☀</span></sc-if>
+        <sc-if value="{{ dark }}"><span style="width:28px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:var(--surface);font-size:13px;color:var(--text);box-shadow:var(--shadow);">☾</span></sc-if>
+        <sc-if value="{{ light }}"><span style="width:28px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;font-size:13px;color:var(--muted);">☾</span></sc-if>
+      </div>
+
+      <button style="background:var(--accent);color:var(--accent-fg);border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">＋ Thêm việc</button>
+    </div>
+
+    <div style="flex:1;overflow:auto;padding:22px 24px;display:flex;flex-direction:column;gap:16px;">
+      <div>
+        <div style="font-size:22px;font-weight:700;letter-spacing:-.02em;">Hôm nay</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:3px;">Thứ Sáu, 4 tháng 7 · 4 việc cần làm</div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:10px 12px;">
+        <div style="width:22px;height:22px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;flex:none;">＋</div>
+        <span style="font-size:13.5px;color:var(--muted);">Thêm việc nhanh — nhập tiêu đề rồi nhấn Enter</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--muted);">CẦN LÀM</div>
+        <sc-for list="{{ active }}" as="t" hint-placeholder-count="4">
+          <dc-import name="TaskRow" title="{{ t.title }}" due="{{ t.due }}" overdue="{{ t.overdue }}" done="{{ t.done }}" priority="{{ t.priority }}" tags="{{ t.tags }}" hint-size="100%,64px"></dc-import>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-size:10.5px;font-weight:700;letter-spacing:.09em;color:var(--muted);">ĐÃ XONG</div>
+        <sc-for list="{{ done }}" as="t" hint-placeholder-count="2">
+          <dc-import name="TaskRow" title="{{ t.title }}" due="{{ t.due }}" overdue="{{ t.overdue }}" done="{{ t.done }}" priority="{{ t.priority }}" tags="{{ t.tags }}" hint-size="100%,64px"></dc-import>
+        </sc-for>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:720},&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const tag = (name, color) => ({ name, color });
+    return {
+      dark: !!this.props.dark,
+      light: !this.props.dark,
+      active: [
+        { title: 'Gửi báo cáo tuần cho quản lý', due: 'Hôm nay, 17:00', overdue: false, done: false, priority: 'cao', tags: [tag('Công việc', '#5b57e0')] },
+        { title: 'Đặt lịch khám nha khoa', due: 'Quá hạn 2 ngày', overdue: true, done: false, priority: 'tb', tags: [tag('Sức khỏe', '#e5484d'), tag('Cá nhân', '#12a150')] },
+        { title: 'Chuẩn bị slide họp team sáng thứ Hai', due: 'Ngày mai, 09:00', overdue: false, done: false, priority: 'cao', tags: [tag('Công việc', '#5b57e0')] },
+        { title: 'Mua quà sinh nhật cho Linh', due: 'T7, 6 tháng 7', overdue: false, done: false, priority: 'thap', tags: [tag('Mua sắm', '#eab308'), tag('Cá nhân', '#12a150')] },
+      ],
+      done: [
+        { title: 'Thanh toán hóa đơn điện', due: 'Hôm qua', overdue: false, done: true, priority: 'tb', tags: [tag('Cá nhân', '#12a150')] },
+        { title: 'Trả sách thư viện', due: '2 tháng 7', overdue: false, done: true, priority: 'thap', tags: [] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

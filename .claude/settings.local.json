@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "WebSearch"
+      "WebSearch",
+      "Bash(rm -f _design_tmp/*)",
+      "Bash(rmdir _design_tmp)",
+      "Bash(ls -d _design_tmp)"
     ]
   }
 }

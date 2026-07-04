@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;width:100%;height:100%;background:var(--bg);color:var(--text);overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex;align-items:center;gap:12px;padding:14px 22px;border-bottom:1px solid var(--border);background:var(--surface);flex:none;">
+    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+      <div style="width:28px;height:28px;border-radius:8px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">✓</div>
+      <div style="font-size:17px;font-weight:700;letter-spacing:-.01em;">Bảng công việc</div>
+    </div>
+    <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:2px;gap:2px;">
+      <span style="padding:6px 13px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--muted);">Danh sách</span>
+      <span style="padding:6px 13px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text);background:var(--surface);box-shadow:var(--shadow);">Bảng</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;width:240px;">
+      <span style="color:var(--muted);font-size:14px;">⌕</span><span style="color:var(--muted);font-size:13px;">Tìm kiếm việc...</span>
+    </div>
+    <button style="background:var(--accent);color:var(--accent-fg);border:none;border-radius:9px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;">＋ Thêm việc</button>
+  </div>
+
+  <!-- board -->
+  <div style="flex:1;overflow:auto;padding:20px 22px;display:flex;gap:16px;align-items:flex-start;">
+    <sc-for list="{{ columns }}" as="col" hint-placeholder-count="4">
+      <div style="width:280px;flex:none;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;max-height:100%;">
+        <div style="display:flex;align-items:center;gap:8px;padding:2px 4px;">
+          <span style="width:9px;height:9px;border-radius:50%;background:{{ col.color }};"></span>
+          <span style="font-size:13.5px;font-weight:700;">{{ col.name }}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:1px 8px;">{{ col.count }}</span>
+          <div style="flex:1;"></div>
+          <span style="color:var(--muted);font-size:16px;line-height:1;">＋</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;overflow-y:auto;overflow-x:hidden;min-width:0;padding-right:2px;">
+          <sc-for list="{{ col.cards }}" as="t" hint-placeholder-count="3">
+            <dc-import name="KanbanCard" title="{{ t.title }}" due="{{ t.due }}" overdue="{{ t.overdue }}" done="{{ t.done }}" priority="{{ t.priority }}" tags="{{ t.tags }}" hint-size="100%,130px"></dc-import>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:720}}">
+class Component extends DCLogic {
+  renderVals() {
+    const tag = (name, color) => ({ name, color });
+    const CV = tag('Công việc', '#5b57e0');
+    const CN = tag('Cá nhân', '#12a150');
+    const MS = tag('Mua sắm', '#eab308');
+    const SK = tag('Sức khỏe', '#e5484d');
+    return {
+      columns: [
+        { name: 'Quá hạn', color: '#e5484d', count: 2, cards: [
+          { title: 'Nộp hồ sơ thuế quý 2', due: 'Quá hạn 5 ngày', overdue: true, priority: 'cao', tags: [CV] },
+          { title: 'Đặt lịch khám nha khoa', due: 'Quá hạn 2 ngày', overdue: true, priority: 'tb', tags: [SK, CN] },
+        ] },
+        { name: 'Hôm nay', color: '#5b57e0', count: 3, cards: [
+          { title: 'Gửi báo cáo tuần cho quản lý', due: 'Hôm nay, 17:00', priority: 'cao', tags: [CV] },
+          { title: 'Chuẩn bị slide họp team sáng thứ Hai', due: 'Hôm nay', priority: 'cao', tags: [CV] },
+          { title: 'Gọi điện xác nhận với khách hàng A', due: 'Hôm nay, 15:00', priority: 'tb', tags: [CV] },
+        ] },
+        { name: 'Sắp tới', color: '#eab308', count: 3, cards: [
+          { title: 'Mua quà sinh nhật cho Linh', due: 'T7, 6 tháng 7', priority: 'thap', tags: [MS, CN] },
+          { title: 'Đăng ký lớp yoga buổi sáng', due: 'CN, 7 tháng 7', priority: 'thap', tags: [SK] },
+          { title: 'Lên kế hoạch du lịch hè', due: '10 tháng 7', priority: 'tb', tags: [CN] },
+        ] },
+        { name: 'Đã xong', color: '#12a150', count: 3, cards: [
+          { title: 'Thanh toán hóa đơn điện', due: 'Hôm qua', done: true, priority: 'tb', tags: [CN] },
+          { title: 'Cập nhật CV cá nhân', due: '2 tháng 7', done: true, priority: 'tb', tags: [CV] },
+          { title: 'Trả sách thư viện', due: '2 tháng 7', done: true, priority: 'thap', tags: [] },
+        ] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

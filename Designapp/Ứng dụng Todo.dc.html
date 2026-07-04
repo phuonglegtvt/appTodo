@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="design_doc_mode" content="canvas">
+<style>
+  body{margin:0;background:#e7e7ea;}
+  *{box-sizing:border-box;}
+</style>
+</helmet>
+
+<div style="width:fit-content;min-width:100%;padding:56px 64px 96px;font-family:'Plus Jakarta Sans',sans-serif;color:#1b1b1f;display:flex;flex-direction:column;gap:76px;">
+
+  <!-- TITLE -->
+  <div style="max-width:900px;">
+    <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <div style="width:30px;height:30px;border-radius:9px;background:#5b57e0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;">✓</div>
+      <span style="font-size:14px;font-weight:700;letter-spacing:.02em;">Việc của tôi — Todo App</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:40px;font-weight:800;letter-spacing:-.03em;">Ứng dụng quản lý việc cá nhân</h1>
+    <p style="margin:0;font-size:16px;line-height:1.6;color:#5c5c64;max-width:680px;">Thiết kế hiện đại, tối giản, có Dark Mode và responsive. Gồm đầy đủ màn hình đăng nhập, danh sách việc, form thêm/sửa, trạng thái rỗng, thông báo lỗi và bộ design tokens cho lập trình viên (React + Tailwind).</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+      <span style="font-size:12.5px;font-weight:600;color:#5c5c64;background:#fff;border:1px solid #dcdce0;border-radius:999px;padding:6px 12px;">Plus Jakarta Sans</span>
+      <span style="font-size:12.5px;font-weight:600;color:#5c5c64;background:#fff;border:1px solid #dcdce0;border-radius:999px;padding:6px 12px;display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:#5b57e0;"></span>Accent Indigo</span>
+      <span style="font-size:12.5px;font-weight:600;color:#5c5c64;background:#fff;border:1px solid #dcdce0;border-radius:999px;padding:6px 12px;">Bo góc 12px</span>
+      <span style="font-size:12.5px;font-weight:600;color:#5c5c64;background:#fff;border:1px solid #dcdce0;border-radius:999px;padding:6px 12px;">Light + Dark</span>
+    </div>
+  </div>
+
+  <!-- 01 LOGIN -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">01 · ĐĂNG NHẬP</div>
+    <div style="width:940px;height:600px;border-radius:18px;overflow:hidden;border:1px solid #dcdce0;box-shadow:0 14px 44px rgba(0,0,0,.08);background:#f5f5f6;display:flex;align-items:center;justify-content:center;position:relative;">
+      <div style="position:absolute;inset:0;background:radial-gradient(120% 90% at 50% -10%, #eeedff 0%, #f5f5f6 55%);"></div>
+      <div style="position:relative;width:392px;background:#fff;border:1px solid #eaeaec;border-radius:16px;box-shadow:0 8px 30px rgba(20,20,40,.06);padding:34px 32px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:26px;">
+          <div style="width:44px;height:44px;border-radius:13px;background:#5b57e0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;">✓</div>
+          <div style="font-size:18px;font-weight:700;letter-spacing:-.01em;">Việc của tôi</div>
+          <div style="font-size:13.5px;color:#71717a;text-align:center;">Quản lý công việc cá nhân, gọn gàng mỗi ngày.</div>
+        </div>
+
+        <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;border:1px solid #dcdce0;border-radius:10px;padding:11px;font-size:14px;font-weight:600;color:#1b1b1f;cursor:pointer;" style-hover="background:#fafafa;">
+          <span style="width:18px;height:18px;border-radius:50%;background:#f1f1f4;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#5c5c64;">G</span>
+          Đăng nhập với Google
+        </button>
+
+        <div style="display:flex;align-items:center;gap:12px;margin:20px 0;">
+          <div style="flex:1;height:1px;background:#eaeaec;"></div>
+          <span style="font-size:12px;color:#a1a1aa;">hoặc</span>
+          <div style="flex:1;height:1px;background:#eaeaec;"></div>
+        </div>
+
+        <label style="display:block;font-size:12.5px;font-weight:600;color:#5c5c64;margin-bottom:7px;">Email</label>
+        <div style="border:1px solid #dcdce0;border-radius:10px;padding:11px 12px;font-size:14px;color:#a1a1aa;margin-bottom:12px;">ban@email.com</div>
+        <button style="width:100%;background:#5b57e0;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;" style-hover="background:#4a46d0;">Gửi magic link</button>
+
+        <p style="margin:16px 0 0;font-size:11.5px;line-height:1.55;color:#a1a1aa;text-align:center;">Chúng tôi sẽ gửi một liên kết đăng nhập tới email của bạn. Không cần mật khẩu.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 DESKTOP -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">02 · TRANG CHÍNH — DESKTOP (LIGHT &amp; DARK)</div>
+    <div style="display:flex;gap:44px;align-items:flex-start;">
+      <div style="width:1100px;height:720px;border-radius:16px;overflow:hidden;border:1px solid #dcdce0;box-shadow:0 14px 44px rgba(0,0,0,.08);--bg:#f5f5f6;--surface:#ffffff;--surface2:#fafafa;--border:#eaeaec;--text:#1b1b1f;--muted:#71717a;--accent:#5b57e0;--accent-fg:#ffffff;--accent-soft:#eeedff;--shadow:0 1px 2px rgba(0,0,0,.04);--cao-bg:#fdeceb;--cao-text:#c62a2f;--tb-bg:#fbf3dd;--tb-text:#97710a;--thap-bg:#e7f6ee;--thap-text:#197a43;--over:#e5484d;--chip-bg:#f4f4f5;">
+        <dc-import name="Dashboard" hint-size="1100px,720px"></dc-import>
+      </div>
+      <div style="width:1100px;height:720px;border-radius:16px;overflow:hidden;border:1px solid #2a2a31;box-shadow:0 14px 44px rgba(0,0,0,.22);--bg:#0d0d10;--surface:#17171c;--surface2:#1d1d23;--border:#2a2a31;--text:#f3f3f5;--muted:#9a9aa4;--accent:#837ff2;--accent-fg:#ffffff;--accent-soft:#211f3a;--shadow:0 1px 2px rgba(0,0,0,.35);--cao-bg:rgba(229,72,77,.16);--cao-text:#ff9b9b;--tb-bg:rgba(234,179,8,.16);--tb-text:#f2c94c;--thap-bg:rgba(18,161,80,.18);--thap-text:#6ee7a8;--over:#ff8f8f;--chip-bg:rgba(255,255,255,.05);">
+        <dc-import name="Dashboard" dark="true" hint-size="1100px,720px"></dc-import>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 KANBAN -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">03 · TỔNG QUAN — BẢNG KANBAN (LIGHT &amp; DARK)</div>
+    <div style="display:flex;gap:44px;align-items:flex-start;">
+      <div style="width:1100px;height:720px;border-radius:16px;overflow:hidden;border:1px solid #dcdce0;box-shadow:0 14px 44px rgba(0,0,0,.08);--bg:#f5f5f6;--surface:#ffffff;--surface2:#fafafa;--border:#eaeaec;--text:#1b1b1f;--muted:#71717a;--accent:#5b57e0;--accent-fg:#ffffff;--accent-soft:#eeedff;--shadow:0 1px 2px rgba(0,0,0,.04);--cao-bg:#fdeceb;--cao-text:#c62a2f;--tb-bg:#fbf3dd;--tb-text:#97710a;--thap-bg:#e7f6ee;--thap-text:#197a43;--over:#e5484d;--chip-bg:#f4f4f5;">
+        <dc-import name="Kanban" hint-size="1100px,720px"></dc-import>
+      </div>
+      <div style="width:1100px;height:720px;border-radius:16px;overflow:hidden;border:1px solid #2a2a31;box-shadow:0 14px 44px rgba(0,0,0,.22);--bg:#0d0d10;--surface:#17171c;--surface2:#1d1d23;--border:#2a2a31;--text:#f3f3f5;--muted:#9a9aa4;--accent:#837ff2;--accent-fg:#ffffff;--accent-soft:#211f3a;--shadow:0 1px 2px rgba(0,0,0,.35);--cao-bg:rgba(229,72,77,.16);--cao-text:#ff9b9b;--tb-bg:rgba(234,179,8,.16);--tb-text:#f2c94c;--thap-bg:rgba(18,161,80,.18);--thap-text:#6ee7a8;--over:#ff8f8f;--chip-bg:rgba(255,255,255,.05);">
+        <dc-import name="Kanban" hint-size="1100px,720px"></dc-import>
+      </div>
+    </div>
+  </div>
+
+  <!-- 04 MOBILE + FORM + EMPTY -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">04 · MOBILE &nbsp;·&nbsp; FORM THÊM/SỬA VIỆC &nbsp;·&nbsp; TRẠNG THÁI RỖNG</div>
+    <div style="display:flex;gap:44px;align-items:flex-start;">
+
+      <!-- MOBILE -->
+      <div style="width:390px;height:800px;border-radius:32px;overflow:hidden;border:8px solid #1b1b1f;box-shadow:0 20px 50px rgba(0,0,0,.16);display:flex;flex-direction:column;position:relative;--bg:#f5f5f6;--surface:#ffffff;--surface2:#fafafa;--border:#eaeaec;--text:#1b1b1f;--muted:#71717a;--accent:#5b57e0;--accent-fg:#ffffff;--accent-soft:#eeedff;--shadow:0 1px 2px rgba(0,0,0,.04);--cao-bg:#fdeceb;--cao-text:#c62a2f;--tb-bg:#fbf3dd;--tb-text:#97710a;--thap-bg:#e7f6ee;--thap-text:#197a43;--over:#e5484d;--chip-bg:#f4f4f5;background:var(--bg);color:var(--text);">
+        <div style="height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:600;background:var(--surface);"><span>9:41</span><span style="letter-spacing:1px;">● ● ●</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 16px 12px;background:var(--surface);border-bottom:1px solid var(--border);">
+          <div style="flex:1;">
+            <div style="font-size:20px;font-weight:700;letter-spacing:-.01em;">Hôm nay</div>
+            <div style="font-size:11.5px;color:var(--muted);">Thứ Sáu, 4 tháng 7 · 4 việc</div>
+          </div>
+          <button style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:14px;color:var(--text);cursor:pointer;">☾</button>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">A</div>
+        </div>
+
+        <div style="display:flex;gap:8px;padding:12px 16px 6px;overflow:hidden;">
+          <span style="flex:none;font-size:12.5px;font-weight:600;color:var(--accent-fg);background:var(--accent);border-radius:999px;padding:6px 13px;">Hôm nay</span>
+          <span style="flex:none;font-size:12.5px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 13px;">Sắp tới</span>
+          <span style="flex:none;font-size:12.5px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 13px;">Tất cả</span>
+          <span style="flex:none;font-size:12.5px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 13px;">Đã xong</span>
+        </div>
+
+        <div style="padding:8px 16px;">
+          <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;"><span style="color:var(--muted);font-size:14px;">⌕</span><span style="color:var(--muted);font-size:13px;">Tìm kiếm việc...</span></div>
+        </div>
+
+        <div style="flex:1;overflow:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:8px;">
+          <dc-import name="TaskRow" title="Gửi báo cáo tuần cho quản lý" due="Hôm nay, 17:00" priority="cao" tags="{{ tCV }}" hint-size="100%,64px"></dc-import>
+          <dc-import name="TaskRow" title="Đặt lịch khám nha khoa" due="Quá hạn 2 ngày" overdue="true" priority="tb" tags="{{ tSKCN }}" hint-size="100%,64px"></dc-import>
+          <dc-import name="TaskRow" title="Mua quà sinh nhật cho Linh" due="T7, 6 tháng 7" priority="thap" tags="{{ tMSCN }}" hint-size="100%,64px"></dc-import>
+          <dc-import name="TaskRow" title="Thanh toán hóa đơn điện" due="Hôm qua" done="true" priority="tb" tags="{{ tCN }}" hint-size="100%,64px"></dc-import>
+        </div>
+
+        <button style="position:absolute;right:20px;bottom:24px;width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--accent-fg);border:none;font-size:26px;font-weight:500;box-shadow:0 8px 20px rgba(91,87,224,.4);cursor:pointer;">＋</button>
+      </div>
+
+      <!-- FORM MODAL -->
+      <div style="width:640px;height:800px;border-radius:18px;overflow:hidden;border:1px solid #dcdce0;box-shadow:0 14px 44px rgba(0,0,0,.08);background:#e9e9ef;display:flex;align-items:center;justify-content:center;position:relative;">
+        <div style="position:absolute;inset:0;background:rgba(20,20,35,.32);"></div>
+        <div style="position:relative;width:468px;background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.22);padding:24px;">
+          <div style="display:flex;align-items:center;margin-bottom:20px;">
+            <div style="flex:1;font-size:17px;font-weight:700;">Sửa việc</div>
+            <div style="width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#f4f4f5;color:#71717a;font-size:14px;cursor:pointer;">✕</div>
+          </div>
+
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#5c5c64;margin-bottom:7px;">Tiêu đề <span style="color:#e5484d;">*</span></label>
+          <div style="border:1.5px solid #5b57e0;border-radius:10px;padding:11px 12px;font-size:14px;color:#1b1b1f;margin-bottom:16px;box-shadow:0 0 0 3px #eeedff;">Gửi báo cáo tuần cho quản lý</div>
+
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#5c5c64;margin-bottom:7px;">Ghi chú</label>
+          <div style="border:1px solid #dcdce0;border-radius:10px;padding:11px 12px;font-size:13.5px;color:#a1a1aa;margin-bottom:16px;min-height:64px;line-height:1.5;">Tổng hợp số liệu tuần và gửi bản PDF qua email cho anh Minh trước 17h.</div>
+
+          <div style="display:flex;gap:14px;margin-bottom:16px;">
+            <div style="flex:1;">
+              <label style="display:block;font-size:12.5px;font-weight:600;color:#5c5c64;margin-bottom:7px;">Hạn chót</label>
+              <div style="display:flex;align-items:center;gap:9px;border:1px solid #dcdce0;border-radius:10px;padding:11px 12px;font-size:14px;color:#1b1b1f;"><span style="width:15px;height:15px;border:1.5px solid #a1a1aa;border-radius:4px;border-top-width:4px;flex:none;"></span>04/07/2026 · 17:00</div>
+            </div>
+          </div>
+
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#5c5c64;margin-bottom:7px;">Độ ưu tiên</label>
+          <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid #e5484d;background:#fdeceb;color:#c62a2f;border-radius:10px;padding:9px;font-size:13px;font-weight:600;"><span style="width:7px;height:7px;border-radius:50%;background:#e5484d;"></span>Cao</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dcdce0;color:#5c5c64;border-radius:10px;padding:9px;font-size:13px;font-weight:500;"><span style="width:7px;height:7px;border-radius:50%;background:#eab308;"></span>Trung bình</div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dcdce0;color:#5c5c64;border-radius:10px;padding:9px;font-size:13px;font-weight:500;"><span style="width:7px;height:7px;border-radius:50%;background:#12a150;"></span>Thấp</div>
+          </div>
+
+          <label style="display:block;font-size:12.5px;font-weight:600;color:#5c5c64;margin-bottom:7px;">Nhãn</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid #dcdce0;border-radius:10px;padding:9px 10px;margin-bottom:24px;">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#5c5c64;background:#f4f4f5;border-radius:999px;padding:4px 10px;"><span style="width:7px;height:7px;border-radius:50%;background:#5b57e0;"></span>Công việc <span style="color:#a1a1aa;cursor:pointer;">✕</span></span>
+            <span style="font-size:13px;color:#a1a1aa;">＋ Thêm nhãn...</span>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button style="background:#fff;border:1px solid #dcdce0;border-radius:10px;padding:10px 18px;font-size:13.5px;font-weight:600;color:#5c5c64;cursor:pointer;">Hủy</button>
+            <button style="background:#5b57e0;border:none;border-radius:10px;padding:10px 22px;font-size:13.5px;font-weight:600;color:#fff;cursor:pointer;">Lưu việc</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EMPTY STATE -->
+      <div style="width:440px;height:800px;border-radius:18px;overflow:hidden;border:1px solid #dcdce0;box-shadow:0 14px 44px rgba(0,0,0,.08);background:#fff;display:flex;flex-direction:column;">
+        <div style="padding:16px 20px;border-bottom:1px solid #eaeaec;font-size:16px;font-weight:700;">Đã xong</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;">
+          <div style="width:108px;height:108px;border-radius:50%;background:repeating-linear-gradient(45deg,#f4f4f5,#f4f4f5 8px,#ececee 8px,#ececee 16px);display:flex;align-items:center;justify-content:center;margin-bottom:22px;">
+            <span style="font-size:40px;color:#c7c7cd;">✓</span>
+          </div>
+          <div style="font-size:19px;font-weight:700;margin-bottom:8px;">Tất cả đã gọn gàng!</div>
+          <div style="font-size:14px;color:#71717a;line-height:1.6;max-width:280px;margin-bottom:24px;">Bạn chưa có việc nào hôm nay. Thêm một việc mới để bắt đầu ngày làm việc hiệu quả.</div>
+          <button style="background:#5b57e0;border:none;border-radius:10px;padding:11px 20px;font-size:14px;font-weight:600;color:#fff;cursor:pointer;">＋ Thêm việc đầu tiên</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 05 ERROR BANNERS -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">05 · DẢI THÔNG BÁO LỖI</div>
+    <div style="display:flex;flex-direction:column;gap:14px;width:820px;">
+      <div style="display:flex;align-items:center;gap:12px;background:#fdeceb;border:1px solid #f6c9c7;border-radius:12px;padding:13px 16px;">
+        <div style="width:26px;height:26px;flex:none;border-radius:50%;background:#e5484d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;">!</div>
+        <div style="flex:1;">
+          <div style="font-size:13.5px;font-weight:700;color:#c62a2f;">Mất kết nối mạng</div>
+          <div style="font-size:12.5px;color:#a05955;">Các thay đổi sẽ được lưu tạm và tự đồng bộ khi có mạng trở lại.</div>
+        </div>
+        <button style="background:#fff;border:1px solid #f0b7b4;border-radius:8px;padding:7px 14px;font-size:12.5px;font-weight:600;color:#c62a2f;cursor:pointer;">Thử lại</button>
+        <span style="color:#c98a87;font-size:14px;cursor:pointer;">✕</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;background:#fbf3dd;border:1px solid #ecdca8;border-radius:12px;padding:13px 16px;">
+        <div style="width:26px;height:26px;flex:none;border-radius:50%;background:#eab308;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;">!</div>
+        <div style="flex:1;">
+          <div style="font-size:13.5px;font-weight:700;color:#97710a;">Lưu việc thất bại</div>
+          <div style="font-size:12.5px;color:#9c7f3a;">Không thể lưu “Gửi báo cáo tuần”. Vui lòng kiểm tra kết nối và thử lại.</div>
+        </div>
+        <button style="background:#fff;border:1px solid #e3cd82;border-radius:8px;padding:7px 14px;font-size:12.5px;font-weight:600;color:#97710a;cursor:pointer;">Thử lại</button>
+        <span style="color:#b89a54;font-size:14px;cursor:pointer;">✕</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 06 ANATOMY -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">06 · GIẢI PHẪU MỘT DÒNG VIỆC (TODO ITEM)</div>
+    <div style="width:960px;background:#fff;border:1px solid #dcdce0;border-radius:18px;box-shadow:0 14px 44px rgba(0,0,0,.06);padding:44px 40px 32px;">
+
+      <div style="display:flex;align-items:center;gap:16px;background:#fafafa;border:1px solid #eaeaec;border-radius:14px;padding:18px 18px;">
+        <div style="position:relative;">
+          <div style="position:absolute;top:-13px;left:-9px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">1</div>
+          <div style="outline:1.5px dashed #b9b7ee;outline-offset:5px;border-radius:6px;display:grid;grid-template-columns:4px 4px;gap:4px;">
+            <span style="width:4px;height:4px;border-radius:50%;background:#9a9aa4;"></span><span style="width:4px;height:4px;border-radius:50%;background:#9a9aa4;"></span><span style="width:4px;height:4px;border-radius:50%;background:#9a9aa4;"></span><span style="width:4px;height:4px;border-radius:50%;background:#9a9aa4;"></span><span style="width:4px;height:4px;border-radius:50%;background:#9a9aa4;"></span><span style="width:4px;height:4px;border-radius:50%;background:#9a9aa4;"></span>
+          </div>
+        </div>
+
+        <div style="position:relative;">
+          <div style="position:absolute;top:-13px;left:-9px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">2</div>
+          <div style="outline:1.5px dashed #b9b7ee;outline-offset:5px;width:24px;height:24px;border-radius:7px;border:2px solid #d4d4d8;"></div>
+        </div>
+
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;">
+          <div style="position:relative;align-self:flex-start;">
+            <div style="position:absolute;top:-13px;left:-9px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">3</div>
+            <span style="outline:1.5px dashed #b9b7ee;outline-offset:5px;border-radius:6px;font-size:17px;font-weight:600;color:#1b1b1f;">Gửi báo cáo tuần cho quản lý</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="position:relative;">
+              <div style="position:absolute;top:-13px;left:-9px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">4</div>
+              <span style="outline:1.5px dashed #b9b7ee;outline-offset:5px;border-radius:6px;display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#e5484d;"><span style="width:5px;height:5px;border-radius:50%;background:#e5484d;"></span>Quá hạn 2 ngày</span>
+            </div>
+            <div style="position:relative;">
+              <div style="position:absolute;top:-13px;left:-9px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">6</div>
+              <span style="outline:1.5px dashed #b9b7ee;outline-offset:5px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#71717a;background:#f4f4f5;border:1px solid #eaeaec;border-radius:999px;padding:3px 9px;"><span style="width:6px;height:6px;border-radius:50%;background:#5b57e0;"></span>Công việc</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="position:relative;">
+          <div style="position:absolute;top:-13px;left:-9px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">5</div>
+          <span style="outline:1.5px dashed #b9b7ee;outline-offset:5px;display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#c62a2f;background:#fdeceb;border-radius:999px;padding:4px 10px;"><span style="width:6px;height:6px;border-radius:50%;background:#e5484d;"></span>Cao</span>
+        </div>
+
+        <div style="position:relative;">
+          <div style="position:absolute;top:-13px;left:-7px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">7</div>
+          <div style="outline:1.5px dashed #b9b7ee;outline-offset:4px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#f4f4f5;color:#71717a;font-size:14px;">✎</div>
+        </div>
+        <div style="position:relative;">
+          <div style="position:absolute;top:-13px;left:-7px;width:20px;height:20px;border-radius:50%;background:#5b57e0;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(91,87,224,.4);z-index:3;">8</div>
+          <div style="outline:1.5px dashed #b9b7ee;outline-offset:4px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#fdeceb;color:#c62a2f;font-size:13px;">✕</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 40px;margin-top:40px;">
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">1</span><div style="font-size:13.5px;color:#3f3f46;"><b>Tay cầm kéo-thả</b> — giữ và kéo để sắp xếp lại thứ tự việc.</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">2</span><div style="font-size:13.5px;color:#3f3f46;"><b>Checkbox</b> — đánh dấu hoàn thành; việc xong sẽ gạch ngang &amp; mờ đi.</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">3</span><div style="font-size:13.5px;color:#3f3f46;"><b>Tiêu đề việc</b> — nội dung chính, có thể nhấn để mở nhanh.</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">4</span><div style="font-size:13.5px;color:#3f3f46;"><b>Hạn chót</b> — việc <span style="color:#e5484d;font-weight:600;">quá hạn</span> hiển thị màu đỏ nổi bật.</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">5</span><div style="font-size:13.5px;color:#3f3f46;"><b>Nhãn ưu tiên</b> — Cao (đỏ) / Trung bình (vàng) / Thấp (xanh).</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">6</span><div style="font-size:13.5px;color:#3f3f46;"><b>Chip nhãn (tags)</b> — phân loại việc, mỗi nhãn một màu chấm.</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">7</span><div style="font-size:13.5px;color:#3f3f46;"><b>Nút Sửa</b> — mở form chỉnh sửa việc.</div></div>
+        <div style="display:flex;align-items:flex-start;gap:10px;"><span style="width:20px;height:20px;flex:none;border-radius:50%;background:#eeedff;color:#5b57e0;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">8</span><div style="font-size:13.5px;color:#3f3f46;"><b>Nút Xóa</b> — xóa việc (hiện hộp xác nhận).</div></div>
+      </div>
+
+      <div style="height:1px;background:#eaeaec;margin:28px 0 24px;"></div>
+
+      <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">CÁC TRẠNG THÁI</div>
+      <div style="display:flex;flex-direction:column;gap:9px;--surface:#ffffff;--surface2:#fafafa;--border:#eaeaec;--text:#1b1b1f;--muted:#71717a;--accent:#5b57e0;--accent-fg:#ffffff;--shadow:0 1px 2px rgba(0,0,0,.04);--cao-bg:#fdeceb;--cao-text:#c62a2f;--tb-bg:#fbf3dd;--tb-text:#97710a;--thap-bg:#e7f6ee;--thap-text:#197a43;--over:#e5484d;--chip-bg:#f4f4f5;">
+        <dc-import name="TaskRow" title="Việc thường — ưu tiên cao" due="Hôm nay, 17:00" priority="cao" tags="{{ tCV }}" hint-size="100%,64px"></dc-import>
+        <dc-import name="TaskRow" title="Việc quá hạn — nổi bật màu đỏ" due="Quá hạn 2 ngày" overdue="true" priority="tb" tags="{{ tSKCN }}" hint-size="100%,64px"></dc-import>
+        <dc-import name="TaskRow" title="Việc đã hoàn thành — gạch ngang, mờ" due="Hôm qua" done="true" priority="thap" tags="{{ tCN }}" hint-size="100%,64px"></dc-import>
+      </div>
+    </div>
+  </div>
+
+  <!-- 07 DESIGN TOKENS -->
+  <div>
+    <div style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#8a8a92;margin-bottom:14px;">07 · DESIGN TOKENS — DÀNH CHO DEV (REACT + TAILWIND)</div>
+    <div style="display:flex;flex-direction:column;gap:20px;width:1180px;">
+
+      <!-- COLORS -->
+      <div style="display:flex;gap:20px;">
+        <div style="flex:1;background:#fff;border:1px solid #dcdce0;border-radius:16px;padding:22px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;"><span style="width:9px;height:9px;border-radius:50%;background:#fafafa;border:1px solid #d4d4d8;"></span><span style="font-size:14px;font-weight:700;">Bảng màu — Light</span></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+            <div><div style="height:50px;border-radius:10px;background:#f5f5f6;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Nền</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">bg · #F5F5F6</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#ffffff;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Bề mặt</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">surface · #FFFFFF</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#fafafa;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Bề mặt 2</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">surface-2 · #FAFAFA</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#eaeaec;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Viền</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">border · #EAEAEC</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#1b1b1f;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Chữ</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">text · #1B1B1F</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#71717a;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Chữ mờ</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">muted · #71717A</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#5b57e0;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Nhấn</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">primary · #5B57E0</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#eeedff;border:1px solid rgba(0,0,0,.08);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Nhấn nhạt</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;">primary-soft · #EEEDFF</div></div>
+          </div>
+        </div>
+
+        <div style="flex:1;background:#17171c;border:1px solid #2a2a31;border-radius:16px;padding:22px;color:#f3f3f5;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;"><span style="width:9px;height:9px;border-radius:50%;background:#0d0d10;border:1px solid #3a3a42;"></span><span style="font-size:14px;font-weight:700;">Bảng màu — Dark</span></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+            <div><div style="height:50px;border-radius:10px;background:#0d0d10;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Nền</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">bg · #0D0D10</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#17171c;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Bề mặt</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">surface · #17171C</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#1d1d23;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Bề mặt 2</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">surface-2 · #1D1D23</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#2a2a31;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Viền</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">border · #2A2A31</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#f3f3f5;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Chữ</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">text · #F3F3F5</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#9a9aa4;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Chữ mờ</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">muted · #9A9AA4</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#837ff2;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Nhấn</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">primary · #837FF2</div></div>
+            <div><div style="height:50px;border-radius:10px;background:#211f3a;border:1px solid rgba(255,255,255,.1);"></div><div style="font-size:12.5px;font-weight:600;margin-top:7px;">Nhấn nhạt</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#9a9aa4;">primary-soft · #211F3A</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEMANTIC + TYPE -->
+      <div style="display:flex;gap:20px;align-items:stretch;">
+        <div style="width:420px;background:#fff;border:1px solid #dcdce0;border-radius:16px;padding:22px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Màu ngữ nghĩa — Ưu tiên &amp; trạng thái</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:22px;height:22px;border-radius:6px;background:#e5484d;flex:none;"></span><span style="flex:1;font-size:13.5px;font-weight:600;">Ưu tiên Cao</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">#E5484D</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:22px;height:22px;border-radius:6px;background:#eab308;flex:none;"></span><span style="flex:1;font-size:13.5px;font-weight:600;">Ưu tiên Trung bình</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">#EAB308</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:22px;height:22px;border-radius:6px;background:#12a150;flex:none;"></span><span style="flex:1;font-size:13.5px;font-weight:600;">Ưu tiên Thấp</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">#12A150</span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:22px;height:22px;border-radius:6px;background:#e5484d;flex:none;"></span><span style="flex:1;font-size:13.5px;font-weight:600;">Quá hạn (overdue)</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">#E5484D</span></div>
+            <div style="height:1px;background:#eaeaec;margin:2px 0;"></div>
+            <div style="font-size:11.5px;color:#8a8a92;line-height:1.55;">Ở Dark Mode, chữ ưu tiên dùng bản sáng hơn (Cao <span style="font-family:'JetBrains Mono',monospace;">#FF9B9B</span>, TB <span style="font-family:'JetBrains Mono',monospace;">#F2C94C</span>, Thấp <span style="font-family:'JetBrains Mono',monospace;">#6EE7A8</span>) trên nền mờ 16% cùng màu.</div>
+          </div>
+        </div>
+
+        <div style="flex:1;background:#fff;border:1px solid #dcdce0;border-radius:16px;padding:22px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:6px;">Kiểu chữ</div>
+          <div style="font-size:12px;color:#8a8a92;margin-bottom:16px;">Giao diện: <b style="color:#1b1b1f;">Plus Jakarta Sans</b> · Mã/token: <b style="color:#1b1b1f;font-family:'JetBrains Mono',monospace;">JetBrains Mono</b></div>
+          <div style="display:flex;flex-direction:column;gap:13px;">
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:26px;font-weight:800;letter-spacing:-.02em;">Display</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">40 / 800 · tiêu đề trang</span></div>
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:22px;font-weight:700;letter-spacing:-.01em;">Heading</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">22 / 700 · tiêu đề màn hình</span></div>
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:17px;font-weight:700;">Subheading</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">17 / 700 · tiêu đề modal</span></div>
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:14px;font-weight:500;">Body</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">14 / 500 · tiêu đề việc</span></div>
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:12.5px;font-weight:600;">Label</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">12.5 / 600 · nhãn form</span></div>
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:12px;font-weight:500;color:#71717a;">Caption</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">12 / 500 · meta, hạn chót</span></div>
+            <div style="display:flex;align-items:baseline;gap:16px;"><span style="width:200px;font-size:10.5px;font-weight:700;letter-spacing:.09em;color:#8a8a92;">OVERLINE</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">10.5 / 700 · mục lục</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPACING / RADIUS / SHADOW -->
+      <div style="display:flex;gap:20px;align-items:stretch;">
+        <div style="flex:1;background:#fff;border:1px solid #dcdce0;border-radius:16px;padding:22px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Khoảng cách <span style="font-weight:500;color:#8a8a92;font-size:12px;">(base 4px)</span></div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">1 · 4</span><span style="height:12px;width:4px;background:#5b57e0;border-radius:2px;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">2 · 8</span><span style="height:12px;width:8px;background:#5b57e0;border-radius:2px;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">3 · 12</span><span style="height:12px;width:12px;background:#5b57e0;border-radius:2px;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">4 · 16</span><span style="height:12px;width:16px;background:#5b57e0;border-radius:2px;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">5 · 20</span><span style="height:12px;width:20px;background:#5b57e0;border-radius:2px;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">6 · 24</span><span style="height:12px;width:24px;background:#5b57e0;border-radius:2px;"></span></div>
+            <div style="display:flex;align-items:center;gap:12px;"><span style="width:44px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a8a92;">8 · 32</span><span style="height:12px;width:32px;background:#5b57e0;border-radius:2px;"></span></div>
+          </div>
+        </div>
+
+        <div style="flex:1;background:#fff;border:1px solid #dcdce0;border-radius:16px;padding:22px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:16px;">Bo góc</div>
+          <div style="display:flex;flex-wrap:wrap;gap:18px;">
+            <div style="text-align:center;"><div style="width:56px;height:56px;background:#eeedff;border:1.5px solid #5b57e0;border-radius:8px;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:7px;">sm · 8</div></div>
+            <div style="text-align:center;"><div style="width:56px;height:56px;background:#eeedff;border:1.5px solid #5b57e0;border-radius:10px;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:7px;">md · 10</div></div>
+            <div style="text-align:center;"><div style="width:56px;height:56px;background:#eeedff;border:1.5px solid #5b57e0;border-radius:12px;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:7px;">lg · 12</div></div>
+            <div style="text-align:center;"><div style="width:56px;height:56px;background:#eeedff;border:1.5px solid #5b57e0;border-radius:16px;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:7px;">xl · 16</div></div>
+            <div style="text-align:center;"><div style="width:56px;height:56px;background:#eeedff;border:1.5px solid #5b57e0;border-radius:999px;"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:7px;">full · 999</div></div>
+          </div>
+          <div style="font-size:14px;font-weight:700;margin:22px 0 14px;">Đổ bóng</div>
+          <div style="display:flex;gap:20px;">
+            <div style="text-align:center;"><div style="width:80px;height:48px;background:#fff;border:1px solid #f0f0f2;border-radius:10px;box-shadow:0 1px 2px rgba(0,0,0,.04);"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:8px;">shadow-sm</div></div>
+            <div style="text-align:center;"><div style="width:80px;height:48px;background:#fff;border:1px solid #f0f0f2;border-radius:10px;box-shadow:0 8px 30px rgba(20,20,40,.10);"></div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#8a8a92;margin-top:8px;">shadow-md</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAILWIND CONFIG -->
+      <div style="background:#0d0d10;border:1px solid #2a2a31;border-radius:16px;padding:22px 24px;">
+        <div style="font-size:12.5px;font-weight:600;color:#9a9aa4;margin-bottom:14px;font-family:'JetBrains Mono',monospace;">tailwind.config.js — theme.extend</div>
+        <pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.65;color:#d4d4d8;white-space:pre;overflow-x:auto;">colors: {
+  bg:        { DEFAULT: '#F5F5F6', dark: '#0D0D10' },
+  surface:   { DEFAULT: '#FFFFFF', 2: '#FAFAFA', dark: '#17171C', '2dark': '#1D1D23' },
+  border:    { DEFAULT: '#EAEAEC', dark: '#2A2A31' },
+  text:      { DEFAULT: '#1B1B1F', muted: '#71717A', dark: '#F3F3F5', 'muted-dark': '#9A9AA4' },
+  primary:   { DEFAULT: '#5B57E0', soft: '#EEEDFF', dark: '#837FF2', 'soft-dark': '#211F3A' },
+  priority:  { high: '#E5484D', medium: '#EAB308', low: '#12A150' },
+},
+borderRadius: { sm: '8px', md: '10px', lg: '12px', xl: '16px' },
+fontFamily:   { sans: ['Plus Jakarta Sans', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+// Dark mode: darkMode: 'class'  →  &lt;html class="dark"&gt;</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <div data-more></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const tag = (name, color) => ({ name, color });
+    return {
+      tCV: [tag('Công việc', '#5b57e0')],
+      tCN: [tag('Cá nhân', '#12a150')],
+      tSKCN: [tag('Sức khỏe', '#e5484d'), tag('Cá nhân', '#12a150')],
+      tMSCN: [tag('Mua sắm', '#eab308'), tag('Cá nhân', '#12a150')],
+    };
+  }
+}
+</script>
+</body>
+</html>

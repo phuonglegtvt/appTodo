@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px;cursor:grab;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <sc-if value="{{ isCao }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--cao-text);background:var(--cao-bg);border-radius:999px;padding:2px 8px;"><span style="width:5px;height:5px;border-radius:50%;background:#e5484d;"></span>Cao</span></sc-if>
+    <sc-if value="{{ isTb }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--tb-text);background:var(--tb-bg);border-radius:999px;padding:2px 8px;"><span style="width:5px;height:5px;border-radius:50%;background:#eab308;"></span>Trung bình</span></sc-if>
+    <sc-if value="{{ isThap }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--thap-text);background:var(--thap-bg);border-radius:999px;padding:2px 8px;"><span style="width:5px;height:5px;border-radius:50%;background:#12a150;"></span>Thấp</span></sc-if>
+    <div style="flex:1;"></div>
+    <div style="display:grid;grid-template-columns:3px 3px;gap:3px;">
+      <span style="width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4;"></span><span style="width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4;"></span><span style="width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4;"></span><span style="width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4;"></span><span style="width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4;"></span><span style="width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:.4;"></span>
+    </div>
+  </div>
+
+  <sc-if value="{{ done }}"><div style="font-size:13.5px;font-weight:600;line-height:1.35;color:var(--muted);text-decoration:line-through;opacity:.75;">{{ title }}</div></sc-if>
+  <sc-if value="{{ notDone }}"><div style="font-size:13.5px;font-weight:600;line-height:1.35;color:var(--text);">{{ title }}</div></sc-if>
+
+  <sc-if value="{{ hasTags }}">
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <sc-for list="{{ tags }}" as="tag" hint-placeholder-count="2">
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--muted);background:var(--chip-bg);border:1px solid var(--border);border-radius:999px;padding:2px 8px;"><span style="width:6px;height:6px;border-radius:50%;background:{{ tag.color }};"></span>{{ tag.name }}</span>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <div style="display:flex;align-items:center;gap:8px;padding-top:2px;">
+    <sc-if value="{{ done }}"><div style="width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-size:11px;flex:none;">✓</div></sc-if>
+    <sc-if value="{{ notDone }}"><div style="width:18px;height:18px;border-radius:50%;border:2px solid var(--border);flex:none;"></div></sc-if>
+    <sc-if value="{{ overdueActive }}"><span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--over);"><span style="width:5px;height:5px;border-radius:50%;background:var(--over);"></span>{{ due }}</span></sc-if>
+    <sc-if value="{{ normalDue }}"><span style="font-size:11.5px;font-weight:500;color:var(--muted);">{{ due }}</span></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:270,&quot;height&quot;:140},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Gửi báo cáo tuần cho quản lý&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;due&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Hôm nay, 17:00&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;overdue&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;done&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;priority&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;cao&quot;,&quot;tb&quot;,&quot;thap&quot;],&quot;default&quot;:&quot;cao&quot;,&quot;tsType&quot;:&quot;'cao'|'tb'|'thap'&quot;},&quot;tags&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;{name:string,color:string}[]&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const tags = p.tags || [];
+    const overdueActive = !!p.overdue && !p.done;
+    return {
+      isCao: p.priority === 'cao',
+      isTb: p.priority === 'tb',
+      isThap: p.priority === 'thap',
+      tags,
+      hasTags: tags.length > 0,
+      notDone: !p.done,
+      overdueActive,
+      normalDue: !overdueActive,
+    };
+  }
+}
+</script>
+</body>
+</html>
