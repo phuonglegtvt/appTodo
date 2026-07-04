@@ -41,6 +41,7 @@ export function Sidebar({ view, onView, counts, tags, activeTag, onTag, userEmai
           <button
             key={v.key}
             onClick={() => onView(v.key)}
+            aria-current={active ? 'page' : undefined}
             className={`flex items-center rounded-[9px] px-2.5 py-2 text-sm ${
               active
                 ? 'bg-primary-soft font-semibold text-primary dark:bg-primary-soft-dark dark:text-primary-dark'
@@ -71,6 +72,7 @@ export function Sidebar({ view, onView, counts, tags, activeTag, onTag, userEmai
               <button
                 key={t.name}
                 onClick={() => onTag(active ? null : t.name)}
+                aria-pressed={active}
                 className={`flex items-center gap-2.5 rounded-[9px] px-2.5 py-1.5 ${
                   active
                     ? 'bg-primary-soft dark:bg-primary-soft-dark'

@@ -47,6 +47,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
   const [query, setQuery] = useState('');
   const [priority, setPriority] = useState<Priority | 'all'>('all');
   const [tag, setTag] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -79,19 +80,36 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
   const active = visible.filter((t) => !t.is_done);
   const done = visible.filter((t) => t.is_done);
 
-  // reorderTodos đánh số lại sort_order theo thứ tự truyền vào; gộp lại để giữ nhất quán giữa 2 nhóm.
-  const reorderActive = (ordered: Todo[]) => reorderTodos([...ordered, ...done]);
-  const reorderDone = (ordered: Todo[]) => reorderTodos([...active, ...ordered]);
+  // Kéo-thả chỉ sắp xếp trong một nhóm đang hiển thị (có thể đã bị lọc). Ta ghép thứ tự
+  // mới của nhóm đó trở lại TOÀN BỘ todos rồi mới gọi reorderTodos — vì reorderTodos
+  // làm setTodos(ordered) (thay thế cả mảng) và chỉ lưu sort_order cho các dòng nhận được.
+  // Nếu chỉ truyền tập con đã lọc, các việc đang bị ẩn sẽ biến mất khỏi state và
+  // sort_order dưới DB bị trùng. Giữ nguyên vị trí các item không bị kéo.
+  const reorderGroup = (orderedSubset: Todo[]) => {
+    const movedIds = new Set(orderedSubset.map((t) => t.id));
+    let i = 0;
+    const fullOrder = sortByOrder(todos).map((t) => (movedIds.has(t.id) ? orderedSubset[i++] : t));
+    reorderTodos(fullOrder);
+  };
 
   const toggleDone = (id: string, isDone: boolean) => updateTodo(id, { is_done: isDone });
   const changePriority = (id: string, p: Priority) => updateTodo(id, { priority: p });
   const removeTodo = (id: string) => {
     if (confirm('Xóa việc này?')) deleteTodo(id);
   };
+  async function handleSignOut() {
+    setAuthError(null);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Lỗi đăng xuất:', error);
+      setAuthError('Không đăng xuất được: ' + error.message);
+    }
+  }
 
   const modeBtn = (m: ViewMode, label: string) => (
     <button
       onClick={() => setMode(m)}
+      aria-pressed={mode === m}
       className={`rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
         mode === m
           ? 'bg-surface text-text shadow-sm dark:bg-surface-dark dark:text-text-dark'
@@ -112,7 +130,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
         activeTag={tag}
         onTag={setTag}
         userEmail={userEmail}
-        onSignOut={() => supabase.auth.signOut()}
+        onSignOut={handleSignOut}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -121,7 +139,13 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
           <div className="flex min-w-[180px] max-w-[380px] flex-1">
             <SearchBar value={query} onChange={setQuery} />
           </div>
-          <FilterBar priority={priority} onPriority={setPriority} tag={tag} onTag={setTag} tags={allTags(todos)} />
+          <FilterBar
+            priority={priority}
+            onPriority={setPriority}
+            tag={tag}
+            onTag={setTag}
+            tags={tagCounts.map((t) => t.name)}
+          />
           <div className="flex gap-0.5 rounded-lg border border-border bg-surface-2 p-0.5 dark:border-border-dark dark:bg-surface-2dark">
             {modeBtn('list', 'Danh sách')}
             {modeBtn('board', 'Bảng')}
@@ -136,6 +160,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
               <button
                 key={v}
                 onClick={() => setView(v)}
+                aria-current={view === v ? 'page' : undefined}
                 className={`flex-none rounded-lg px-3 py-1.5 text-sm font-medium ${
                   view === v
                     ? 'bg-primary-soft text-primary dark:bg-primary-soft-dark dark:text-primary-dark'
@@ -149,13 +174,16 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
 
           {/* Tiêu đề view */}
           <div>
-            <div className="text-[22px] font-bold tracking-tight">{VIEW_LABEL[view]}</div>
+            <div className="text-[22px] font-bold tracking-tight text-text dark:text-text-dark">
+              {VIEW_LABEL[view]}
+            </div>
             <div className="mt-0.5 text-[13px] text-text-muted dark:text-text-muted-dark">
               {visible.length} việc
             </div>
           </div>
 
           {error && <ErrorBanner message={error} onClose={clearError} />}
+          {authError && <ErrorBanner message={authError} onClose={() => setAuthError(null)} />}
 
           <TodoForm onAdd={addTodo} />
 
@@ -180,7 +208,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
                     onToggle={toggleDone}
                     onUpdate={updateTodo}
                     onDelete={removeTodo}
-                    onReorder={reorderActive}
+                    onReorder={reorderGroup}
                   />
                 </section>
               )}
@@ -195,7 +223,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
                     onToggle={toggleDone}
                     onUpdate={updateTodo}
                     onDelete={removeTodo}
-                    onReorder={reorderDone}
+                    onReorder={reorderGroup}
                   />
                 </section>
               )}
