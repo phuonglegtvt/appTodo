@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { NewTodo, Priority } from '../types/todo';
 
 const inputClass =
-  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-text-muted focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:placeholder:text-text-muted-dark';
+  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none placeholder:text-text-muted focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:placeholder:text-text-muted-dark dark:focus:border-primary-dark';
 
 /** Form thêm việc: tiêu đề + ưu tiên + hạn + nhãn. Nhấn Enter/nút để thêm. */
 export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
@@ -38,6 +38,7 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Thêm việc nhanh — nhập tiêu đề rồi nhấn Enter"
+        aria-label="Tiêu đề việc mới"
         className={`min-w-[12rem] flex-1 ${inputClass}`}
       />
       <select
@@ -63,7 +64,7 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
         placeholder="nhãn, cách nhau dấu phẩy"
         className={inputClass}
       />
-      <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+      <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 dark:bg-primary-dark">
         Thêm
       </button>
     </form>

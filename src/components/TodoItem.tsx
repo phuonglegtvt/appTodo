@@ -15,7 +15,7 @@ interface Props {
 }
 
 const editInput =
-  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark';
+  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:focus:border-primary-dark';
 
 export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -49,7 +49,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
 
   if (editing) {
     return (
-      <li className="rounded-xl border border-border bg-surface p-3 dark:border-border-dark dark:bg-surface-dark">
+      <li className="rounded-lg border border-border bg-surface p-3 dark:border-border-dark dark:bg-surface-dark">
         <form onSubmit={save} className="flex flex-col gap-2">
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={editInput} />
           <textarea
@@ -77,7 +77,9 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
             />
           </div>
           <div className="flex gap-2">
-            <button className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white">Lưu</button>
+            <button className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white dark:bg-primary-dark">
+              Lưu
+            </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
@@ -95,7 +97,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
     <li
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-[11px] shadow-sm dark:border-border-dark dark:bg-surface-dark"
+      className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-[11px] shadow-sm dark:border-border-dark dark:bg-surface-dark"
     >
       {/* Tay cầm kéo — 6 chấm */}
       <button
@@ -106,7 +108,10 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         className="grid flex-none cursor-grab grid-cols-2 gap-[3px]"
       >
         {Array.from({ length: 6 }).map((_, i) => (
-          <span key={i} className="h-[3px] w-[3px] rounded-full bg-text-muted opacity-40" />
+          <span
+            key={i}
+            className="h-[3px] w-[3px] rounded-full bg-text-muted opacity-40 dark:bg-text-muted-dark"
+          />
         ))}
       </button>
 
@@ -119,7 +124,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         onClick={() => onToggle(todo.id, !todo.is_done)}
         className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[13px] leading-none ${
           todo.is_done
-            ? 'bg-primary text-white'
+            ? 'bg-primary text-white dark:bg-primary-dark'
             : 'border-2 border-border dark:border-border-dark'
         }`}
       >
