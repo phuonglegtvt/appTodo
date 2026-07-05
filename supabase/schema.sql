@@ -50,3 +50,10 @@ create policy "todos_delete_own" on public.todos
 
 -- Bật Realtime cho bảng todos.
 alter publication supabase_realtime add table public.todos;
+
+-- REPLICA IDENTITY FULL: bắt buộc để sự kiện realtime DELETE (và UPDATE) mang đủ
+-- các cột cũ, không chỉ khóa chính. Kênh client lọc theo user_id — nếu payload
+-- DELETE thiếu user_id (mặc định chỉ có id), Supabase loại bỏ sự kiện và việc đã
+-- xóa vẫn "kẹt" trên màn hình các thiết bị khác. Với app đồng bộ nhiều thiết bị,
+-- đây là điều kiện cần để xóa lan truyền đúng.
+alter table public.todos replica identity full;

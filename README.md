@@ -10,13 +10,16 @@ Web app quản lý công việc (todo) cá nhân, đồng bộ nhiều thiết b
 React + Vite + TypeScript + Tailwind CSS · Supabase (Auth / Postgres / Realtime) · Vitest
 
 ## Bắt đầu
-> Dự án đang ở giai đoạn tài liệu. Các bước dưới sẽ dùng được sau khi scaffold code.
 
 ```bash
 npm install
 cp .env.example .env   # rồi điền thông tin Supabase
 npm run dev
 ```
+
+Thiết lập Supabase (một lần): chạy toàn bộ [`supabase/schema.sql`](./supabase/schema.sql)
+trong SQL Editor (tạo bảng `todos` + RLS + Realtime), bật Auth provider Email
+(magic link) và/hoặc Google, thêm `http://localhost:5173` vào Redirect URLs.
 
 ## Biến môi trường
 Xem [`.env.example`](./.env.example). Cần một project Supabase (miễn phí) với:
