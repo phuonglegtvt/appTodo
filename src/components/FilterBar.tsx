@@ -12,8 +12,12 @@ interface Props {
  * Bộ lọc trên top bar: theo Ưu tiên và Nhãn (bám mockup nút "Ưu tiên ▾ / Nhãn ▾").
  * Smart view (Hôm nay/Sắp tới/…) nằm ở Sidebar, không ở đây.
  */
-const selectClass =
-  'cursor-pointer rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-[12.5px] font-medium text-text-muted outline-none dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark';
+const baseSelect =
+  'cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-medium outline-none transition-colors';
+const idleSelect =
+  'border-border bg-surface-2 text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark';
+const activeSelect =
+  'border-primary bg-primary-soft text-primary dark:border-primary-dark dark:bg-primary-soft-dark dark:text-primary-dark';
 
 export function FilterBar({ priority, onPriority, tag, onTag, tags }: Props) {
   return (
@@ -21,7 +25,7 @@ export function FilterBar({ priority, onPriority, tag, onTag, tags }: Props) {
       <select
         value={priority}
         onChange={(e) => onPriority(e.target.value as Priority | 'all')}
-        className={selectClass}
+        className={`${baseSelect} ${priority === 'all' ? idleSelect : activeSelect}`}
         aria-label="Lọc theo ưu tiên"
       >
         <option value="all">Mọi ưu tiên</option>
@@ -33,7 +37,7 @@ export function FilterBar({ priority, onPriority, tag, onTag, tags }: Props) {
       <select
         value={tag ?? ''}
         onChange={(e) => onTag(e.target.value || null)}
-        className={selectClass}
+        className={`${baseSelect} ${tag ? activeSelect : idleSelect}`}
         aria-label="Lọc theo nhãn"
       >
         <option value="">Mọi nhãn</option>

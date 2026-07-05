@@ -44,10 +44,10 @@ function Column({
   return (
     <div
       ref={setNodeRef}
-      className={`flex max-h-full w-[280px] flex-none flex-col gap-2.5 rounded-xl border p-3 transition-colors ${
+      className={`flex max-h-full w-[280px] flex-none flex-col gap-2.5 rounded-xl border p-3.5 transition-colors ${
         isOver
           ? 'border-primary bg-primary-soft dark:border-primary-dark dark:bg-primary-soft-dark'
-          : 'border-border bg-surface-2 dark:border-border-dark dark:bg-surface-2dark'
+          : 'border-border bg-surface-2 shadow-soft dark:border-border-dark dark:bg-surface-2dark dark:shadow-soft-dark'
       }`}
     >
       <div className="flex items-center gap-2 px-1 py-0.5">

@@ -44,7 +44,7 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg p-6 font-sans text-text dark:bg-bg-dark dark:text-text-dark">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-8 shadow-sm dark:border-border-dark dark:bg-surface-dark">
+      <div className="surface-card w-full max-w-sm p-8 shadow-lg dark:shadow-lg-dark">
         {/* Logo + tiêu đề */}
         <div className="mb-6 flex flex-col items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary text-lg font-bold text-white">
@@ -66,7 +66,7 @@ export function LoginPage() {
 
         <button
           onClick={signInWithGoogle}
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-border px-4 py-2.5 font-medium transition-colors hover:bg-surface-2 dark:border-border-dark dark:hover:bg-surface-2dark"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2.5 font-medium transition hover:bg-surface-2 active:scale-95 dark:border-border-dark dark:hover:bg-surface-2dark"
         >
           Đăng nhập với Google
         </button>
@@ -78,7 +78,7 @@ export function LoginPage() {
         </div>
 
         {sent ? (
-          <p className="rounded-md bg-primary-soft px-4 py-3 text-center text-sm text-primary dark:bg-primary-soft-dark dark:text-primary-dark">
+          <p className="rounded-lg bg-primary-soft px-4 py-3 text-center text-sm text-primary dark:bg-primary-soft-dark dark:text-primary-dark">
             Đã gửi link đăng nhập tới <strong>{email}</strong>. Kiểm tra hộp thư nhé.
           </p>
         ) : (
@@ -89,12 +89,12 @@ export function LoginPage() {
               placeholder="email@cua-ban.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark"
+              className="rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:focus:border-primary-dark dark:focus:ring-primary-dark/30"
             />
             <button
               type="submit"
               disabled={busy}
-              className="rounded-md bg-primary px-4 py-2.5 font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="rounded-lg bg-primary px-4 py-2.5 font-medium text-white shadow-soft transition hover:shadow-md active:scale-95 disabled:opacity-50 dark:bg-primary-dark dark:shadow-soft-dark dark:hover:shadow-md-dark"
             >
               {busy ? 'Đang gửi…' : 'Gửi link đăng nhập'}
             </button>

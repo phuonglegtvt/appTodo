@@ -138,7 +138,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
 
       <main className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <div className="flex flex-none flex-wrap items-center gap-3 border-b border-border bg-surface px-5 py-3 dark:border-border-dark dark:bg-surface-dark">
+        <div className="flex flex-none flex-wrap items-center gap-3 bg-surface px-5 py-3 shadow-soft dark:bg-surface-dark dark:shadow-soft-dark">
           <div className="flex min-w-[180px] max-w-[380px] flex-1">
             <SearchBar value={query} onChange={setQuery} />
           </div>
