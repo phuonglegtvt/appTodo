@@ -83,6 +83,11 @@ export function KanbanCard({ todo, today, onToggle }: Props) {
               {todo.due_date}
             </span>
           ))}
+        {todo.recurrence !== 'none' && (
+          <span className="text-[11px]" title="Việc lặp lại" aria-label="Việc lặp lại">
+            🔁
+          </span>
+        )}
       </div>
     </div>
   );
