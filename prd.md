@@ -1,10 +1,12 @@
 # PRD — Ứng dụng Todo cá nhân
 
 > Product Requirements Document. Tài liệu này mô tả **cái gì** cần xây và **vì
-> sao**. Chi tiết kỹ thuật xem `docs/superpowers/specs/2026-07-04-todo-app-design.md`.
+> sao**. Chi tiết kỹ thuật Phase 1 xem
+> `docs/superpowers/specs/2026-07-04-todo-app-design.md`; Phase 2a xem
+> `docs/superpowers/specs/2026-07-05-recurring-tasks-design.md`.
 
-- **Phiên bản:** 1.0 (Phase 1 / MVP)
-- **Ngày:** 2026-07-04
+- **Phiên bản:** 1.1 (Phase 1 hoàn tất / Phase 2a đang triển khai)
+- **Ngày:** 2026-07-05
 - **Chủ sản phẩm:** phuonglegtvt92@gmail.com
 
 ## 1. Tổng quan
@@ -64,8 +66,40 @@ dữ liệu.
 - NFR-3: Bảo mật dữ liệu bằng Row Level Security; không lộ khóa nhạy cảm ở frontend.
 - NFR-4: Code chia module nhỏ, có test cho phần logic.
 
-## 6. Ngoài phạm vi (Phase 2+)
-Nhập ngôn ngữ tự nhiên, việc con, lặp định kỳ, nhắc nhở/thông báo, Pomodoro,
+## 6. Định hướng Phase 2
+
+Phase 1 là nền tảng CRUD + đồng bộ. Phase 2 mở rộng theo tầm nhìn: app phải cho
+người dùng **nhìn vào là biết ngay** mục tiêu dài hạn của mình và việc cần làm
+hôm nay bám vào mục tiêu đó ra sao — "mục tiêu dài hạn là kim chỉ nam cho hành động".
+
+### 6.1 Phase 2a — Việc lặp cố định ngày (đang triển khai)
+Giá trị cao nhất, độc lập với hệ thống mục tiêu, làm trước:
+- FR-19: Gắn quy tắc **lặp lại** (hàng tuần / hàng tháng / hàng năm) cho một việc.
+- FR-20: Đánh dấu hoàn thành một việc lặp → **tự động tạo việc cho kỳ tiếp
+  theo** (VD: đóng thẻ tín dụng VPBank ngày 15 hàng tháng → tick xong → tự sinh
+  việc ngày 15 tháng sau). Dừng lặp bằng cách tự xóa việc của kỳ kế tiếp — không
+  cần thao tác "hủy lặp" riêng.
+- FR-21: Việc đã đánh dấu hoàn thành **ẩn khỏi** các view đang làm (Hôm nay/Sắp
+  tới/Tất cả) nhưng vẫn xem lại được ở view "Đã xong" — không xóa khỏi dữ liệu
+  (giữ nguyên NFR không mất dữ liệu).
+
+Thiết kế chi tiết: `docs/superpowers/specs/2026-07-05-recurring-tasks-design.md`.
+
+### 6.2 Phase 2b — Mục tiêu theo tầng thời gian (kế hoạch)
+- FR-22: Tạo **mục tiêu** gắn với một tầng thời gian (horizon): 5 năm / năm /
+  tháng / tuần, mỗi mục tiêu ứng với một kỳ cụ thể (VD mục tiêu năm 2026, mục
+  tiêu tháng 2026-07).
+- FR-23: Gắn một việc với một mục tiêu (**tùy chọn**, không bắt buộc — việc vặt
+  không thuộc mục tiêu nào vẫn hợp lệ, giữ tiêu chí thêm việc nhanh).
+- FR-24: Xem việc/mục tiêu theo view tổng hợp từng tầng thời gian (Ngày → Tuần
+  → Tháng → Năm → 5 năm), giúp nhìn một lúc biết mục tiêu dài hạn đang được việc
+  hằng ngày phục vụ ra sao.
+
+Mô hình mục tiêu **phẳng** (không lồng cây nhiều tầng ở bản đầu) để giữ độ phức
+tạp vừa phải; có thể nâng cấp lên cây lồng nhau thật sự nếu nhu cầu phát sinh.
+
+### 6.3 Ngoài phạm vi (chưa có kế hoạch)
+Nhập ngôn ngữ tự nhiên, việc con (subtask), nhắc nhở/thông báo đẩy, Pomodoro,
 habit tracker, tính năng AI, cộng tác nhiều người.
 
 ## 7. Công nghệ
