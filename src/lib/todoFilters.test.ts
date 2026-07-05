@@ -20,6 +20,7 @@ function makeTodo(over: Partial<Todo>): Todo {
     due_date: over.due_date ?? null,
     priority: over.priority ?? 'medium',
     tags: over.tags ?? [],
+    recurrence: over.recurrence ?? 'none',
     sort_order: over.sort_order ?? 0,
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
