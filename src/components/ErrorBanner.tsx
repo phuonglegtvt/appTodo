@@ -8,9 +8,13 @@ export function ErrorBanner({ message, onClose }: Props) {
   return (
     <div
       role="alert"
-      className="flex items-start justify-between gap-3 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
+      style={{ borderLeftColor: '#E5484D' }}
+      className="flex items-start justify-between gap-3 rounded-lg border border-l-[3px] border-border bg-surface px-4 py-3 text-sm text-red-800 shadow-soft dark:border-border-dark dark:bg-surface-dark dark:text-red-200 dark:shadow-soft-dark"
     >
-      <span>{message}</span>
+      <span className="flex items-start gap-2">
+        <span aria-hidden="true">⚠</span>
+        {message}
+      </span>
       {onClose && (
         <button onClick={onClose} className="font-bold" aria-label="Đóng">
           ×
