@@ -28,7 +28,9 @@ export function KanbanCard({ todo, today, onToggle }: Props) {
       style={style}
       {...attributes}
       {...listeners}
-      className="flex cursor-grab flex-col gap-2.5 rounded-lg border border-border bg-surface p-3 shadow-sm dark:border-border-dark dark:bg-surface-dark"
+      className={`surface-card flex cursor-grab flex-col gap-2.5 p-3.5 transition-transform duration-150 ${
+        isDragging ? 'scale-105 shadow-lg dark:shadow-lg-dark' : ''
+      }`}
     >
       <span
         className={`text-[13.5px] font-semibold leading-snug ${
@@ -45,7 +47,7 @@ export function KanbanCard({ todo, today, onToggle }: Props) {
           {todo.tags.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[11px] font-medium text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark"
+              className="pill border border-border bg-surface-2 text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark"
             >
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: tagColor(t) }} />
               {t}
@@ -62,7 +64,7 @@ export function KanbanCard({ todo, today, onToggle }: Props) {
           aria-label={todo.is_done ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu hoàn thành'}
           onClick={() => onToggle(todo.id, !todo.is_done)}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full text-[11px] leading-none ${
+          className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full text-[11px] leading-none transition-colors duration-150 ${
             todo.is_done
               ? 'bg-primary text-white dark:bg-primary-dark'
               : 'border-2 border-border dark:border-border-dark'
