@@ -10,3 +10,22 @@
     @apply bg-bg text-text font-sans dark:bg-bg-dark dark:text-text-dark;
   }
 }
+
+@layer components {
+  .surface-card {
+    @apply rounded-xl border border-border bg-surface shadow-soft transition-shadow
+           duration-150 ease-out hover:shadow-md
+           dark:border-border-dark dark:bg-surface-dark dark:shadow-soft-dark dark:hover:shadow-md-dark;
+  }
+
+  .btn-icon {
+    @apply flex h-8 w-8 items-center justify-center rounded-lg text-text-muted
+           transition-colors duration-150 ease-out
+           hover:bg-surface-2 hover:text-text active:scale-95
+           dark:text-text-muted-dark dark:hover:bg-surface-2dark dark:hover:text-text-dark;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}
