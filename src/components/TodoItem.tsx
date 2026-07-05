@@ -15,13 +15,25 @@ interface Props {
 }
 
 const editInput =
-  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:focus:border-primary-dark';
+  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:focus:border-primary-dark dark:focus:ring-primary-dark/30';
+
+/** Màu dải viền trái theo mức ưu tiên (khớp token `priority` trong tailwind.config.js). */
+const PRIORITY_BORDER_COLOR: Record<Priority, string> = {
+  high: '#E5484D',
+  medium: '#EAB308',
+  low: '#12A150',
+};
 
 export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
   });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 };
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    borderLeftColor: PRIORITY_BORDER_COLOR[todo.priority],
+  };
   const overdue = isOverdue(todo, today);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(todo.title);
@@ -49,7 +61,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
 
   if (editing) {
     return (
-      <li className="rounded-lg border border-border bg-surface p-3 dark:border-border-dark dark:bg-surface-dark">
+      <li className="surface-card p-4">
         <form onSubmit={save} className="flex flex-col gap-2">
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={editInput} />
           <textarea
@@ -77,13 +89,13 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
             />
           </div>
           <div className="flex gap-2">
-            <button className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white dark:bg-primary-dark">
+            <button className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white transition active:scale-95 dark:bg-primary-dark">
               Lưu
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm dark:border-border-dark"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm transition-colors duration-150 hover:bg-surface-2 dark:border-border-dark dark:hover:bg-surface-2dark"
             >
               Hủy
             </button>
@@ -94,11 +106,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
   }
 
   return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      className="flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-[11px] shadow-sm dark:border-border-dark dark:bg-surface-dark"
-    >
+    <li ref={setNodeRef} style={style} className="surface-card flex items-center gap-3 border-l-[3px] px-3.5 py-3">
       {/* Tay cầm kéo — 6 chấm */}
       <button
         {...attributes}
@@ -108,10 +116,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         className="grid flex-none cursor-grab grid-cols-2 gap-[3px]"
       >
         {Array.from({ length: 6 }).map((_, i) => (
-          <span
-            key={i}
-            className="h-[3px] w-[3px] rounded-full bg-text-muted opacity-40 dark:bg-text-muted-dark"
-          />
+          <span key={i} className="h-[3px] w-[3px] rounded-full bg-text-muted opacity-40 dark:bg-text-muted-dark" />
         ))}
       </button>
 
@@ -122,7 +127,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         aria-checked={todo.is_done}
         aria-label={todo.is_done ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu hoàn thành'}
         onClick={() => onToggle(todo.id, !todo.is_done)}
-        className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[13px] leading-none ${
+        className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[13px] leading-none transition-colors duration-150 ${
           todo.is_done
             ? 'bg-primary text-white dark:bg-primary-dark'
             : 'border-2 border-border dark:border-border-dark'
@@ -150,15 +155,13 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
                 {todo.due_date} (quá hạn)
               </span>
             ) : (
-              <span className="text-xs font-medium text-text-muted dark:text-text-muted-dark">
-                {todo.due_date}
-              </span>
+              <span className="text-xs font-medium text-text-muted dark:text-text-muted-dark">{todo.due_date}</span>
             ))}
 
           {todo.tags.map((t) => (
             <span
               key={t}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2 py-0.5 text-[11.5px] font-medium text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark"
+              className="pill border border-border bg-surface-2 text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark"
             >
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: tagColor(t) }} />
               {t}
@@ -169,17 +172,13 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
 
       <div className="flex flex-none items-center gap-2">
         <PriorityBadge priority={todo.priority} />
-        <button
-          onClick={() => setEditing(true)}
-          aria-label="Sửa"
-          className="flex h-7 w-7 items-center justify-center rounded-md text-sm text-text-muted hover:bg-surface-2 hover:text-text dark:text-text-muted-dark dark:hover:bg-surface-2dark dark:hover:text-text-dark"
-        >
+        <button onClick={() => setEditing(true)} aria-label="Sửa" className="btn-icon h-7 w-7 text-sm">
           ✎
         </button>
         <button
           onClick={() => onDelete(todo.id)}
           aria-label="Xóa"
-          className="flex h-7 w-7 items-center justify-center rounded-md text-[13px] text-text-muted hover:bg-red-50 hover:text-red-600 dark:text-text-muted-dark dark:hover:bg-red-950/50 dark:hover:text-red-300"
+          className="flex h-7 w-7 flex-none items-center justify-center rounded-lg text-[13px] text-text-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-600 active:scale-95 dark:text-text-muted-dark dark:hover:bg-red-950/50 dark:hover:text-red-300"
         >
           ✕
         </button>
