@@ -42,7 +42,7 @@ export function Sidebar({ view, onView, counts, tags, activeTag, onTag, userEmai
             key={v.key}
             onClick={() => onView(v.key)}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center rounded-[9px] border-l-2 px-2.5 py-2 text-sm transition-colors duration-150 ${
+            className={`flex items-center rounded-[9px] border-l-2 px-2.5 py-2 text-sm transition-colors ${
               active
                 ? 'border-primary bg-primary-soft font-semibold text-primary dark:border-primary-dark dark:bg-primary-soft-dark dark:text-primary-dark'
                 : 'border-transparent font-medium text-text hover:bg-surface-2 dark:text-text-dark dark:hover:bg-surface-2dark'

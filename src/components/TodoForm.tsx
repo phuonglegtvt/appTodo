@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { NewTodo, Priority } from '../types/todo';
 
 const inputClass =
-  'rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors duration-150 placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:placeholder:text-text-muted-dark dark:focus:border-primary-dark dark:focus:ring-primary-dark/30';
+  'rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:placeholder:text-text-muted-dark dark:focus:border-primary-dark dark:focus:ring-primary-dark/30';
 
 /** Form thêm việc: tiêu đề + ưu tiên + hạn + nhãn. Nhấn Enter/nút để thêm. */
 export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
@@ -64,7 +64,7 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
         placeholder="nhãn, cách nhau dấu phẩy"
         className={inputClass}
       />
-      <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition duration-150 hover:shadow-md active:scale-95 dark:bg-primary-dark dark:shadow-soft-dark dark:hover:shadow-md-dark">
+      <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:shadow-md active:scale-95 dark:bg-primary-dark dark:shadow-soft-dark dark:hover:shadow-md-dark">
         Thêm
       </button>
     </form>

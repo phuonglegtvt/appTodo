@@ -13,7 +13,7 @@ interface Props {
  * Smart view (Hôm nay/Sắp tới/…) nằm ở Sidebar, không ở đây.
  */
 const baseSelect =
-  'cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-medium outline-none transition-colors duration-150';
+  'cursor-pointer rounded-full border px-3 py-1.5 text-[12.5px] font-medium outline-none transition-colors';
 const idleSelect =
   'border-border bg-surface-2 text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark';
 const activeSelect =

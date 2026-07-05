@@ -28,7 +28,7 @@ export function KanbanCard({ todo, today, onToggle }: Props) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`surface-card flex cursor-grab flex-col gap-2.5 p-3.5 transition-transform duration-150 ${
+      className={`surface-card flex cursor-grab flex-col gap-2.5 p-3.5 transition-transform ${
         isDragging ? 'scale-105 shadow-lg dark:shadow-lg-dark' : ''
       }`}
     >
@@ -64,7 +64,7 @@ export function KanbanCard({ todo, today, onToggle }: Props) {
           aria-label={todo.is_done ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu hoàn thành'}
           onClick={() => onToggle(todo.id, !todo.is_done)}
           onPointerDown={(e) => e.stopPropagation()}
-          className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full text-[11px] leading-none transition-colors duration-150 ${
+          className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full text-[11px] leading-none transition-colors ${
             todo.is_done
               ? 'bg-primary text-white dark:bg-primary-dark'
               : 'border-2 border-border dark:border-border-dark'

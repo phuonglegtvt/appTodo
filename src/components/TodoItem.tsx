@@ -15,7 +15,7 @@ interface Props {
 }
 
 const editInput =
-  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors duration-150 focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:focus:border-primary-dark dark:focus:ring-primary-dark/30';
+  'rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:focus:border-primary-dark dark:focus:ring-primary-dark/30';
 
 /** Màu dải viền trái theo mức ưu tiên (khớp token `priority` trong tailwind.config.js). */
 const PRIORITY_BORDER_COLOR: Record<Priority, string> = {
@@ -95,7 +95,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm transition-colors duration-150 hover:bg-surface-2 dark:border-border-dark dark:hover:bg-surface-2dark"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm transition-colors hover:bg-surface-2 dark:border-border-dark dark:hover:bg-surface-2dark"
             >
               Hủy
             </button>
@@ -127,7 +127,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         aria-checked={todo.is_done}
         aria-label={todo.is_done ? 'Bỏ đánh dấu hoàn thành' : 'Đánh dấu hoàn thành'}
         onClick={() => onToggle(todo.id, !todo.is_done)}
-        className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[13px] leading-none transition-colors duration-150 ${
+        className={`flex h-5 w-5 flex-none items-center justify-center rounded-md text-[13px] leading-none transition-colors ${
           todo.is_done
             ? 'bg-primary text-white dark:bg-primary-dark'
             : 'border-2 border-border dark:border-border-dark'
@@ -178,7 +178,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         <button
           onClick={() => onDelete(todo.id)}
           aria-label="Xóa"
-          className="flex h-7 w-7 flex-none items-center justify-center rounded-lg text-[13px] text-text-muted transition-colors duration-150 hover:bg-red-50 hover:text-red-600 active:scale-95 dark:text-text-muted-dark dark:hover:bg-red-950/50 dark:hover:text-red-300"
+          className="flex h-7 w-7 flex-none items-center justify-center rounded-lg text-[13px] text-text-muted transition hover:bg-red-50 hover:text-red-600 active:scale-95 dark:text-text-muted-dark dark:hover:bg-red-950/50 dark:hover:text-red-300"
         >
           ✕
         </button>
