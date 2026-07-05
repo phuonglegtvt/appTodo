@@ -98,8 +98,9 @@ describe('applySmartView', () => {
   it('"done" chỉ việc đã xong', () => {
     expect(applySmartView(todos, 'done', today).map((t) => t.id)).toEqual(['e']);
   });
-  it('"all" trả tất cả', () => {
-    expect(applySmartView(todos, 'all', today)).toHaveLength(5);
+  it('"all" gồm việc chưa xong, không gồm việc đã xong', () => {
+    const ids = applySmartView(todos, 'all', today).map((t) => t.id).sort();
+    expect(ids).toEqual(['a', 'b', 'c', 'd']);
   });
 });
 
