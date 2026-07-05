@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Todo, TodoUpdate, Priority } from '../types/todo';
+import type { Todo, TodoUpdate, Priority, Recurrence } from '../types/todo';
 import { PriorityBadge } from './PriorityBadge';
 import { isOverdue } from '../lib/todoFilters';
 import { tagColor } from '../lib/tagColor';
@@ -41,6 +41,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
   const [dueDate, setDueDate] = useState(todo.due_date ?? '');
   const [tagsText, setTagsText] = useState(todo.tags.join(', '));
   const [notes, setNotes] = useState(todo.notes ?? '');
+  const [recurrence, setRecurrence] = useState<Recurrence>(todo.recurrence);
 
   function save(e: React.FormEvent) {
     e.preventDefault();
@@ -51,12 +52,18 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
       priority,
       due_date: dueDate || null,
       notes: notes.trim() || null,
+      recurrence: dueDate ? recurrence : 'none',
       tags: tagsText
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean),
     });
     setEditing(false);
+  }
+
+  function handleDueDateChange(value: string) {
+    setDueDate(value);
+    if (!value) setRecurrence('none');
   }
 
   if (editing) {
@@ -80,7 +87,25 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
               <option value="medium">Trung bình</option>
               <option value="low">Thấp</option>
             </select>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={editInput} />
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => handleDueDateChange(e.target.value)}
+              className={editInput}
+            />
+            <select
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+              disabled={!dueDate}
+              className={editInput}
+              aria-label="Lặp lại"
+              title={!dueDate ? 'Chọn hạn chót trước để bật lặp lại' : undefined}
+            >
+              <option value="none">Không lặp</option>
+              <option value="weekly">Hàng tuần</option>
+              <option value="monthly">Hàng tháng</option>
+              <option value="yearly">Hàng năm</option>
+            </select>
             <input
               value={tagsText}
               onChange={(e) => setTagsText(e.target.value)}
@@ -157,6 +182,16 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
             ) : (
               <span className="text-xs font-medium text-text-muted dark:text-text-muted-dark">{todo.due_date}</span>
             ))}
+
+          {todo.recurrence !== 'none' && (
+            <span
+              className="text-xs text-text-muted dark:text-text-muted-dark"
+              title="Việc lặp lại"
+              aria-label="Việc lặp lại"
+            >
+              🔁
+            </span>
+          )}
 
           {todo.tags.map((t) => (
             <span

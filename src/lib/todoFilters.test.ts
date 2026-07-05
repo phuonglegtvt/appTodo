@@ -20,6 +20,7 @@ function makeTodo(over: Partial<Todo>): Todo {
     due_date: over.due_date ?? null,
     priority: over.priority ?? 'medium',
     tags: over.tags ?? [],
+    recurrence: over.recurrence ?? 'none',
     sort_order: over.sort_order ?? 0,
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
@@ -97,8 +98,9 @@ describe('applySmartView', () => {
   it('"done" chỉ việc đã xong', () => {
     expect(applySmartView(todos, 'done', today).map((t) => t.id)).toEqual(['e']);
   });
-  it('"all" trả tất cả', () => {
-    expect(applySmartView(todos, 'all', today)).toHaveLength(5);
+  it('"all" gồm việc chưa xong, không gồm việc đã xong', () => {
+    const ids = applySmartView(todos, 'all', today).map((t) => t.id).sort();
+    expect(ids).toEqual(['a', 'b', 'c', 'd']);
   });
 });
 

@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { buildNextOccurrence } from '../lib/recurrence';
 import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
 
 interface UseTodos {
   todos: Todo[];
   loading: boolean;
   error: string | null;
-  addTodo: (input: NewTodo) => Promise<void>;
+  addTodo: (input: NewTodo) => Promise<boolean>;
   updateTodo: (id: string, patch: TodoUpdate) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   reorderTodos: (ordered: Todo[]) => Promise<void>;
+  completeRecurring: (todo: Todo) => Promise<void>;
   clearError: () => void;
 }
 
@@ -17,6 +19,11 @@ export function useTodos(userId: string): UseTodos {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Chặn double-tick trùng kỳ: completeRecurring không cập nhật state lạc quan,
+  // nên trong lúc chờ echo realtime, tick lần 2 vẫn thấy recurrence cũ và có thể
+  // insert thêm một kỳ nữa nếu không chặn ở đây.
+  const pendingRecurring = useRef<Set<string>>(new Set());
 
   // Tải lần đầu.
   useEffect(() => {
@@ -82,7 +89,7 @@ export function useTodos(userId: string): UseTodos {
   }, [userId]);
 
   const addTodo = useCallback(
-    async (input: NewTodo) => {
+    async (input: NewTodo): Promise<boolean> => {
       const maxOrder = todos.reduce((m, t) => Math.max(m, t.sort_order), 0);
       const { error } = await supabase.from('todos').insert({
         user_id: userId,
@@ -91,12 +98,15 @@ export function useTodos(userId: string): UseTodos {
         due_date: input.due_date ?? null,
         priority: input.priority ?? 'medium',
         tags: input.tags ?? [],
+        recurrence: input.recurrence ?? 'none',
         sort_order: maxOrder + 1,
       });
       if (error) {
         console.error('Lỗi thêm việc:', error);
         setError('Không thêm được việc: ' + error.message);
+        return false;
       }
+      return true;
     },
     [todos, userId],
   );
@@ -117,6 +127,37 @@ export function useTodos(userId: string): UseTodos {
     }
   }, []);
 
+  // Tick hoàn thành một việc lặp: sinh kỳ sau TRƯỚC, chỉ đánh dấu kỳ hiện tại
+  // là xong nếu sinh thành công — tránh mất reminder nếu lỗi mạng giữa chừng.
+  // recurrence = 'none' cho kỳ vừa xong để nó thành bản ghi lịch sử thuần túy,
+  // chống sinh trùng nếu người dùng bỏ tick rồi tick lại.
+  const completeRecurring = useCallback(
+    async (todo: Todo) => {
+      if (pendingRecurring.current.has(todo.id)) return;
+      pendingRecurring.current.add(todo.id);
+      try {
+        if (todo.recurrence === 'none') {
+          await updateTodo(todo.id, { is_done: true });
+          return;
+        }
+        let next: NewTodo;
+        try {
+          next = buildNextOccurrence(todo);
+        } catch (e) {
+          console.error('Lỗi tính kỳ lặp tiếp theo:', e);
+          setError('Việc lặp thiếu hạn chót, không tính được kỳ tiếp theo.');
+          return;
+        }
+        const inserted = await addTodo(next);
+        if (!inserted) return;
+        await updateTodo(todo.id, { is_done: true, recurrence: 'none' });
+      } finally {
+        pendingRecurring.current.delete(todo.id);
+      }
+    },
+    [addTodo, updateTodo],
+  );
+
   // Cập nhật lạc quan thứ tự, rồi lưu sort_order mới lên server. Gán luôn sort_order
   // mới vào state để UI giữ đúng thứ tự ngay (nếu không, sortByOrder ở tầng trên đọc
   // sort_order cũ và kéo danh sách nhảy về chỗ cũ cho tới khi echo realtime về).
@@ -135,5 +176,15 @@ export function useTodos(userId: string): UseTodos {
 
   const clearError = useCallback(() => setError(null), []);
 
-  return { todos, loading, error, addTodo, updateTodo, deleteTodo, reorderTodos, clearError };
+  return {
+    todos,
+    loading,
+    error,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    reorderTodos,
+    completeRecurring,
+    clearError,
+  };
 }

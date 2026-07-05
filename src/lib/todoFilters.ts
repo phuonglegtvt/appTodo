@@ -34,7 +34,7 @@ export function isOverdue(todo: Todo, today: string): boolean {
 export function applySmartView(todos: Todo[], view: SmartView, today: string): Todo[] {
   switch (view) {
     case 'all':
-      return todos;
+      return todos.filter((t) => !t.is_done);
     case 'done':
       return todos.filter((t) => t.is_done);
     case 'today':

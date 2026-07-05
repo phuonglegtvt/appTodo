@@ -39,7 +39,7 @@ interface AppPageProps {
 }
 
 export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps) {
-  const { todos, loading, error, addTodo, updateTodo, deleteTodo, reorderTodos, clearError } =
+  const { todos, loading, error, addTodo, updateTodo, deleteTodo, reorderTodos, completeRecurring, clearError } =
     useTodos(userId);
 
   const [view, setView] = useState<SmartView>('all');
@@ -95,7 +95,18 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
     reorderTodos(fullOrder);
   };
 
-  const toggleDone = (id: string, isDone: boolean) => updateTodo(id, { is_done: isDone });
+  // Việc lặp: tick xong không chỉ set is_done — phải sinh kỳ sau trước
+  // (xem completeRecurring trong useTodos.ts). Việc thường giữ nguyên hành vi cũ.
+  const toggleDone = (id: string, isDone: boolean) => {
+    if (isDone) {
+      const todo = todos.find((t) => t.id === id);
+      if (todo && todo.recurrence !== 'none') {
+        completeRecurring(todo);
+        return;
+      }
+    }
+    updateTodo(id, { is_done: isDone });
+  };
   const changePriority = (id: string, p: Priority) => updateTodo(id, { priority: p });
   const removeTodo = (id: string) => {
     if (confirm('Xóa việc này?')) deleteTodo(id);

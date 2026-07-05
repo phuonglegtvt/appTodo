@@ -57,3 +57,9 @@ alter publication supabase_realtime add table public.todos;
 -- xóa vẫn "kẹt" trên màn hình các thiết bị khác. Với app đồng bộ nhiều thiết bị,
 -- đây là điều kiện cần để xóa lan truyền đúng.
 alter table public.todos replica identity full;
+
+-- Phase 2a: việc lặp cố định ngày (xem
+-- docs/superpowers/specs/2026-07-05-recurring-tasks-design.md).
+alter table public.todos
+  add column if not exists recurrence text not null default 'none'
+  check (recurrence in ('none', 'weekly', 'monthly', 'yearly'));
