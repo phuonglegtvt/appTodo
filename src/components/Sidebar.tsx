@@ -42,10 +42,10 @@ export function Sidebar({ view, onView, counts, tags, activeTag, onTag, userEmai
             key={v.key}
             onClick={() => onView(v.key)}
             aria-current={active ? 'page' : undefined}
-            className={`flex items-center rounded-[9px] px-2.5 py-2 text-sm ${
+            className={`flex items-center rounded-[9px] border-l-2 px-2.5 py-2 text-sm transition-colors duration-150 ${
               active
-                ? 'bg-primary-soft font-semibold text-primary dark:bg-primary-soft-dark dark:text-primary-dark'
-                : 'font-medium text-text hover:bg-surface-2 dark:text-text-dark dark:hover:bg-surface-2dark'
+                ? 'border-primary bg-primary-soft font-semibold text-primary dark:border-primary-dark dark:bg-primary-soft-dark dark:text-primary-dark'
+                : 'border-transparent font-medium text-text hover:bg-surface-2 dark:text-text-dark dark:hover:bg-surface-2dark'
             }`}
           >
             <span className="flex-1 text-left">{v.label}</span>
@@ -104,7 +104,7 @@ export function Sidebar({ view, onView, counts, tags, activeTag, onTag, userEmai
           onClick={onSignOut}
           title="Đăng xuất"
           aria-label="Đăng xuất"
-          className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-lg text-[15px] text-text-muted hover:bg-surface-2 hover:text-text dark:text-text-muted-dark dark:hover:bg-surface-2dark dark:hover:text-text-dark"
+          className="btn-icon h-[30px] w-[30px] flex-none text-[15px]"
         >
           ⏻
         </button>
