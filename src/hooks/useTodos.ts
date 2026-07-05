@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { buildNextOccurrence } from '../lib/recurrence';
 import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
@@ -19,6 +19,11 @@ export function useTodos(userId: string): UseTodos {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Chặn double-tick trùng kỳ: completeRecurring không cập nhật state lạc quan,
+  // nên trong lúc chờ echo realtime, tick lần 2 vẫn thấy recurrence cũ và có thể
+  // insert thêm một kỳ nữa nếu không chặn ở đây.
+  const pendingRecurring = useRef<Set<string>>(new Set());
 
   // Tải lần đầu.
   useEffect(() => {
@@ -128,17 +133,27 @@ export function useTodos(userId: string): UseTodos {
   // chống sinh trùng nếu người dùng bỏ tick rồi tick lại.
   const completeRecurring = useCallback(
     async (todo: Todo) => {
-      let next: NewTodo;
+      if (pendingRecurring.current.has(todo.id)) return;
+      pendingRecurring.current.add(todo.id);
       try {
-        next = buildNextOccurrence(todo);
-      } catch (e) {
-        console.error('Lỗi tính kỳ lặp tiếp theo:', e);
-        setError('Việc lặp thiếu hạn chót, không tính được kỳ tiếp theo.');
-        return;
+        if (todo.recurrence === 'none') {
+          await updateTodo(todo.id, { is_done: true });
+          return;
+        }
+        let next: NewTodo;
+        try {
+          next = buildNextOccurrence(todo);
+        } catch (e) {
+          console.error('Lỗi tính kỳ lặp tiếp theo:', e);
+          setError('Việc lặp thiếu hạn chót, không tính được kỳ tiếp theo.');
+          return;
+        }
+        const inserted = await addTodo(next);
+        if (!inserted) return;
+        await updateTodo(todo.id, { is_done: true, recurrence: 'none' });
+      } finally {
+        pendingRecurring.current.delete(todo.id);
       }
-      const inserted = await addTodo(next);
-      if (!inserted) return;
-      await updateTodo(todo.id, { is_done: true, recurrence: 'none' });
     },
     [addTodo, updateTodo],
   );
