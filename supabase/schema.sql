@@ -63,3 +63,42 @@ alter table public.todos replica identity full;
 alter table public.todos
   add column if not exists recurrence text not null default 'none'
   check (recurrence in ('none', 'weekly', 'monthly', 'yearly'));
+
+-- Phase 2b: mục tiêu theo tầng thời gian (xem
+-- docs/superpowers/specs/2026-07-07-goal-horizons-design.md).
+create table if not exists public.goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  horizon text not null check (horizon in ('five_year', 'year', 'month', 'week')),
+  period_key text not null,
+  title text not null,
+  is_done boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_goals_updated_at on public.goals;
+create trigger trg_goals_updated_at
+  before update on public.goals
+  for each row execute function public.set_updated_at();
+
+alter table public.goals enable row level security;
+
+drop policy if exists "goals_select_own" on public.goals;
+create policy "goals_select_own" on public.goals
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "goals_insert_own" on public.goals;
+create policy "goals_insert_own" on public.goals
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "goals_update_own" on public.goals;
+create policy "goals_update_own" on public.goals
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "goals_delete_own" on public.goals;
+create policy "goals_delete_own" on public.goals
+  for delete using (auth.uid() = user_id);
+
+alter publication supabase_realtime add table public.goals;
+alter table public.goals replica identity full;
