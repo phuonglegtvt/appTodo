@@ -82,20 +82,26 @@ Phase 2a, script này phải tự chạy tay trên Supabase Dashboard (project t
 trước khi tính năng chạy được ở production.
 
 ### Kiểu dữ liệu (`src/types/goal.ts`)
+Theo đúng quy ước hiện có ở `src/types/todo.ts` (field snake_case, ánh xạ
+thẳng 1-1 với tên cột DB, không có tầng chuyển đổi camelCase):
 ```ts
-type Horizon = 'five_year' | 'year' | 'month' | 'week';
-interface Goal {
+export type Horizon = 'five_year' | 'year' | 'month' | 'week';
+export interface Goal {
   id: string;
-  userId: string;
+  user_id: string;
   horizon: Horizon;
-  periodKey: string;
+  period_key: string;
   title: string;
-  isDone: boolean;
-  createdAt: string;
-  updatedAt: string;
+  is_done: boolean;
+  created_at: string;
+  updated_at: string;
 }
-type NewGoal = Pick<Goal, 'horizon' | 'periodKey' | 'title'>;
-type GoalUpdate = Partial<Pick<Goal, 'title' | 'isDone'>>;
+export interface NewGoal {
+  horizon: Horizon;
+  period_key: string;
+  title: string;
+}
+export type GoalUpdate = Partial<Pick<Goal, 'title' | 'is_done'>>;
 ```
 
 ## 3. Kiến trúc & cấu trúc file
