@@ -175,9 +175,7 @@ export function PlanPage({ userId, todos, today, onToggleTodo, onUpdateTodo, onD
         />
       )}
 
-      {loading ? (
-        <p className="py-8 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải…</p>
-      ) : horizon === 'day' ? (
+      {horizon === 'day' ? (
         <TodoList
           todos={dayTodos}
           today={today}
@@ -186,6 +184,8 @@ export function PlanPage({ userId, todos, today, onToggleTodo, onUpdateTodo, onD
           onDelete={onDeleteTodo}
           onReorder={onReorderTodos}
         />
+      ) : loading ? (
+        <p className="py-8 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải…</p>
       ) : (
         <div className="flex flex-col gap-1.5">
           {(horizon === 'month' || horizon === 'week') && (
