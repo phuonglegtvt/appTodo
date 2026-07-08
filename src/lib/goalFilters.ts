@@ -1,4 +1,5 @@
 import type { Horizon } from '../types/goal';
+import type { Todo } from '../types/todo';
 
 export interface PeriodRange {
   start: string; // 'YYYY-MM-DD'
@@ -79,6 +80,60 @@ export function getPeriodKey(horizon: Horizon, date: string): string {
     case 'week': {
       const { isoYear, week } = isoWeekOf(parseDate(date));
       return `${isoYear}-W${String(week).padStart(2, '0')}`;
+    }
+  }
+}
+
+export function getChildPeriods(horizon: Horizon, periodKey: string): string[] {
+  switch (horizon) {
+    case 'five_year': {
+      const startYear = Number(periodKey);
+      return Array.from({ length: 5 }, (_, i) => String(startYear + i));
+    }
+    case 'year': {
+      const year = Number(periodKey);
+      return Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
+    }
+    case 'month': {
+      const [y, m] = periodKey.split('-').map(Number);
+      const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      return Array.from({ length: lastDay }, (_, i) => `${periodKey}-${String(i + 1).padStart(2, '0')}`);
+    }
+    case 'week': {
+      const { start } = getPeriodRange('week', periodKey);
+      const monday = parseDate(start);
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday);
+        d.setUTCDate(d.getUTCDate() + i);
+        return toDateString(d);
+      });
+    }
+  }
+}
+
+export function countTodosInRange(todos: Todo[], start: string, end: string): { done: number; total: number } {
+  const inRange = todos.filter((t) => t.due_date !== null && t.due_date >= start && t.due_date <= end);
+  return { done: inRange.filter((t) => t.is_done).length, total: inRange.length };
+}
+
+export function shiftPeriod(horizon: Horizon, periodKey: string, delta: number): string {
+  switch (horizon) {
+    case 'five_year':
+      return String(Number(periodKey) + delta * 5);
+    case 'year':
+      return String(Number(periodKey) + delta);
+    case 'month': {
+      const [y, m] = periodKey.split('-').map(Number);
+      const total = y * 12 + (m - 1) + delta;
+      const targetYear = Math.floor(total / 12);
+      const targetMonth = ((total % 12) + 12) % 12;
+      return `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
+    }
+    case 'week': {
+      const { start } = getPeriodRange('week', periodKey);
+      const monday = parseDate(start);
+      monday.setUTCDate(monday.getUTCDate() + delta * 7);
+      return getPeriodKey('week', toDateString(monday));
     }
   }
 }

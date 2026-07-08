@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getPeriodRange, getPeriodKey } from './goalFilters';
+import { getPeriodRange, getPeriodKey, getChildPeriods, countTodosInRange, shiftPeriod } from './goalFilters';
+import type { Todo } from '../types/todo';
 
 describe('getPeriodRange', () => {
   it('year: cả năm từ 01/01 đến 31/12', () => {
@@ -63,5 +64,95 @@ describe('getPeriodKey', () => {
     const range = getPeriodRange('week', key);
     expect(getPeriodKey('week', range.start)).toBe(key);
     expect(getPeriodKey('week', range.end)).toBe(key);
+  });
+});
+
+function makeTodo(over: Partial<Todo>): Todo {
+  return {
+    id: over.id ?? crypto.randomUUID(),
+    user_id: 'u1',
+    title: over.title ?? 'Việc',
+    notes: null,
+    is_done: over.is_done ?? false,
+    due_date: over.due_date ?? null,
+    priority: over.priority ?? 'medium',
+    tags: over.tags ?? [],
+    recurrence: over.recurrence ?? 'none',
+    sort_order: over.sort_order ?? 0,
+    created_at: '2026-07-01T00:00:00Z',
+    updated_at: '2026-07-01T00:00:00Z',
+  };
+}
+
+describe('getChildPeriods', () => {
+  it('five_year: ra đúng 5 năm liên tiếp', () => {
+    expect(getChildPeriods('five_year', '2025')).toEqual(['2025', '2026', '2027', '2028', '2029']);
+  });
+
+  it('year: ra đúng 12 tháng', () => {
+    const months = getChildPeriods('year', '2026');
+    expect(months).toHaveLength(12);
+    expect(months[0]).toBe('2026-01');
+    expect(months[11]).toBe('2026-12');
+  });
+
+  it('month: ra đúng số ngày trong tháng (năm nhuận, 29 ngày)', () => {
+    const days = getChildPeriods('month', '2028-02');
+    expect(days).toHaveLength(29);
+    expect(days[0]).toBe('2028-02-01');
+    expect(days[28]).toBe('2028-02-29');
+  });
+
+  it('month: ra đúng số ngày trong tháng (năm thường, 28 ngày)', () => {
+    expect(getChildPeriods('month', '2026-02')).toHaveLength(28);
+  });
+
+  it('week: ra đúng 7 ngày Thứ Hai đến Chủ Nhật', () => {
+    expect(getChildPeriods('week', '2026-W28')).toEqual([
+      '2026-07-06',
+      '2026-07-07',
+      '2026-07-08',
+      '2026-07-09',
+      '2026-07-10',
+      '2026-07-11',
+      '2026-07-12',
+    ]);
+  });
+});
+
+describe('countTodosInRange', () => {
+  it('đếm đúng done/total, bỏ qua việc ngoài khoảng và việc không có hạn', () => {
+    const todos = [
+      makeTodo({ id: 'a', due_date: '2026-07-05', is_done: true }),
+      makeTodo({ id: 'b', due_date: '2026-07-10', is_done: false }),
+      makeTodo({ id: 'c', due_date: '2026-08-01', is_done: false }),
+      makeTodo({ id: 'd', due_date: null }),
+    ];
+    expect(countTodosInRange(todos, '2026-07-01', '2026-07-31')).toEqual({ done: 1, total: 2 });
+  });
+});
+
+describe('shiftPeriod', () => {
+  it('year: +1/-1 năm', () => {
+    expect(shiftPeriod('year', '2026', 1)).toBe('2027');
+    expect(shiftPeriod('year', '2026', -1)).toBe('2025');
+  });
+
+  it('month: qua ranh giới năm', () => {
+    expect(shiftPeriod('month', '2026-12', 1)).toBe('2027-01');
+    expect(shiftPeriod('month', '2026-01', -1)).toBe('2025-12');
+  });
+
+  it('five_year: nhảy nguyên khối 5 năm', () => {
+    expect(shiftPeriod('five_year', '2025', 1)).toBe('2030');
+  });
+
+  it('week: qua ranh giới năm ISO (tuần 53/2026 -> tuần 1/2027)', () => {
+    expect(shiftPeriod('week', '2026-W53', 1)).toBe('2027-W01');
+  });
+
+  it('week: đi tới rồi quay lại đúng kỳ ban đầu', () => {
+    const key = '2026-W28';
+    expect(shiftPeriod('week', shiftPeriod('week', key, 1), -1)).toBe(key);
   });
 });
