@@ -41,11 +41,7 @@ export function DayPopover({ date, todos, onAdd, onToggle, onOpenFull, onClose }
     <>
       {/* Backdrop bắt click ra ngoài để đóng (kể cả click lại chính ô đó). */}
       <div className="fixed inset-0 z-10" onClick={onClose} />
-      <div
-        // Ngăn click bên trong nổi lên backdrop.
-        onClick={(e) => e.stopPropagation()}
-        className="absolute left-1/2 top-full z-20 mt-1 w-56 -translate-x-1/2 rounded-lg border border-border bg-surface p-3 text-left shadow-md dark:border-border-dark dark:bg-surface-dark dark:shadow-md-dark"
-      >
+      <div className="absolute left-1/2 top-full z-20 mt-1 w-56 -translate-x-1/2 rounded-lg border border-border bg-surface p-3 text-left shadow-md dark:border-border-dark dark:bg-surface-dark dark:shadow-md-dark">
         <div className="mb-2 text-xs font-semibold text-text dark:text-text-dark">
           Việc ngày {shortDate(date)}
         </div>

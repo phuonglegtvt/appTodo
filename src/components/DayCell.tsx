@@ -37,6 +37,7 @@ export function DayCell({
       <button
         type="button"
         onClick={onOpen}
+        aria-label={`Ngày ${dayNumber}, ${todos.length} việc`}
         className={`flex min-h-[6rem] w-full flex-col gap-1 rounded-lg border bg-surface p-1.5 text-left transition-colors hover:border-primary dark:bg-surface-dark dark:hover:border-primary-dark ${
           isToday ? 'border-primary dark:border-primary-dark' : 'border-border dark:border-border-dark'
         }`}

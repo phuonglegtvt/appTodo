@@ -155,7 +155,8 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
 
       <main className="flex min-w-0 flex-1 flex-col">
         {page === 'plan' ? (
-          <div className="flex-1 overflow-auto p-5 sm:p-6">
+          <div className="flex flex-1 flex-col gap-4 overflow-auto p-5 sm:p-6">
+            {error && <ErrorBanner message={error} onClose={clearError} />}
             <PlanPage
               userId={userId}
               todos={todos}

@@ -73,16 +73,19 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
   const [openDay, setOpenDay] = useState<string | null>(null);
 
   function handleHorizon(newHorizon: ViewHorizon) {
+    setOpenDay(null);
     const anchor = anchorDate(horizon, periodKey);
     setHorizon(newHorizon);
     setPeriodKey(newHorizon === 'day' ? anchor : getPeriodKey(newHorizon, anchor));
   }
 
   function handlePrev() {
+    setOpenDay(null);
     setPeriodKey(horizon === 'day' ? shiftDay(periodKey, -1) : shiftPeriod(horizon, periodKey, -1));
   }
 
   function handleNext() {
+    setOpenDay(null);
     setPeriodKey(horizon === 'day' ? shiftDay(periodKey, 1) : shiftPeriod(horizon, periodKey, 1));
   }
 
