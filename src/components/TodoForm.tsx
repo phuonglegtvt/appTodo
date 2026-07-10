@@ -11,6 +11,8 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
   const [dueDate, setDueDate] = useState('');
   const [tagsText, setTagsText] = useState('');
   const [recurrence, setRecurrence] = useState<Recurrence>('none');
+  const [notes, setNotes] = useState('');
+  const [showNotes, setShowNotes] = useState(false);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,12 +22,14 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    onAdd({ title: t, priority, due_date: dueDate || null, tags, recurrence });
+    onAdd({ title: t, priority, due_date: dueDate || null, tags, recurrence, notes: notes.trim() || null });
     setTitle('');
     setDueDate('');
     setTagsText('');
     setPriority('medium');
     setRecurrence('none');
+    setNotes('');
+    setShowNotes(false);
   }
 
   // Việc lặp cần due_date làm mốc tính kỳ sau — xóa hạn thì tự bỏ luôn lặp,
@@ -38,8 +42,9 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
   return (
     <form
       onSubmit={submit}
-      className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface p-3 dark:border-border-dark dark:bg-surface-dark"
+      className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 dark:border-border-dark dark:bg-surface-dark"
     >
+      <div className="flex flex-wrap items-center gap-2">
       <div className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-md bg-primary-soft text-base font-semibold text-primary dark:bg-primary-soft-dark dark:text-primary-dark">
         ＋
       </div>
@@ -89,6 +94,27 @@ export function TodoForm({ onAdd }: { onAdd: (t: NewTodo) => void }) {
       <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:shadow-md active:scale-95 dark:bg-primary-dark dark:shadow-soft-dark dark:hover:shadow-md-dark">
         Thêm
       </button>
+      </div>
+
+      {/* Nút mở ô ghi chú chi tiết — giữ form gọn cho người không cần notes. */}
+      <button
+        type="button"
+        onClick={() => setShowNotes((v) => !v)}
+        aria-expanded={showNotes}
+        className="self-start text-xs font-medium text-text-muted transition-colors hover:text-primary dark:text-text-muted-dark dark:hover:text-primary-dark"
+      >
+        {showNotes ? '－ ẩn chi tiết' : '＋ chi tiết'}
+      </button>
+      {showNotes && (
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Ghi chú chi tiết…"
+          rows={3}
+          aria-label="Ghi chú chi tiết"
+          className={inputClass}
+        />
+      )}
     </form>
   );
 }

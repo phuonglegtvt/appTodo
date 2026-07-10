@@ -36,6 +36,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
   };
   const overdue = isOverdue(todo, today);
   const [editing, setEditing] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
   const [title, setTitle] = useState(todo.title);
   const [priority, setPriority] = useState<Priority>(todo.priority);
   const [dueDate, setDueDate] = useState(todo.due_date ?? '');
@@ -162,15 +163,31 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
       </button>
 
       <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
-        <span
-          className={`text-[14.5px] font-medium ${
-            todo.is_done
-              ? 'text-text-muted line-through opacity-75 dark:text-text-muted-dark'
-              : 'text-text dark:text-text-dark'
-          }`}
-        >
-          {todo.title}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`min-w-0 text-[14.5px] font-medium ${
+              todo.is_done
+                ? 'text-text-muted line-through opacity-75 dark:text-text-muted-dark'
+                : 'text-text dark:text-text-dark'
+            }`}
+          >
+            {todo.title}
+          </span>
+          {todo.notes && (
+            <button
+              type="button"
+              onClick={() => setShowNotes((v) => !v)}
+              aria-expanded={showNotes}
+              aria-label={showNotes ? 'Thu gọn ghi chú' : 'Xem ghi chú'}
+              title={showNotes ? 'Thu gọn ghi chú' : 'Xem ghi chú'}
+              className={`flex-none text-xs text-text-muted transition-transform hover:text-primary dark:text-text-muted-dark dark:hover:text-primary-dark ${
+                showNotes ? 'rotate-180' : ''
+              }`}
+            >
+              ▾
+            </button>
+          )}
+        </div>
 
         <div className="flex flex-wrap items-center gap-2">
           {todo.due_date &&
@@ -203,6 +220,12 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
             </span>
           ))}
         </div>
+
+        {todo.notes && showNotes && (
+          <p className="whitespace-pre-wrap text-xs leading-relaxed text-text-muted dark:text-text-muted-dark">
+            {todo.notes}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-none items-center gap-2">
