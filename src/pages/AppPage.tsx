@@ -160,6 +160,7 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
               userId={userId}
               todos={todos}
               today={today}
+              onAddTodo={addTodo}
               onToggleTodo={toggleDone}
               onUpdateTodo={updateTodo}
               onDeleteTodo={removeTodo}

@@ -7,11 +7,13 @@ import {
   countTodosInRange,
   shiftPeriod,
 } from '../lib/goalFilters';
-import type { Todo, TodoUpdate } from '../types/todo';
+import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
 import type { Horizon, ViewHorizon } from '../types/goal';
 import { HorizonSwitcher } from './HorizonSwitcher';
 import { PeriodGrid } from './PeriodGrid';
 import type { CellData } from './PeriodGrid';
+import { DayGrid } from './DayGrid';
+import type { DayCellData } from './DayGrid';
 import { GoalList } from './GoalList';
 import { TodoList } from './TodoList';
 import { ErrorBanner } from './ErrorBanner';
@@ -20,6 +22,7 @@ interface Props {
   userId: string;
   todos: Todo[];
   today: string;
+  onAddTodo: (input: NewTodo) => void;
   onToggleTodo: (id: string, done: boolean) => void;
   onUpdateTodo: (id: string, patch: TodoUpdate) => void;
   onDeleteTodo: (id: string) => void;
@@ -62,11 +65,12 @@ function formatPeriodLabel(horizon: ViewHorizon, periodKey: string): string {
 }
 
 /** Trang "Kế hoạch": chọn tầng thời gian, xem mục tiêu + việc gộp theo đúng kỳ. */
-export function PlanPage({ userId, todos, today, onToggleTodo, onUpdateTodo, onDeleteTodo, onReorderTodos }: Props) {
+export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpdateTodo, onDeleteTodo, onReorderTodos }: Props) {
   const { goals, loading, error, addGoal, updateGoal, deleteGoal, clearError } = useGoals(userId);
 
   const [horizon, setHorizon] = useState<ViewHorizon>('month');
   const [periodKey, setPeriodKey] = useState<string>(() => getPeriodKey('month', today));
+  const [openDay, setOpenDay] = useState<string | null>(null);
 
   function handleHorizon(newHorizon: ViewHorizon) {
     const anchor = anchorDate(horizon, periodKey);
@@ -89,11 +93,17 @@ export function PlanPage({ userId, todos, today, onToggleTodo, onUpdateTodo, onD
     } else if (horizon === 'year') {
       setHorizon('month');
       setPeriodKey(key);
-    } else {
-      // month hoặc week -> chọn 1 ngày cụ thể
-      setHorizon('day');
-      setPeriodKey(key);
     }
+  }
+
+  function handleAddOnDay(date: string, title: string) {
+    onAddTodo({ title, due_date: date, priority: 'medium', tags: [], recurrence: 'none' });
+  }
+
+  function handleOpenFull(date: string) {
+    setOpenDay(null);
+    setHorizon('day');
+    setPeriodKey(date);
   }
 
   const currentGoals = useMemo(
@@ -122,35 +132,31 @@ export function PlanPage({ userId, todos, today, onToggleTodo, onUpdateTodo, onD
       });
     }
 
-    function dayCells(dates: string[]): CellData[] {
-      return dates.map((date) => {
-        const todosOnDate = todos.filter((t) => t.due_date === date);
-        return {
-          key: date,
-          label: String(Number(date.slice(8, 10))),
-          doneCount: todosOnDate.filter((t) => t.is_done).length,
-          totalCount: todosOnDate.length,
-          tooltipLines: todosOnDate.map((t) => (t.is_done ? '✓ ' : '• ') + t.title),
-        };
-      });
-    }
-
-    if (horizon === 'day') return null;
     if (horizon === 'five_year') {
       return { columns: 5, leadingBlanks: 0, cells: yearOrFiveYearCells('year', getChildPeriods('five_year', periodKey)) };
     }
     if (horizon === 'year') {
       return { columns: 4, leadingBlanks: 0, cells: yearOrFiveYearCells('month', getChildPeriods('year', periodKey)) };
     }
+    return null;
+  }, [horizon, periodKey, todos, goals]);
+
+  const dayGrid = useMemo((): { leadingBlanks: number; cells: DayCellData[] } | null => {
+    if (horizon !== 'month' && horizon !== 'week') return null;
+    const dates = getChildPeriods(horizon, periodKey);
+    let leadingBlanks = 0;
     if (horizon === 'month') {
       const [y, m] = periodKey.split('-').map(Number);
       const firstWeekday = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
-      const leadingBlanks = (firstWeekday + 6) % 7; // quy về Thứ Hai = cột đầu
-      return { columns: 7, leadingBlanks, cells: dayCells(getChildPeriods('month', periodKey)) };
+      leadingBlanks = (firstWeekday + 6) % 7; // quy về Thứ Hai = cột đầu
     }
-    // week
-    return { columns: 7, leadingBlanks: 0, cells: dayCells(getChildPeriods('week', periodKey)) };
-  }, [horizon, periodKey, todos, goals]);
+    const cells = dates.map((date) => ({
+      date,
+      dayNumber: Number(date.slice(8, 10)),
+      todos: todos.filter((t) => t.due_date === date),
+    }));
+    return { leadingBlanks, cells };
+  }, [horizon, periodKey, todos]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -195,8 +201,28 @@ export function PlanPage({ userId, todos, today, onToggleTodo, onUpdateTodo, onD
               ))}
             </div>
           )}
-          {grid && (
-            <PeriodGrid columns={grid.columns} leadingBlanks={grid.leadingBlanks} cells={grid.cells} onSelect={handleSelectCell} />
+          {dayGrid ? (
+            <DayGrid
+              leadingBlanks={dayGrid.leadingBlanks}
+              cells={dayGrid.cells}
+              today={today}
+              openDay={openDay}
+              maxLines={3}
+              onOpen={setOpenDay}
+              onClose={() => setOpenDay(null)}
+              onAdd={handleAddOnDay}
+              onToggle={onToggleTodo}
+              onOpenFull={handleOpenFull}
+            />
+          ) : (
+            grid && (
+              <PeriodGrid
+                columns={grid.columns}
+                leadingBlanks={grid.leadingBlanks}
+                cells={grid.cells}
+                onSelect={handleSelectCell}
+              />
+            )
           )}
         </div>
       )}
