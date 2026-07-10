@@ -17,6 +17,7 @@ import type { DayCellData } from './DayGrid';
 import { GoalList } from './GoalList';
 import { TodoList } from './TodoList';
 import { ErrorBanner } from './ErrorBanner';
+import { sortByDoneThenOrder } from '../lib/todoFilters';
 
 interface Props {
   userId: string;
@@ -115,7 +116,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
   );
 
   const dayTodos = useMemo(
-    () => (horizon === 'day' ? todos.filter((t) => t.due_date === periodKey) : []),
+    () => (horizon === 'day' ? sortByDoneThenOrder(todos.filter((t) => t.due_date === periodKey)) : []),
     [todos, horizon, periodKey],
   );
 
@@ -156,7 +157,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     const cells = dates.map((date) => ({
       date,
       dayNumber: Number(date.slice(8, 10)),
-      todos: todos.filter((t) => t.due_date === date),
+      todos: sortByDoneThenOrder(todos.filter((t) => t.due_date === date)),
     }));
     return { leadingBlanks, cells };
   }, [horizon, periodKey, todos]);

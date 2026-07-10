@@ -24,6 +24,18 @@ export function sortByOrder(todos: Todo[]): Todo[] {
   return [...todos].sort((a, b) => a.sort_order - b.sort_order);
 }
 
+/**
+ * Việc chưa xong lên trên, việc đã xong xuống dưới; trong mỗi nhóm giữ thứ tự
+ * sort_order. Dùng cho các khung nhìn theo ngày (ô lịch, popover, tầng Ngày) —
+ * nơi việc xong và chưa xong hiển thị lẫn nhau. Không đổi mảng gốc.
+ */
+export function sortByDoneThenOrder(todos: Todo[]): Todo[] {
+  return [...todos].sort((a, b) => {
+    if (a.is_done !== b.is_done) return a.is_done ? 1 : -1;
+    return a.sort_order - b.sort_order;
+  });
+}
+
 /** Việc quá hạn: chưa xong và due_date trước hôm nay (today dạng 'YYYY-MM-DD'). */
 export function isOverdue(todo: Todo, today: string): boolean {
   if (todo.is_done || !todo.due_date) return false;

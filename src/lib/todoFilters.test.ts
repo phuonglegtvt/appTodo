@@ -5,6 +5,7 @@ import {
   filterByPriority,
   filterByTag,
   sortByOrder,
+  sortByDoneThenOrder,
   isOverdue,
   applySmartView,
   allTags,
@@ -64,6 +65,40 @@ describe('sortByOrder', () => {
     const sorted = sortByOrder(todos);
     expect(sorted.map((t) => t.sort_order)).toEqual([1, 2]);
     expect(todos[0].sort_order).toBe(2); // gốc không đổi
+  });
+});
+
+describe('sortByDoneThenOrder', () => {
+  it('việc chưa xong lên trên, việc đã xong xuống dưới', () => {
+    const todos = [
+      makeTodo({ id: 'done1', is_done: true, sort_order: 1 }),
+      makeTodo({ id: 'todo1', is_done: false, sort_order: 2 }),
+    ];
+    expect(sortByDoneThenOrder(todos).map((t) => t.id)).toEqual(['todo1', 'done1']);
+  });
+
+  it('trong mỗi nhóm giữ thứ tự theo sort_order', () => {
+    const todos = [
+      makeTodo({ id: 'done-b', is_done: true, sort_order: 4 }),
+      makeTodo({ id: 'todo-b', is_done: false, sort_order: 3 }),
+      makeTodo({ id: 'done-a', is_done: true, sort_order: 2 }),
+      makeTodo({ id: 'todo-a', is_done: false, sort_order: 1 }),
+    ];
+    expect(sortByDoneThenOrder(todos).map((t) => t.id)).toEqual([
+      'todo-a',
+      'todo-b',
+      'done-a',
+      'done-b',
+    ]);
+  });
+
+  it('không đổi mảng gốc', () => {
+    const todos = [
+      makeTodo({ id: 'done1', is_done: true, sort_order: 1 }),
+      makeTodo({ id: 'todo1', is_done: false, sort_order: 2 }),
+    ];
+    sortByDoneThenOrder(todos);
+    expect(todos.map((t) => t.id)).toEqual(['done1', 'todo1']);
   });
 });
 
