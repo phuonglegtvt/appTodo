@@ -12,6 +12,9 @@ import type { Horizon, ViewHorizon } from '../types/goal';
 import { HorizonSwitcher } from './HorizonSwitcher';
 import { PeriodGrid } from './PeriodGrid';
 import type { CellData } from './PeriodGrid';
+import { MonthGrid } from './MonthGrid';
+import { buildMonthCells } from '../lib/monthCell';
+import type { MonthCellData } from '../lib/monthCell';
 import { DayGrid } from './DayGrid';
 import type { DayCellData } from './DayGrid';
 import { GoalList } from './GoalList';
@@ -139,11 +142,13 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     if (horizon === 'five_year') {
       return { columns: 5, leadingBlanks: 0, cells: yearOrFiveYearCells('year', getChildPeriods('five_year', periodKey)) };
     }
-    if (horizon === 'year') {
-      return { columns: 4, leadingBlanks: 0, cells: yearOrFiveYearCells('month', getChildPeriods('year', periodKey)) };
-    }
     return null;
   }, [horizon, periodKey, todos, goals]);
+
+  const monthCells = useMemo(
+    (): MonthCellData[] | null => (horizon === 'year' ? buildMonthCells(todos, periodKey) : null),
+    [horizon, periodKey, todos],
+  );
 
   const dayGrid = useMemo((): { leadingBlanks: number; cells: DayCellData[] } | null => {
     if (horizon !== 'month' && horizon !== 'week') return null;
@@ -218,6 +223,8 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onToggle={onToggleTodo}
               onOpenFull={handleOpenFull}
             />
+          ) : monthCells ? (
+            <MonthGrid cells={monthCells} onSelect={handleSelectCell} />
           ) : (
             grid && (
               <PeriodGrid
