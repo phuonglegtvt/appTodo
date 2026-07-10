@@ -46,10 +46,11 @@ export function MonthCell({ data, onSelect }: Props) {
         ))}
       </div>
 
-      {(overflow > 0 || expanded) && data.totalCount > 6 && (
+      {(overflow > 0 || expanded) && (
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
           className="mt-auto self-start px-1 text-[10px] text-text-muted underline-offset-2 hover:underline dark:text-text-muted-dark"
         >
           {expanded ? 'thu gọn' : `+${overflow} xem thêm`}
