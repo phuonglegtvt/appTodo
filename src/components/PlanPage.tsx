@@ -5,16 +5,14 @@ import {
   getPeriodKey,
   getViewPeriodKey,
   getChildPeriods,
-  countTodosInRange,
   shiftPeriod,
 } from '../lib/goalFilters';
 import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
-import type { Horizon, ViewHorizon } from '../types/goal';
+import type { ViewHorizon } from '../types/goal';
 import { HorizonSwitcher } from './HorizonSwitcher';
-import { PeriodGrid } from './PeriodGrid';
-import type { CellData } from './PeriodGrid';
 import { MonthGrid } from './MonthGrid';
-import { buildMonthCells } from '../lib/todoCell';
+import { YearGrid } from './YearGrid';
+import { buildMonthCells, buildYearCells } from '../lib/todoCell';
 import type { TodoCellData } from '../lib/todoCell';
 import { DayGrid } from './DayGrid';
 import type { DayCellData } from './DayGrid';
@@ -118,30 +116,13 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     [todos, horizon, periodKey],
   );
 
-  const grid = useMemo((): { columns: number; leadingBlanks: number; cells: CellData[] } | null => {
-    function yearOrFiveYearCells(childHorizon: Horizon, keys: string[]): CellData[] {
-      return keys.map((key) => {
-        const range = getPeriodRange(childHorizon, key);
-        const { done, total } = countTodosInRange(todos, range.start, range.end);
-        const childGoals = goals.filter((g) => g.horizon === childHorizon && g.period_key === key);
-        return {
-          key,
-          label: childHorizon === 'month' ? key.slice(5) : key,
-          doneCount: done + childGoals.filter((g) => g.is_done).length,
-          totalCount: total + childGoals.length,
-          tooltipLines: childGoals.map((g) => (g.is_done ? '✓ ' : '• ') + g.title),
-        };
-      });
-    }
-
-    if (horizon === 'five_year') {
-      return { columns: 5, leadingBlanks: 0, cells: yearOrFiveYearCells('year', getChildPeriods('five_year', periodKey)) };
-    }
-    return null;
-  }, [horizon, periodKey, todos, goals]);
-
   const monthCells = useMemo(
     (): TodoCellData[] | null => (horizon === 'year' ? buildMonthCells(todos, periodKey) : null),
+    [horizon, periodKey, todos],
+  );
+
+  const yearCells = useMemo(
+    (): TodoCellData[] | null => (horizon === 'five_year' ? buildYearCells(todos, periodKey) : null),
     [horizon, periodKey, todos],
   );
 
@@ -217,16 +198,14 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onDeleteTodo={onDeleteTodo}
               onAddTodo={handleAddOnMonth}
             />
-          ) : (
-            grid && (
-              <PeriodGrid
-                columns={grid.columns}
-                leadingBlanks={grid.leadingBlanks}
-                cells={grid.cells}
-                onSelect={handleSelectCell}
-              />
-            )
-          )}
+          ) : yearCells ? (
+            <YearGrid
+              cells={yearCells}
+              onSelect={handleSelectCell}
+              onToggleTodo={onToggleTodo}
+              onDeleteTodo={onDeleteTodo}
+            />
+          ) : null}
         </div>
       )}
     </div>
