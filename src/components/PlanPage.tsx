@@ -68,21 +68,17 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
   const [horizon, setHorizon] = useState<ViewHorizon>('month');
   const [periodKey, setPeriodKey] = useState<string>(() => getPeriodKey('month', today));
-  const [openDay, setOpenDay] = useState<string | null>(null);
 
   function handleHorizon(newHorizon: ViewHorizon) {
-    setOpenDay(null);
     setHorizon(newHorizon);
     setPeriodKey(getViewPeriodKey(newHorizon, today));
   }
 
   function handlePrev() {
-    setOpenDay(null);
     setPeriodKey(horizon === 'day' ? shiftDay(periodKey, -1) : shiftPeriod(horizon, periodKey, -1));
   }
 
   function handleNext() {
-    setOpenDay(null);
     setPeriodKey(horizon === 'day' ? shiftDay(periodKey, 1) : shiftPeriod(horizon, periodKey, 1));
   }
 
@@ -106,7 +102,6 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
   }
 
   function handleOpenFull(date: string) {
-    setOpenDay(null);
     setHorizon('day');
     setPeriodKey(date);
   }
@@ -182,12 +177,10 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               leadingBlanks={dayGrid.leadingBlanks}
               cells={dayGrid.cells}
               today={today}
-              openDay={openDay}
               maxLines={3}
-              onOpen={setOpenDay}
-              onClose={() => setOpenDay(null)}
               onAdd={handleAddOnDay}
               onToggle={onToggleTodo}
+              onDelete={onDeleteTodo}
               onOpenFull={handleOpenFull}
             />
           ) : monthCells ? (
