@@ -1,5 +1,4 @@
 import type { Horizon, ViewHorizon } from '../types/goal';
-import type { Todo } from '../types/todo';
 
 export interface PeriodRange {
   start: string; // 'YYYY-MM-DD'
@@ -114,11 +113,6 @@ export function getChildPeriods(horizon: Horizon, periodKey: string): string[] {
       });
     }
   }
-}
-
-export function countTodosInRange(todos: Todo[], start: string, end: string): { done: number; total: number } {
-  const inRange = todos.filter((t) => t.due_date !== null && t.due_date >= start && t.due_date <= end);
-  return { done: inRange.filter((t) => t.is_done).length, total: inRange.length };
 }
 
 export function shiftPeriod(horizon: Horizon, periodKey: string, delta: number): string {

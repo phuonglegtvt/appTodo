@@ -80,10 +80,13 @@ export function useGoals(userId: string): UseGoals {
 
   const addGoal = useCallback(
     async (input: NewGoal) => {
+      // Mục tiêu là danh sách chung, không theo kỳ. Nhưng cột horizon/period_key
+      // của bảng `goals` đang NOT NULL → điền giá trị cố định hợp lệ để khỏi phải
+      // đổi schema. period_key='global' đánh dấu "mục tiêu chung".
       const { error } = await supabase.from('goals').insert({
         user_id: userId,
-        horizon: input.horizon,
-        period_key: input.period_key,
+        horizon: 'year',
+        period_key: 'global',
         title: input.title,
       });
       if (error) {

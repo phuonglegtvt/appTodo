@@ -5,20 +5,18 @@ import {
   getPeriodKey,
   getViewPeriodKey,
   getChildPeriods,
-  countTodosInRange,
   shiftPeriod,
 } from '../lib/goalFilters';
 import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
-import type { Horizon, ViewHorizon } from '../types/goal';
+import type { ViewHorizon } from '../types/goal';
 import { HorizonSwitcher } from './HorizonSwitcher';
-import { PeriodGrid } from './PeriodGrid';
-import type { CellData } from './PeriodGrid';
 import { MonthGrid } from './MonthGrid';
-import { buildMonthCells } from '../lib/monthCell';
-import type { MonthCellData } from '../lib/monthCell';
+import { YearGrid } from './YearGrid';
+import { buildMonthCells, buildYearCells } from '../lib/todoCell';
+import type { TodoCellData } from '../lib/todoCell';
 import { DayGrid } from './DayGrid';
 import type { DayCellData } from './DayGrid';
-import { GoalList } from './GoalList';
+import { GoalBoard } from './GoalBoard';
 import { TodoList } from './TodoList';
 import { ErrorBanner } from './ErrorBanner';
 import { sortByDoneThenOrder } from '../lib/todoFilters';
@@ -70,21 +68,17 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
   const [horizon, setHorizon] = useState<ViewHorizon>('month');
   const [periodKey, setPeriodKey] = useState<string>(() => getPeriodKey('month', today));
-  const [openDay, setOpenDay] = useState<string | null>(null);
 
   function handleHorizon(newHorizon: ViewHorizon) {
-    setOpenDay(null);
     setHorizon(newHorizon);
     setPeriodKey(getViewPeriodKey(newHorizon, today));
   }
 
   function handlePrev() {
-    setOpenDay(null);
     setPeriodKey(horizon === 'day' ? shiftDay(periodKey, -1) : shiftPeriod(horizon, periodKey, -1));
   }
 
   function handleNext() {
-    setOpenDay(null);
     setPeriodKey(horizon === 'day' ? shiftDay(periodKey, 1) : shiftPeriod(horizon, periodKey, 1));
   }
 
@@ -102,46 +96,28 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     onAddTodo({ title, due_date: date, priority: 'medium', tags: [], recurrence: 'none' });
   }
 
+  function handleAddOnMonth(monthKey: string, title: string) {
+    // Ô tháng không có ngày cụ thể → gán ngày 01 của tháng để việc hiện trong ô.
+    onAddTodo({ title, due_date: `${monthKey}-01`, priority: 'medium', tags: [], recurrence: 'none' });
+  }
+
   function handleOpenFull(date: string) {
-    setOpenDay(null);
     setHorizon('day');
     setPeriodKey(date);
   }
-
-  const currentGoals = useMemo(
-    () => (horizon === 'day' ? [] : goals.filter((g) => g.horizon === horizon && g.period_key === periodKey)),
-    [goals, horizon, periodKey],
-  );
 
   const dayTodos = useMemo(
     () => (horizon === 'day' ? sortByDoneThenOrder(todos.filter((t) => t.due_date === periodKey)) : []),
     [todos, horizon, periodKey],
   );
 
-  const grid = useMemo((): { columns: number; leadingBlanks: number; cells: CellData[] } | null => {
-    function yearOrFiveYearCells(childHorizon: Horizon, keys: string[]): CellData[] {
-      return keys.map((key) => {
-        const range = getPeriodRange(childHorizon, key);
-        const { done, total } = countTodosInRange(todos, range.start, range.end);
-        const childGoals = goals.filter((g) => g.horizon === childHorizon && g.period_key === key);
-        return {
-          key,
-          label: childHorizon === 'month' ? key.slice(5) : key,
-          doneCount: done + childGoals.filter((g) => g.is_done).length,
-          totalCount: total + childGoals.length,
-          tooltipLines: childGoals.map((g) => (g.is_done ? '✓ ' : '• ') + g.title),
-        };
-      });
-    }
-
-    if (horizon === 'five_year') {
-      return { columns: 5, leadingBlanks: 0, cells: yearOrFiveYearCells('year', getChildPeriods('five_year', periodKey)) };
-    }
-    return null;
-  }, [horizon, periodKey, todos, goals]);
-
   const monthCells = useMemo(
-    (): MonthCellData[] | null => (horizon === 'year' ? buildMonthCells(todos, periodKey) : null),
+    (): TodoCellData[] | null => (horizon === 'year' ? buildMonthCells(todos, periodKey) : null),
+    [horizon, periodKey, todos],
+  );
+
+  const yearCells = useMemo(
+    (): TodoCellData[] | null => (horizon === 'five_year' ? buildYearCells(todos, periodKey) : null),
     [horizon, periodKey, todos],
   );
 
@@ -174,16 +150,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
       {error && <ErrorBanner message={error} onClose={clearError} />}
 
-      {horizon !== 'day' && (
-        <GoalList
-          goals={currentGoals}
-          horizon={horizon}
-          periodKey={periodKey}
-          onAdd={addGoal}
-          onUpdate={updateGoal}
-          onDelete={deleteGoal}
-        />
-      )}
+      <GoalBoard goals={goals} onAdd={(title) => addGoal({ title })} onUpdate={updateGoal} onDelete={deleteGoal} />
 
       {horizon === 'day' ? (
         <TodoList
@@ -210,26 +177,28 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               leadingBlanks={dayGrid.leadingBlanks}
               cells={dayGrid.cells}
               today={today}
-              openDay={openDay}
               maxLines={3}
-              onOpen={setOpenDay}
-              onClose={() => setOpenDay(null)}
               onAdd={handleAddOnDay}
               onToggle={onToggleTodo}
+              onDelete={onDeleteTodo}
               onOpenFull={handleOpenFull}
             />
           ) : monthCells ? (
-            <MonthGrid cells={monthCells} onSelect={handleSelectCell} onToggleTodo={onToggleTodo} />
-          ) : (
-            grid && (
-              <PeriodGrid
-                columns={grid.columns}
-                leadingBlanks={grid.leadingBlanks}
-                cells={grid.cells}
-                onSelect={handleSelectCell}
-              />
-            )
-          )}
+            <MonthGrid
+              cells={monthCells}
+              onSelect={handleSelectCell}
+              onToggleTodo={onToggleTodo}
+              onDeleteTodo={onDeleteTodo}
+              onAddTodo={handleAddOnMonth}
+            />
+          ) : yearCells ? (
+            <YearGrid
+              cells={yearCells}
+              onSelect={handleSelectCell}
+              onToggleTodo={onToggleTodo}
+              onDeleteTodo={onDeleteTodo}
+            />
+          ) : null}
         </div>
       )}
     </div>
