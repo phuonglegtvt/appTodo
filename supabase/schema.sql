@@ -102,3 +102,47 @@ create policy "goals_delete_own" on public.goals
 
 alter publication supabase_realtime add table public.goals;
 alter table public.goals replica identity full;
+
+-- Phase 2c: danh mục cổ phiếu tích sản (xem
+-- docs/handoff/2026-07-11-2015-stock-portfolio.md).
+create table if not exists public.stocks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  ticker text not null,
+  company_name text not null,
+  "group" text not null check ("group" in ('attack', 'balance', 'defense')),
+  price_threshold numeric,
+  price_protect numeric,
+  current_price numeric,
+  dividend numeric,
+  invested_amount numeric,
+  sort_order numeric not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists trg_stocks_updated_at on public.stocks;
+create trigger trg_stocks_updated_at
+  before update on public.stocks
+  for each row execute function public.set_updated_at();
+
+alter table public.stocks enable row level security;
+
+drop policy if exists "stocks_select_own" on public.stocks;
+create policy "stocks_select_own" on public.stocks
+  for select using (auth.uid() = user_id);
+
+drop policy if exists "stocks_insert_own" on public.stocks;
+create policy "stocks_insert_own" on public.stocks
+  for insert with check (auth.uid() = user_id);
+
+drop policy if exists "stocks_update_own" on public.stocks;
+create policy "stocks_update_own" on public.stocks
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "stocks_delete_own" on public.stocks;
+create policy "stocks_delete_own" on public.stocks
+  for delete using (auth.uid() = user_id);
+
+alter publication supabase_realtime add table public.stocks;
+alter table public.stocks replica identity full;
