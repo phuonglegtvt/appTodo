@@ -2,18 +2,17 @@ import type { Stock, StockGroup } from '../types/stock';
 import { groupWeights, compareToTarget, TARGET_PROFILES } from '../lib/stockCalc';
 
 const GROUP_META: Record<StockGroup, { label: string; bar: string }> = {
-  attack: { label: 'Tấn công', bar: 'bg-red-500' },
-  balance: { label: 'Cân bằng', bar: 'bg-green-500' },
-  defense: { label: 'Phòng thủ', bar: 'bg-blue-500' },
+  attack: { label: 'Tấn công', bar: 'bg-red-500 dark:bg-red-400' },
+  balance: { label: 'Cân bằng', bar: 'bg-green-500 dark:bg-green-400' },
+  defense: { label: 'Phòng thủ', bar: 'bg-blue-500 dark:bg-blue-400' },
 };
 
 const GROUPS: StockGroup[] = ['attack', 'balance', 'defense'];
 
-const PROFILE_LABEL: Record<StockGroup, string> = {
-  attack: 'Tấn công',
-  balance: 'Cân bằng',
-  defense: 'Phòng thủ',
-};
+/** Kẹp phần trăm về [0, 100] để phòng dữ liệu bất thường. */
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(value, 100));
+}
 
 /** Định dạng tiền VND (đơn vị đồng). */
 function formatVnd(amount: number): string {
@@ -57,7 +56,7 @@ export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
                   : 'text-text-muted dark:text-text-muted-dark'
               }`}
             >
-              {PROFILE_LABEL[g]}
+              {GROUP_META[g].label}
             </button>
           ))}
         </div>
@@ -80,15 +79,15 @@ export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
                   </span>
                 </span>
               </div>
-              {/* Rãnh chứa cả thanh mục tiêu (mờ) và thanh thực tế (đậm chồng lên) */}
+              {/* Rãnh chứa thanh thực tế (đậm) + vạch mốc mục tiêu (đường kẻ dọc) */}
               <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-surface-2 dark:bg-surface-2dark">
                 <div
-                  className={`absolute inset-y-0 left-0 rounded-full ${GROUP_META[g].bar} opacity-30`}
-                  style={{ width: `${Math.min(target[g], 100)}%` }}
+                  className={`absolute inset-y-0 left-0 rounded-full ${GROUP_META[g].bar}`}
+                  style={{ width: `${clampPercent(actual)}%` }}
                 />
                 <div
-                  className={`absolute inset-y-0 left-0 rounded-full ${GROUP_META[g].bar}`}
-                  style={{ width: `${Math.min(actual, 100)}%` }}
+                  className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-text/60 dark:bg-text-dark/60"
+                  style={{ left: `${clampPercent(target[g])}%` }}
                 />
               </div>
             </div>
