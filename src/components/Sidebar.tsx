@@ -2,8 +2,8 @@ import type { SmartView } from '../types/todo';
 import { tagColor } from '../lib/tagColor';
 
 interface Props {
-  page: 'todos' | 'plan';
-  onPage: (p: 'todos' | 'plan') => void;
+  page: 'todos' | 'plan' | 'stocks';
+  onPage: (p: 'todos' | 'plan' | 'stocks') => void;
   view: SmartView;
   onView: (v: SmartView) => void;
   counts: Record<SmartView, number>;
@@ -67,6 +67,17 @@ export function Sidebar({
           }`}
         >
           Kế hoạch
+        </button>
+        <button
+          onClick={() => onPage('stocks')}
+          aria-pressed={page === 'stocks'}
+          className={`flex-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+            page === 'stocks'
+              ? 'bg-surface text-text shadow-sm dark:bg-surface-dark dark:text-text-dark'
+              : 'text-text-muted dark:text-text-muted-dark'
+          }`}
+        >
+          Cổ phiếu
         </button>
       </div>
 

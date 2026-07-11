@@ -20,8 +20,9 @@ import { FilterBar } from '../components/FilterBar';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { PlanPage } from '../components/PlanPage';
+import { StocksPage } from '../components/StocksPage';
 
-type Page = 'todos' | 'plan';
+type Page = 'todos' | 'plan' | 'stocks';
 
 type ViewMode = 'list' | 'board';
 
@@ -154,7 +155,9 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        {page === 'plan' ? (
+        {page === 'stocks' ? (
+          <StocksPage userId={userId} />
+        ) : page === 'plan' ? (
           <div className="flex flex-1 flex-col gap-4 overflow-auto p-5 sm:p-6">
             {error && <ErrorBanner message={error} onClose={clearError} />}
             <PlanPage
