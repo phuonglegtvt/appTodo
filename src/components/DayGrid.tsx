@@ -28,7 +28,6 @@ export function DayGrid({ leadingBlanks, cells, today, maxLines, onAdd, onToggle
       {cells.map((c) => (
         <DayCell
           key={c.date}
-          date={c.date}
           dayNumber={c.dayNumber}
           todos={c.todos}
           isToday={c.date === today}

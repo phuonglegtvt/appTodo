@@ -4,7 +4,6 @@ import { CellAddForm } from './CellAddForm';
 import { visibleTodos } from '../lib/todoCell';
 
 interface Props {
-  date: string;
   dayNumber: number;
   todos: Todo[];
   isToday: boolean;
@@ -17,7 +16,6 @@ interface Props {
 
 /** 1 ô ngày (Tháng/Tuần): số ngày (bấm để mở tab Ngày) + việc có checkbox/✕ + ô thêm. */
 export function DayCell({
-  date,
   dayNumber,
   todos,
   isToday,
@@ -27,7 +25,6 @@ export function DayCell({
   onDelete,
   onOpenFull,
 }: Props) {
-  void date; // giữ trong Props theo interface thống nhất (DayGrid truyền vào), không dùng trực tiếp ở đây
   const [expanded, setExpanded] = useState(false);
   const { visible, overflow } = visibleTodos(todos, expanded, maxLines);
 
