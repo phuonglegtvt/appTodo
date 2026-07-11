@@ -1,31 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { parsePriceResponse } from './stockPrice';
+import { parseLatestClose } from './stockPrice';
 
-describe('parsePriceResponse', () => {
-  it('chuẩn hóa mảng {ticker, price} về map ticker → giá (nghìn đồng)', () => {
-    // TCBS trả giá theo nghìn đồng (VD ACB ~ 30.1). Giữ nguyên đơn vị nghìn đồng.
-    const json = [
-      { ticker: 'ACB', price: 30.1 },
-      { ticker: 'FPT', price: 120.5 },
-    ];
-    expect(parsePriceResponse(json)).toEqual({ ACB: 30.1, FPT: 120.5 });
+describe('parseLatestClose', () => {
+  it('s=ok: lấy giá đóng cửa cuối cùng của mảng c (nghìn đồng)', () => {
+    expect(parseLatestClose({ s: 'ok', c: [17.349, 17.313, 17.457] })).toBe(17.457);
   });
 
-  it('viết hoa ticker để khớp mã lưu trong DB', () => {
-    expect(parsePriceResponse([{ ticker: 'acb', price: 30.1 }])).toEqual({ ACB: 30.1 });
+  it('s=ok với 1 phần tử', () => {
+    expect(parseLatestClose({ s: 'ok', c: [30.1] })).toBe(30.1);
   });
 
-  it('bỏ qua phần tử thiếu ticker hoặc price không phải số', () => {
-    const json = [
-      { ticker: 'ACB', price: 30.1 },
-      { ticker: 'BAD' }, // thiếu price
-      { price: 10 }, // thiếu ticker
-      { ticker: 'X', price: 'n/a' }, // price không hợp lệ
-    ];
-    expect(parsePriceResponse(json)).toEqual({ ACB: 30.1 });
+  it('s=no_data: mã hợp lệ nhưng không có nến → null (không phải lỗi)', () => {
+    expect(parseLatestClose({ s: 'no_data' })).toBeNull();
   });
 
-  it('ném lỗi rõ ràng khi response không phải mảng (nguồn đổi shape)', () => {
-    expect(() => parsePriceResponse({ oops: true })).toThrow(/không đúng định dạng/i);
+  it('s=ok nhưng mảng c rỗng → null', () => {
+    expect(parseLatestClose({ s: 'ok', c: [] })).toBeNull();
+  });
+
+  it('s=ok nhưng giá cuối không phải số hữu hạn → null', () => {
+    expect(parseLatestClose({ s: 'ok', c: [17.3, null] })).toBeNull();
+  });
+
+  it('ném lỗi khi không phải object (nguồn đổi shape)', () => {
+    expect(() => parseLatestClose('oops')).toThrow(/không đúng định dạng/i);
+  });
+
+  it('ném lỗi khi trạng thái s không hợp lệ', () => {
+    expect(() => parseLatestClose({ s: 'error', c: [1] })).toThrow(/trạng thái không hợp lệ/i);
   });
 });
