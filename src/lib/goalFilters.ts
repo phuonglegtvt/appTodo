@@ -1,4 +1,4 @@
-import type { Horizon } from '../types/goal';
+import type { Horizon, ViewHorizon } from '../types/goal';
 import type { Todo } from '../types/todo';
 
 export interface PeriodRange {
@@ -82,6 +82,11 @@ export function getPeriodKey(horizon: Horizon, date: string): string {
       return `${isoYear}-W${String(week).padStart(2, '0')}`;
     }
   }
+}
+
+/** Period key cho tầng UI, trong đó tầng Ngày dùng chính date làm key. */
+export function getViewPeriodKey(horizon: ViewHorizon, date: string): string {
+  return horizon === 'day' ? date : getPeriodKey(horizon, date);
 }
 
 export function getChildPeriods(horizon: Horizon, periodKey: string): string[] {

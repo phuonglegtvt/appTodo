@@ -5,6 +5,7 @@ import { visibleTodos } from '../lib/monthCell';
 interface Props {
   data: MonthCellData;
   onSelect: () => void;
+  onToggleTodo: (id: string, done: boolean) => void;
 }
 
 /**
@@ -12,18 +13,18 @@ interface Props {
  * done/total, và danh sách todo trong tháng. Mặc định hiện tối đa 6 việc; nếu
  * nhiều hơn có nút bung/thu gọn tại chỗ (state cục bộ trong ô này).
  */
-export function MonthCell({ data, onSelect }: Props) {
+export function MonthCell({ data, onSelect, onToggleTodo }: Props) {
   const [expanded, setExpanded] = useState(false);
   const { visible, overflow } = visibleTodos(data.todos, expanded);
 
   return (
-    <div className="flex min-h-[7rem] flex-col gap-1 rounded-lg border border-border bg-surface p-1.5 dark:border-border-dark dark:bg-surface-dark">
+    <div className="flex min-h-[9rem] flex-col gap-1.5 rounded-lg border border-border bg-surface p-2 dark:border-border-dark dark:bg-surface-dark">
       <button
         type="button"
         onClick={onSelect}
         className="flex items-baseline justify-between gap-1 text-left transition-colors hover:text-primary dark:hover:text-primary-dark"
       >
-        <span className="text-xs font-semibold text-text dark:text-text-dark">{data.monthLabel}</span>
+        <span className="text-sm font-semibold text-text dark:text-text-dark">{data.monthLabel}</span>
         {data.totalCount > 0 && (
           <span className="text-[10px] text-text-muted dark:text-text-muted-dark">
             {data.doneCount}/{data.totalCount}
@@ -31,18 +32,24 @@ export function MonthCell({ data, onSelect }: Props) {
         )}
       </button>
 
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         {visible.map((t) => (
-          <span
+          <label
             key={t.id}
-            className={`truncate rounded px-1 text-[10px] ${
+            className={`flex min-w-0 items-center gap-1.5 rounded px-1.5 py-0.5 text-[12px] font-medium ${
               t.is_done
                 ? 'text-text-muted line-through dark:text-text-muted-dark'
                 : 'bg-primary-soft text-primary dark:bg-primary-soft-dark dark:text-primary-dark'
             }`}
           >
-            {t.title}
-          </span>
+            <input
+              type="checkbox"
+              checked={t.is_done}
+              onChange={() => onToggleTodo(t.id, !t.is_done)}
+              className="h-3.5 w-3.5 shrink-0 accent-primary dark:accent-primary-dark"
+            />
+            <span className="truncate">{t.title}</span>
+          </label>
         ))}
       </div>
 

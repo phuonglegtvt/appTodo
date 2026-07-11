@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { getPeriodRange, getPeriodKey, getChildPeriods, countTodosInRange, shiftPeriod } from './goalFilters';
+import {
+  getPeriodRange,
+  getPeriodKey,
+  getChildPeriods,
+  countTodosInRange,
+  shiftPeriod,
+  getViewPeriodKey,
+} from './goalFilters';
 import type { Todo } from '../types/todo';
 
 describe('getPeriodRange', () => {
@@ -64,6 +71,19 @@ describe('getPeriodKey', () => {
     const range = getPeriodRange('week', key);
     expect(getPeriodKey('week', range.start)).toBe(key);
     expect(getPeriodKey('week', range.end)).toBe(key);
+  });
+});
+
+describe('getViewPeriodKey', () => {
+  it('day: trả về chính ngày neo', () => {
+    expect(getViewPeriodKey('day', '2026-07-11')).toBe('2026-07-11');
+  });
+
+  it('các tầng kế hoạch khác: trả về period key chứa ngày neo', () => {
+    expect(getViewPeriodKey('five_year', '2026-07-11')).toBe('2025');
+    expect(getViewPeriodKey('year', '2026-07-11')).toBe('2026');
+    expect(getViewPeriodKey('month', '2026-07-11')).toBe('2026-07');
+    expect(getViewPeriodKey('week', '2026-07-11')).toBe('2026-W28');
   });
 });
 

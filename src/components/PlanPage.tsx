@@ -3,6 +3,7 @@ import { useGoals } from '../hooks/useGoals';
 import {
   getPeriodRange,
   getPeriodKey,
+  getViewPeriodKey,
   getChildPeriods,
   countTodosInRange,
   shiftPeriod,
@@ -34,11 +35,6 @@ interface Props {
 }
 
 const WEEKDAY_LABELS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-
-/** Ngày đại diện của 1 kỳ (dùng để đổi tầng mà vẫn giữ đúng thời điểm đang xem). */
-function anchorDate(horizon: ViewHorizon, periodKey: string): string {
-  return horizon === 'day' ? periodKey : getPeriodRange(horizon, periodKey).start;
-}
 
 function shiftDay(date: string, delta: number): string {
   const [y, m, d] = date.split('-').map(Number);
@@ -78,9 +74,8 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
   function handleHorizon(newHorizon: ViewHorizon) {
     setOpenDay(null);
-    const anchor = anchorDate(horizon, periodKey);
     setHorizon(newHorizon);
-    setPeriodKey(newHorizon === 'day' ? anchor : getPeriodKey(newHorizon, anchor));
+    setPeriodKey(getViewPeriodKey(newHorizon, today));
   }
 
   function handlePrev() {
@@ -224,7 +219,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onOpenFull={handleOpenFull}
             />
           ) : monthCells ? (
-            <MonthGrid cells={monthCells} onSelect={handleSelectCell} />
+            <MonthGrid cells={monthCells} onSelect={handleSelectCell} onToggleTodo={onToggleTodo} />
           ) : (
             grid && (
               <PeriodGrid
