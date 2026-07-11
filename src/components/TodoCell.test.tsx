@@ -44,7 +44,7 @@ describe('TodoCell', () => {
       <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} />,
     );
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Việc trong tháng' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Việc trong tháng 11/07' }));
 
     expect(onToggleTodo).toHaveBeenCalledWith('todo-1', true);
     expect(onSelect).not.toHaveBeenCalled();
@@ -59,7 +59,7 @@ describe('TodoCell', () => {
       <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} />,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Xóa Việc trong tháng' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa Việc trong tháng 11/07' }));
 
     expect(onDeleteTodo).toHaveBeenCalledWith('todo-1');
   });

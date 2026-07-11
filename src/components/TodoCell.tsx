@@ -50,7 +50,7 @@ export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onAdd, sh
               type="checkbox"
               checked={t.is_done}
               onChange={() => onToggleTodo(t.id, !t.is_done)}
-              aria-label={t.title}
+              aria-label={t.due_date ? `${t.title} ${formatDayMonth(t.due_date)}` : t.title}
               className="h-3.5 w-3.5 shrink-0 accent-primary dark:accent-primary-dark"
             />
             <span className="min-w-0 flex-1 truncate">{t.title}</span>
@@ -62,7 +62,7 @@ export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onAdd, sh
             <button
               type="button"
               onClick={() => onDeleteTodo(t.id)}
-              aria-label={`Xóa ${t.title}`}
+              aria-label={t.due_date ? `Xóa ${t.title} ${formatDayMonth(t.due_date)}` : `Xóa ${t.title}`}
               className="shrink-0 rounded px-1 text-[11px] text-text-muted opacity-0 transition hover:text-red-600 group-hover:opacity-100 dark:text-text-muted-dark dark:hover:text-red-300"
             >
               ✕

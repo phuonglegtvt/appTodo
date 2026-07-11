@@ -73,13 +73,14 @@ export function DayCell({
             </button>
           </div>
         ))}
-        {overflow > 0 && (
+        {(overflow > 0 || expanded) && (
           <button
             type="button"
-            onClick={() => setExpanded(true)}
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
             className="px-1 text-left text-[10px] text-text-muted hover:underline dark:text-text-muted-dark"
           >
-            +{overflow} việc
+            {expanded ? 'thu gọn' : `+${overflow} việc`}
           </button>
         )}
       </div>

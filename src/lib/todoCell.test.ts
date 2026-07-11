@@ -65,6 +65,19 @@ describe('buildYearCells', () => {
     expect(cells[0].todos.map((t) => t.id)).toEqual(['a', 'b']);
     expect(cells[1].todos.map((t) => t.id)).toEqual(['c']);
   });
+
+  it('đếm done/total trong năm; việc chưa xong lên trước', () => {
+    const year = buildYearCells(
+      [
+        todo({ id: 'a', due_date: '2025-03-05', is_done: true, sort_order: 1 }),
+        todo({ id: 'b', due_date: '2025-02-01', is_done: false, sort_order: 0 }),
+      ],
+      '2025',
+    )[0];
+    expect(year.totalCount).toBe(2);
+    expect(year.doneCount).toBe(1);
+    expect(year.todos.map((t) => t.id)).toEqual(['b', 'a']);
+  });
 });
 
 describe('formatDayMonth', () => {

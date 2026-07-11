@@ -3,11 +3,9 @@ import {
   getPeriodRange,
   getPeriodKey,
   getChildPeriods,
-  countTodosInRange,
   shiftPeriod,
   getViewPeriodKey,
 } from './goalFilters';
-import type { Todo } from '../types/todo';
 
 describe('getPeriodRange', () => {
   it('year: cả năm từ 01/01 đến 31/12', () => {
@@ -87,23 +85,6 @@ describe('getViewPeriodKey', () => {
   });
 });
 
-function makeTodo(over: Partial<Todo>): Todo {
-  return {
-    id: over.id ?? crypto.randomUUID(),
-    user_id: 'u1',
-    title: over.title ?? 'Việc',
-    notes: null,
-    is_done: over.is_done ?? false,
-    due_date: over.due_date ?? null,
-    priority: over.priority ?? 'medium',
-    tags: over.tags ?? [],
-    recurrence: over.recurrence ?? 'none',
-    sort_order: over.sort_order ?? 0,
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-07-01T00:00:00Z',
-  };
-}
-
 describe('getChildPeriods', () => {
   it('five_year: ra đúng 5 năm liên tiếp', () => {
     expect(getChildPeriods('five_year', '2025')).toEqual(['2025', '2026', '2027', '2028', '2029']);
@@ -137,18 +118,6 @@ describe('getChildPeriods', () => {
       '2026-07-11',
       '2026-07-12',
     ]);
-  });
-});
-
-describe('countTodosInRange', () => {
-  it('đếm đúng done/total, bỏ qua việc ngoài khoảng và việc không có hạn', () => {
-    const todos = [
-      makeTodo({ id: 'a', due_date: '2026-07-05', is_done: true }),
-      makeTodo({ id: 'b', due_date: '2026-07-10', is_done: false }),
-      makeTodo({ id: 'c', due_date: '2026-08-01', is_done: false }),
-      makeTodo({ id: 'd', due_date: null }),
-    ];
-    expect(countTodosInRange(todos, '2026-07-01', '2026-07-31')).toEqual({ done: 1, total: 2 });
   });
 });
 
