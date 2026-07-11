@@ -1,25 +1,23 @@
 import { useState } from 'react';
-import type { Goal, GoalUpdate, Horizon, NewGoal } from '../types/goal';
+import type { Goal, GoalUpdate } from '../types/goal';
 import { GoalItem } from './GoalItem';
 
 interface Props {
   goals: Goal[];
-  horizon: Horizon;
-  periodKey: string;
-  onAdd: (input: NewGoal) => void;
+  onAdd: (title: string) => void;
   onUpdate: (id: string, patch: GoalUpdate) => void;
   onDelete: (id: string) => void;
 }
 
-/** Danh sách mục tiêu của đúng 1 kỳ đang chọn: thêm, tick, sửa tên, xóa. */
-export function GoalList({ goals, horizon, periodKey, onAdd, onUpdate, onDelete }: Props) {
+/** Bảng mục tiêu chung: hiện ở mọi tab, không gắn theo kỳ. Thêm/tick/sửa/xóa. */
+export function GoalBoard({ goals, onAdd, onUpdate, onDelete }: Props) {
   const [title, setTitle] = useState('');
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const t = title.trim();
     if (!t) return;
-    onAdd({ horizon, period_key: periodKey, title: t });
+    onAdd(t);
     setTitle('');
   }
 
@@ -29,7 +27,7 @@ export function GoalList({ goals, horizon, periodKey, onAdd, onUpdate, onDelete 
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Thêm mục tiêu cho kỳ này…"
+          placeholder="Thêm mục tiêu…"
           aria-label="Mục tiêu mới"
           className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark"
         />
@@ -38,7 +36,7 @@ export function GoalList({ goals, horizon, periodKey, onAdd, onUpdate, onDelete 
         </button>
       </form>
       {goals.length === 0 ? (
-        <p className="text-sm text-text-muted dark:text-text-muted-dark">Chưa có mục tiêu nào cho kỳ này.</p>
+        <p className="text-sm text-text-muted dark:text-text-muted-dark">Chưa có mục tiêu nào.</p>
       ) : (
         <ul className="flex flex-col gap-1.5">
           {goals.map((g) => (

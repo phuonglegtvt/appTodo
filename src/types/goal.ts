@@ -14,10 +14,8 @@ export interface Goal {
   updated_at: string;
 }
 
-/** Dữ liệu để tạo mục tiêu mới (server tự sinh id/user_id/timestamps). */
+/** Dữ liệu để tạo mục tiêu mới. Mục tiêu giờ là danh sách chung (không theo kỳ). */
 export interface NewGoal {
-  horizon: Horizon;
-  period_key: string;
   title: string;
 }
 

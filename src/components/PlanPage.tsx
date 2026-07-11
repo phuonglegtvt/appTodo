@@ -18,7 +18,7 @@ import { buildMonthCells } from '../lib/monthCell';
 import type { MonthCellData } from '../lib/monthCell';
 import { DayGrid } from './DayGrid';
 import type { DayCellData } from './DayGrid';
-import { GoalList } from './GoalList';
+import { GoalBoard } from './GoalBoard';
 import { TodoList } from './TodoList';
 import { ErrorBanner } from './ErrorBanner';
 import { sortByDoneThenOrder } from '../lib/todoFilters';
@@ -108,11 +108,6 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     setPeriodKey(date);
   }
 
-  const currentGoals = useMemo(
-    () => (horizon === 'day' ? [] : goals.filter((g) => g.horizon === horizon && g.period_key === periodKey)),
-    [goals, horizon, periodKey],
-  );
-
   const dayTodos = useMemo(
     () => (horizon === 'day' ? sortByDoneThenOrder(todos.filter((t) => t.due_date === periodKey)) : []),
     [todos, horizon, periodKey],
@@ -174,16 +169,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
       {error && <ErrorBanner message={error} onClose={clearError} />}
 
-      {horizon !== 'day' && (
-        <GoalList
-          goals={currentGoals}
-          horizon={horizon}
-          periodKey={periodKey}
-          onAdd={addGoal}
-          onUpdate={updateGoal}
-          onDelete={deleteGoal}
-        />
-      )}
+      <GoalBoard goals={goals} onAdd={(title) => addGoal({ title })} onUpdate={updateGoal} onDelete={deleteGoal} />
 
       {horizon === 'day' ? (
         <TodoList
