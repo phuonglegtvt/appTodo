@@ -14,8 +14,8 @@ import { HorizonSwitcher } from './HorizonSwitcher';
 import { PeriodGrid } from './PeriodGrid';
 import type { CellData } from './PeriodGrid';
 import { MonthGrid } from './MonthGrid';
-import { buildMonthCells } from '../lib/monthCell';
-import type { MonthCellData } from '../lib/monthCell';
+import { buildMonthCells } from '../lib/todoCell';
+import type { TodoCellData } from '../lib/todoCell';
 import { DayGrid } from './DayGrid';
 import type { DayCellData } from './DayGrid';
 import { GoalBoard } from './GoalBoard';
@@ -136,7 +136,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
   }, [horizon, periodKey, todos, goals]);
 
   const monthCells = useMemo(
-    (): MonthCellData[] | null => (horizon === 'year' ? buildMonthCells(todos, periodKey) : null),
+    (): TodoCellData[] | null => (horizon === 'year' ? buildMonthCells(todos, periodKey) : null),
     [horizon, periodKey, todos],
   );
 

@@ -1,8 +1,8 @@
-import type { MonthCellData } from '../lib/monthCell';
+import type { TodoCellData } from '../lib/todoCell';
 import { MonthCell } from './MonthCell';
 
 interface Props {
-  cells: MonthCellData[];
+  cells: TodoCellData[];
   onSelect: (key: string) => void;
   onToggleTodo: (id: string, done: boolean) => void;
 }

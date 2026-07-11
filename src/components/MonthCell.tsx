@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import type { MonthCellData } from '../lib/monthCell';
-import { visibleTodos } from '../lib/monthCell';
+import type { TodoCellData } from '../lib/todoCell';
+import { visibleTodos } from '../lib/todoCell';
 
 interface Props {
-  data: MonthCellData;
+  data: TodoCellData;
   onSelect: () => void;
   onToggleTodo: (id: string, done: boolean) => void;
 }
@@ -24,7 +24,7 @@ export function MonthCell({ data, onSelect, onToggleTodo }: Props) {
         onClick={onSelect}
         className="flex items-baseline justify-between gap-1 text-left transition-colors hover:text-primary dark:hover:text-primary-dark"
       >
-        <span className="text-sm font-semibold text-text dark:text-text-dark">{data.monthLabel}</span>
+        <span className="text-sm font-semibold text-text dark:text-text-dark">{data.label}</span>
         {data.totalCount > 0 && (
           <span className="text-[10px] text-text-muted dark:text-text-muted-dark">
             {data.doneCount}/{data.totalCount}

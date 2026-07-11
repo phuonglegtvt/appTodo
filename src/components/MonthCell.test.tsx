@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MonthCell } from './MonthCell';
-import type { MonthCellData } from '../lib/monthCell';
+import type { TodoCellData } from '../lib/todoCell';
 import type { Todo } from '../types/todo';
 
 function todo(partial: Partial<Todo>): Todo {
@@ -22,11 +22,11 @@ function todo(partial: Partial<Todo>): Todo {
   };
 }
 
-function monthCellData(overrides: Partial<MonthCellData> = {}): MonthCellData {
+function monthCellData(overrides: Partial<TodoCellData> = {}): TodoCellData {
   const todos = overrides.todos ?? [todo({})];
   return {
     key: '2026-07',
-    monthLabel: 'Tháng 07',
+    label: 'Tháng 07',
     todos,
     doneCount: todos.filter((t) => t.is_done).length,
     totalCount: todos.length,
