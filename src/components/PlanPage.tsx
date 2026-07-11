@@ -102,6 +102,11 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     onAddTodo({ title, due_date: date, priority: 'medium', tags: [], recurrence: 'none' });
   }
 
+  function handleAddOnMonth(monthKey: string, title: string) {
+    // Ô tháng không có ngày cụ thể → gán ngày 01 của tháng để việc hiện trong ô.
+    onAddTodo({ title, due_date: `${monthKey}-01`, priority: 'medium', tags: [], recurrence: 'none' });
+  }
+
   function handleOpenFull(date: string) {
     setOpenDay(null);
     setHorizon('day');
@@ -205,7 +210,13 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onOpenFull={handleOpenFull}
             />
           ) : monthCells ? (
-            <MonthGrid cells={monthCells} onSelect={handleSelectCell} onToggleTodo={onToggleTodo} />
+            <MonthGrid
+              cells={monthCells}
+              onSelect={handleSelectCell}
+              onToggleTodo={onToggleTodo}
+              onDeleteTodo={onDeleteTodo}
+              onAddTodo={handleAddOnMonth}
+            />
           ) : (
             grid && (
               <PeriodGrid

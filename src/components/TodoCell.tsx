@@ -1,19 +1,23 @@
 import { useState } from 'react';
 import type { TodoCellData } from '../lib/todoCell';
-import { visibleTodos } from '../lib/todoCell';
+import { visibleTodos, formatDayMonth } from '../lib/todoCell';
+import { CellAddForm } from './CellAddForm';
 
 interface Props {
   data: TodoCellData;
   onSelect: () => void;
   onToggleTodo: (id: string, done: boolean) => void;
+  onDeleteTodo: (id: string) => void;
+  onAdd?: (title: string) => void; // có → hiện ô "+ thêm việc"
+  showDate?: boolean; // hiện dd/mm mỗi việc
 }
 
 /**
- * 1 ô tháng trong chế độ Năm: nhãn tháng (bấm để đi xuống chế độ Tháng) + số
- * done/total, và danh sách todo trong tháng. Mặc định hiện tối đa 6 việc; nếu
- * nhiều hơn có nút bung/thu gọn tại chỗ (state cục bộ trong ô này).
+ * 1 ô lịch liệt kê việc (dùng cho ô tháng ở tab Năm và ô năm ở tab 5 Năm):
+ * nhãn kỳ (bấm để đi xuống tầng con) + số done/total, danh sách việc có checkbox
+ * + ngày dd/mm + nút ✕ xóa, tối đa 6 việc với nút bung/thu, và ô thêm việc tùy chọn.
  */
-export function MonthCell({ data, onSelect, onToggleTodo }: Props) {
+export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onAdd, showDate }: Props) {
   const [expanded, setExpanded] = useState(false);
   const { visible, overflow } = visibleTodos(data.todos, expanded);
 
@@ -34,9 +38,9 @@ export function MonthCell({ data, onSelect, onToggleTodo }: Props) {
 
       <div className="flex flex-col gap-1">
         {visible.map((t) => (
-          <label
+          <div
             key={t.id}
-            className={`flex min-w-0 items-center gap-1.5 rounded px-1.5 py-0.5 text-[12px] font-medium ${
+            className={`group flex min-w-0 items-center gap-1.5 rounded px-1.5 py-0.5 text-[12px] font-medium ${
               t.is_done
                 ? 'text-text-muted line-through dark:text-text-muted-dark'
                 : 'bg-primary-soft text-primary dark:bg-primary-soft-dark dark:text-primary-dark'
@@ -46,10 +50,24 @@ export function MonthCell({ data, onSelect, onToggleTodo }: Props) {
               type="checkbox"
               checked={t.is_done}
               onChange={() => onToggleTodo(t.id, !t.is_done)}
+              aria-label={t.title}
               className="h-3.5 w-3.5 shrink-0 accent-primary dark:accent-primary-dark"
             />
-            <span className="truncate">{t.title}</span>
-          </label>
+            <span className="min-w-0 flex-1 truncate">{t.title}</span>
+            {showDate && t.due_date && (
+              <span className="shrink-0 text-[10px] tabular-nums text-text-muted dark:text-text-muted-dark">
+                {formatDayMonth(t.due_date)}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => onDeleteTodo(t.id)}
+              aria-label={`Xóa ${t.title}`}
+              className="shrink-0 rounded px-1 text-[11px] text-text-muted opacity-0 transition hover:text-red-600 group-hover:opacity-100 dark:text-text-muted-dark dark:hover:text-red-300"
+            >
+              ✕
+            </button>
+          </div>
         ))}
       </div>
 
@@ -58,11 +76,13 @@ export function MonthCell({ data, onSelect, onToggleTodo }: Props) {
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-auto self-start px-1 text-[10px] text-text-muted underline-offset-2 hover:underline dark:text-text-muted-dark"
+          className="self-start px-1 text-[10px] text-text-muted underline-offset-2 hover:underline dark:text-text-muted-dark"
         >
           {expanded ? 'thu gọn' : `+${overflow} xem thêm`}
         </button>
       )}
+
+      {onAdd && <CellAddForm onAdd={onAdd} />}
     </div>
   );
 }
