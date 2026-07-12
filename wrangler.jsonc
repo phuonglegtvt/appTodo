@@ -1,0 +1,12 @@
+{
+  // Cấu hình cho Cloudflare Workers ở chế độ "static assets" (không có Worker script).
+  // `npx wrangler deploy` sẽ tải thẳng thư mục ./dist lên, phục vụ như web tĩnh.
+  // Nhờ có file này, wrangler KHÔNG tự-nhận-diện-Vite (khâu gây lỗi với Vite 5).
+  "name": "apptodo",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    // App điều hướng bằng hash, không có route thật ở server; SPA fallback cho chắc deep-link.
+    "not_found_handling": "single-page-application"
+  }
+}
