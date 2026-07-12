@@ -1,5 +1,6 @@
 import type { SmartView } from '../types/todo';
 import { tagColor } from '../lib/tagColor';
+import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed';
 
 interface Props {
   page: 'todos' | 'plan' | 'stocks';
@@ -21,6 +22,12 @@ const VIEWS: { key: SmartView; label: string }[] = [
   { key: 'done', label: 'Đã xong' },
 ];
 
+const PAGES: { key: Props['page']; label: string; icon: string }[] = [
+  { key: 'todos', label: 'Việc', icon: '✓' },
+  { key: 'plan', label: 'Kế hoạch', icon: '◎' },
+  { key: 'stocks', label: 'Cổ phiếu', icon: '▤' },
+];
+
 /** Sidebar dashboard (desktop): smart views + nhãn + tài khoản. Chỉ nhận props, không gọi mạng. */
 export function Sidebar({
   page,
@@ -34,54 +41,69 @@ export function Sidebar({
   userEmail,
   onSignOut,
 }: Props) {
+  const { collapsed, toggle } = useSidebarCollapsed();
   return (
-    <aside className="hidden w-[258px] flex-none flex-col gap-1 border-r border-border bg-surface px-3.5 py-[18px] md:flex dark:border-border-dark dark:bg-surface-dark">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-1.5 pb-3.5 pt-0.5">
-        <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-primary text-[15px] font-bold text-white dark:bg-primary-dark">
+    <aside
+      className={`hidden flex-none flex-col gap-1 border-r border-border bg-surface py-[18px] md:flex dark:border-border-dark dark:bg-surface-dark ${
+        collapsed ? 'w-[64px] px-2' : 'w-[258px] px-3.5'
+      }`}
+    >
+      {/* Logo + nút thu gọn */}
+      <div className={`flex items-center pb-3.5 pt-0.5 ${collapsed ? 'justify-center' : 'gap-2.5 px-1.5'}`}>
+        <div className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] bg-primary text-[15px] font-bold text-white dark:bg-primary-dark">
           ✓
         </div>
-        <div className="text-[15.5px] font-bold tracking-tight text-text dark:text-text-dark">Việc của tôi</div>
+        {!collapsed && (
+          <>
+            <div className="flex-1 text-[15.5px] font-bold tracking-tight text-text dark:text-text-dark">Việc của tôi</div>
+            <button
+              onClick={toggle}
+              aria-label="Thu gọn thanh bên"
+              title="Thu gọn"
+              className="btn-icon h-7 w-7 flex-none text-sm"
+            >
+              «
+            </button>
+          </>
+        )}
       </div>
+      {collapsed && (
+        <button
+          onClick={toggle}
+          aria-label="Mở rộng thanh bên"
+          title="Mở rộng"
+          className="btn-icon mx-auto mb-1 h-7 w-7 flex-none text-sm"
+        >
+          »
+        </button>
+      )}
 
-      {/* Chuyển trang: Việc / Kế hoạch */}
-      <div className="mb-2 flex gap-0.5 rounded-lg border border-border bg-surface-2 p-0.5 dark:border-border-dark dark:bg-surface-2dark">
-        <button
-          onClick={() => onPage('todos')}
-          aria-pressed={page === 'todos'}
-          className={`flex-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-            page === 'todos'
-              ? 'bg-surface text-text shadow-sm dark:bg-surface-dark dark:text-text-dark'
-              : 'text-text-muted dark:text-text-muted-dark'
-          }`}
-        >
-          Việc
-        </button>
-        <button
-          onClick={() => onPage('plan')}
-          aria-pressed={page === 'plan'}
-          className={`flex-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-            page === 'plan'
-              ? 'bg-surface text-text shadow-sm dark:bg-surface-dark dark:text-text-dark'
-              : 'text-text-muted dark:text-text-muted-dark'
-          }`}
-        >
-          Kế hoạch
-        </button>
-        <button
-          onClick={() => onPage('stocks')}
-          aria-pressed={page === 'stocks'}
-          className={`flex-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
-            page === 'stocks'
-              ? 'bg-surface text-text shadow-sm dark:bg-surface-dark dark:text-text-dark'
-              : 'text-text-muted dark:text-text-muted-dark'
-          }`}
-        >
-          Cổ phiếu
-        </button>
-      </div>
+      {/* Chuyển trang: nav dọc */}
+      <nav className="mb-2 flex flex-col gap-0.5">
+        {PAGES.map((p) => {
+          const active = page === p.key;
+          return (
+            <button
+              key={p.key}
+              onClick={() => onPage(p.key)}
+              aria-current={active ? 'page' : undefined}
+              title={collapsed ? p.label : undefined}
+              className={`flex items-center gap-2.5 rounded-[9px] border-l-2 py-2 text-sm transition-colors ${
+                collapsed ? 'justify-center px-0' : 'px-2.5'
+              } ${
+                active
+                  ? 'border-primary bg-primary-soft font-semibold text-primary dark:border-primary-dark dark:bg-primary-soft-dark dark:text-primary-dark'
+                  : 'border-transparent font-medium text-text hover:bg-surface-2 dark:text-text-dark dark:hover:bg-surface-2dark'
+              }`}
+            >
+              <span className="text-base leading-none">{p.icon}</span>
+              {!collapsed && <span className="flex-1 text-left">{p.label}</span>}
+            </button>
+          );
+        })}
+      </nav>
 
-      {page === 'todos' && (
+      {page === 'todos' && !collapsed && (
         <>
           {/* Smart views */}
           <div className="px-2 pb-1.5 pt-2 text-[10.5px] font-bold tracking-[0.09em] text-text-muted dark:text-text-muted-dark">
@@ -147,13 +169,19 @@ export function Sidebar({
       <div className="flex-1" />
 
       {/* Tài khoản */}
-      <div className="mt-2 flex items-center gap-2.5 border-t border-border px-2 pb-1 pt-2.5 dark:border-border-dark">
+      <div
+        className={`mt-2 flex items-center border-t border-border pb-1 pt-2.5 dark:border-border-dark ${
+          collapsed ? 'flex-col gap-2' : 'gap-2.5 px-2'
+        }`}
+      >
         <div className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-primary-soft text-[13px] font-bold uppercase text-primary dark:bg-primary-soft-dark dark:text-primary-dark">
           {userEmail.charAt(0) || '?'}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[11px] text-text-muted dark:text-text-muted-dark">{userEmail}</div>
-        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[11px] text-text-muted dark:text-text-muted-dark">{userEmail}</div>
+          </div>
+        )}
         <button
           onClick={onSignOut}
           title="Đăng xuất"
