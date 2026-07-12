@@ -732,8 +732,8 @@ describe('formatMoney', () => {
     expect(formatMoney(64832.1, 'USD', null)).toBe('$64,832.1');
     expect(formatMoney(1000, 'USD', 26000)).toBe('$1,000');
   });
-  it('VND có tỷ giá → quy đổi, làm tròn, hậu tố đ', () => {
-    expect(formatMoney(10, 'VND', 26000)).toBe('260,000 đ');
+  it('VND có tỷ giá → quy đổi, làm tròn, hậu tố đ (vi-VN dùng dấu . ngăn nghìn)', () => {
+    expect(formatMoney(10, 'VND', 26000)).toBe('260.000 đ');
   });
   it('VND nhưng chưa có tỷ giá → fallback hiển thị USD', () => {
     expect(formatMoney(10, 'VND', null)).toBe('$10');
