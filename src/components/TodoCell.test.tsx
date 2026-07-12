@@ -41,7 +41,7 @@ describe('TodoCell', () => {
     const onDeleteTodo = vi.fn();
 
     render(
-      <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} />,
+      <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onEditTodo={vi.fn()} />,
     );
 
     fireEvent.click(screen.getByRole('checkbox', { name: 'Việc trong tháng 11/07' }));
@@ -56,12 +56,30 @@ describe('TodoCell', () => {
     const onDeleteTodo = vi.fn();
 
     render(
-      <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} />,
+      <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={onToggleTodo} onDeleteTodo={onDeleteTodo} onEditTodo={vi.fn()} />,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Xóa Việc trong tháng 11/07' }));
 
     expect(onDeleteTodo).toHaveBeenCalledWith('todo-1');
+  });
+
+  it('bấm tên việc gọi onEditTodo với todo đó', () => {
+    const onEditTodo = vi.fn();
+
+    render(
+      <TodoCell
+        data={monthCellData()}
+        onSelect={vi.fn()}
+        onToggleTodo={vi.fn()}
+        onDeleteTodo={vi.fn()}
+        onEditTodo={onEditTodo}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa Việc trong tháng' }));
+
+    expect(onEditTodo).toHaveBeenCalledWith(expect.objectContaining({ id: 'todo-1' }));
   });
 
   it('có onAdd → bấm "+ thêm việc" hiện ô nhập, nhập rồi submit gọi onAdd với title đã trim', () => {
@@ -76,6 +94,7 @@ describe('TodoCell', () => {
         onSelect={onSelect}
         onToggleTodo={onToggleTodo}
         onDeleteTodo={onDeleteTodo}
+        onEditTodo={vi.fn()}
         onAdd={onAdd}
       />,
     );
@@ -95,6 +114,7 @@ describe('TodoCell', () => {
         onSelect={vi.fn()}
         onToggleTodo={vi.fn()}
         onDeleteTodo={vi.fn()}
+        onEditTodo={vi.fn()}
       />,
     );
 
@@ -104,7 +124,7 @@ describe('TodoCell', () => {
   it('showDate + due_date → hiện dd/mm của việc', () => {
     const data = monthCellData({ todos: [todo({ due_date: '2026-08-05' })] });
 
-    render(<TodoCell data={data} onSelect={vi.fn()} onToggleTodo={vi.fn()} onDeleteTodo={vi.fn()} showDate />);
+    render(<TodoCell data={data} onSelect={vi.fn()} onToggleTodo={vi.fn()} onDeleteTodo={vi.fn()} onEditTodo={vi.fn()} showDate />);
 
     expect(screen.getByText('05/08')).toBeInTheDocument();
   });
@@ -112,7 +132,7 @@ describe('TodoCell', () => {
   it('không có showDate → không hiện dd/mm dù có due_date', () => {
     const data = monthCellData({ todos: [todo({ due_date: '2026-08-05' })] });
 
-    render(<TodoCell data={data} onSelect={vi.fn()} onToggleTodo={vi.fn()} onDeleteTodo={vi.fn()} />);
+    render(<TodoCell data={data} onSelect={vi.fn()} onToggleTodo={vi.fn()} onDeleteTodo={vi.fn()} onEditTodo={vi.fn()} />);
 
     expect(screen.queryByText('05/08')).not.toBeInTheDocument();
   });

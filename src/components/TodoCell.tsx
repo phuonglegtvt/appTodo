@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Todo } from '../types/todo';
 import type { TodoCellData } from '../lib/todoCell';
 import { visibleTodos, formatDayMonth } from '../lib/todoCell';
 import { CellAddForm } from './CellAddForm';
@@ -8,6 +9,7 @@ interface Props {
   onSelect: () => void;
   onToggleTodo: (id: string, done: boolean) => void;
   onDeleteTodo: (id: string) => void;
+  onEditTodo: (todo: Todo) => void;
   onAdd?: (title: string) => void; // có → hiện ô "+ thêm việc"
   showDate?: boolean; // hiện dd/mm mỗi việc
 }
@@ -17,7 +19,7 @@ interface Props {
  * nhãn kỳ (bấm để đi xuống tầng con) + số done/total, danh sách việc có checkbox
  * + ngày dd/mm + nút ✕ xóa, tối đa 6 việc với nút bung/thu, và ô thêm việc tùy chọn.
  */
-export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onAdd, showDate }: Props) {
+export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onEditTodo, onAdd, showDate }: Props) {
   const [expanded, setExpanded] = useState(false);
   const { visible, overflow } = visibleTodos(data.todos, expanded);
 
@@ -53,7 +55,14 @@ export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onAdd, sh
               aria-label={t.due_date ? `${t.title} ${formatDayMonth(t.due_date)}` : t.title}
               className="h-3.5 w-3.5 shrink-0 accent-primary dark:accent-primary-dark"
             />
-            <span className="min-w-0 flex-1 truncate">{t.title}</span>
+            <button
+              type="button"
+              onClick={() => onEditTodo(t)}
+              aria-label={`Sửa ${t.title}`}
+              className="min-w-0 flex-1 truncate text-left hover:underline"
+            >
+              {t.title}
+            </button>
             {showDate && t.due_date && (
               <span className="shrink-0 text-[10px] tabular-nums text-text-muted dark:text-text-muted-dark">
                 {formatDayMonth(t.due_date)}

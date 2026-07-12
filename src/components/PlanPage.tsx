@@ -18,6 +18,7 @@ import { DayGrid } from './DayGrid';
 import type { DayCellData } from './DayGrid';
 import { GoalBoard } from './GoalBoard';
 import { TodoList } from './TodoList';
+import { TodoEditModal } from './TodoEditModal';
 import { ErrorBanner } from './ErrorBanner';
 import { sortByDoneThenOrder } from '../lib/todoFilters';
 
@@ -68,6 +69,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
   const [horizon, setHorizon] = useState<ViewHorizon>('month');
   const [periodKey, setPeriodKey] = useState<string>(() => getPeriodKey('month', today));
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
 
   function handleHorizon(newHorizon: ViewHorizon) {
     setHorizon(newHorizon);
@@ -181,6 +183,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onAdd={handleAddOnDay}
               onToggle={onToggleTodo}
               onDelete={onDeleteTodo}
+              onEdit={setEditingTodo}
               onOpenFull={handleOpenFull}
             />
           ) : monthCells ? (
@@ -189,6 +192,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onSelect={handleSelectCell}
               onToggleTodo={onToggleTodo}
               onDeleteTodo={onDeleteTodo}
+              onEditTodo={setEditingTodo}
               onAddTodo={handleAddOnMonth}
             />
           ) : yearCells ? (
@@ -197,9 +201,19 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               onSelect={handleSelectCell}
               onToggleTodo={onToggleTodo}
               onDeleteTodo={onDeleteTodo}
+              onEditTodo={setEditingTodo}
             />
           ) : null}
         </div>
+      )}
+
+      {editingTodo && (
+        <TodoEditModal
+          todo={editingTodo}
+          onSave={onUpdateTodo}
+          onDelete={onDeleteTodo}
+          onClose={() => setEditingTodo(null)}
+        />
       )}
     </div>
   );

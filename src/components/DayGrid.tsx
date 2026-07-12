@@ -15,11 +15,12 @@ interface Props {
   onAdd: (date: string, title: string) => void;
   onToggle: (id: string, done: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (todo: Todo) => void;
   onOpenFull: (date: string) => void;
 }
 
 /** Lưới ngày kiểu Google Calendar cho tầng Tháng/Tuần (7 cột). */
-export function DayGrid({ leadingBlanks, cells, today, maxLines, onAdd, onToggle, onDelete, onOpenFull }: Props) {
+export function DayGrid({ leadingBlanks, cells, today, maxLines, onAdd, onToggle, onDelete, onEdit, onOpenFull }: Props) {
   return (
     <div className="grid grid-cols-7 gap-1.5">
       {Array.from({ length: leadingBlanks }).map((_, i) => (
@@ -35,6 +36,7 @@ export function DayGrid({ leadingBlanks, cells, today, maxLines, onAdd, onToggle
           onAdd={(title) => onAdd(c.date, title)}
           onToggle={onToggle}
           onDelete={onDelete}
+          onEdit={onEdit}
           onOpenFull={() => onOpenFull(c.date)}
         />
       ))}

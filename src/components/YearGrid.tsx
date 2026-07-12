@@ -1,3 +1,4 @@
+import type { Todo } from '../types/todo';
 import type { TodoCellData } from '../lib/todoCell';
 import { TodoCell } from './TodoCell';
 
@@ -6,10 +7,11 @@ interface Props {
   onSelect: (key: string) => void;
   onToggleTodo: (id: string, done: boolean) => void;
   onDeleteTodo: (id: string) => void;
+  onEditTodo: (todo: Todo) => void;
 }
 
 /** Lưới 5 ô năm (3 cột) cho chế độ 5 Năm — mỗi ô liệt kê việc gần nhất trong năm. */
-export function YearGrid({ cells, onSelect, onToggleTodo, onDeleteTodo }: Props) {
+export function YearGrid({ cells, onSelect, onToggleTodo, onDeleteTodo, onEditTodo }: Props) {
   return (
     <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
       {cells.map((c) => (
@@ -20,6 +22,7 @@ export function YearGrid({ cells, onSelect, onToggleTodo, onDeleteTodo }: Props)
           onSelect={() => onSelect(c.key)}
           onToggleTodo={onToggleTodo}
           onDeleteTodo={onDeleteTodo}
+          onEditTodo={onEditTodo}
         />
       ))}
     </div>

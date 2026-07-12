@@ -11,6 +11,7 @@ interface Props {
   onAdd: (title: string) => void;
   onToggle: (id: string, done: boolean) => void;
   onDelete: (id: string) => void;
+  onEdit: (todo: Todo) => void;
   onOpenFull: () => void;
 }
 
@@ -23,6 +24,7 @@ export function DayCell({
   onAdd,
   onToggle,
   onDelete,
+  onEdit,
   onOpenFull,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
@@ -62,7 +64,14 @@ export function DayCell({
               aria-label={t.title}
               className="h-3 w-3 shrink-0 accent-primary dark:accent-primary-dark"
             />
-            <span className="min-w-0 flex-1 truncate">{t.title}</span>
+            <button
+              type="button"
+              onClick={() => onEdit(t)}
+              aria-label={`Sửa ${t.title}`}
+              className="min-w-0 flex-1 truncate text-left hover:underline"
+            >
+              {t.title}
+            </button>
             <button
               type="button"
               onClick={() => onDelete(t.id)}
