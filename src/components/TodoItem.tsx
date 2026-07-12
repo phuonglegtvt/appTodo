@@ -193,6 +193,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
                 e.stopPropagation();
                 setShowNotes((v) => !v);
               }}
+              onKeyDown={(e) => e.stopPropagation()}
               aria-expanded={showNotes}
               aria-label={showNotes ? 'Thu gọn ghi chú' : 'Xem ghi chú'}
               title={showNotes ? 'Thu gọn ghi chú' : 'Xem ghi chú'}

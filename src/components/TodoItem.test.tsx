@@ -51,6 +51,12 @@ describe('TodoItem — click để sửa', () => {
     expect(screen.getByText('Ghi chú gì đó')).toBeInTheDocument();
   });
 
+  it('bấm phím trên nút xem ghi chú ▾ không mở nhầm form sửa (chặn lan keydown)', () => {
+    renderItem({ notes: 'Ghi chú gì đó' });
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Xem ghi chú' }), { key: 'Enter' });
+    expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
+  });
+
   it('không còn nút ✎ riêng, vẫn còn nút ✕ xóa hoạt động', () => {
     const onDelete = vi.fn();
     renderItem({}, vi.fn(), onDelete);
