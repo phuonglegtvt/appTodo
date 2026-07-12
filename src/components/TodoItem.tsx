@@ -163,7 +163,19 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
         {todo.is_done ? '✓' : ''}
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-[5px]">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setEditing(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setEditing(true);
+          }
+        }}
+        aria-label={`Sửa việc: ${todo.title}`}
+        className="flex min-w-0 flex-1 cursor-pointer flex-col gap-[5px] rounded-md focus:outline-none focus:ring-2 focus:ring-primary/40 dark:focus:ring-primary-dark/40"
+      >
         <div className="flex items-center gap-1.5">
           <span
             className={`min-w-0 text-[14.5px] font-medium ${
@@ -177,7 +189,10 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
           {todo.notes && (
             <button
               type="button"
-              onClick={() => setShowNotes((v) => !v)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowNotes((v) => !v);
+              }}
               aria-expanded={showNotes}
               aria-label={showNotes ? 'Thu gọn ghi chú' : 'Xem ghi chú'}
               title={showNotes ? 'Thu gọn ghi chú' : 'Xem ghi chú'}
@@ -231,9 +246,6 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
 
       <div className="flex flex-none items-center gap-2">
         <PriorityBadge priority={todo.priority} />
-        <button onClick={() => setEditing(true)} aria-label="Sửa" className="btn-icon h-7 w-7 text-sm">
-          ✎
-        </button>
         <button
           onClick={() => onDelete(todo.id)}
           aria-label="Xóa"
