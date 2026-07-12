@@ -136,4 +136,26 @@ describe('TodoCell', () => {
 
     expect(screen.queryByText('05/08')).not.toBeInTheDocument();
   });
+
+  it('double-click nền ô gọi onSelect (đi xuống 1 tầng)', () => {
+    const onSelect = vi.fn();
+    const { container } = render(
+      <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={vi.fn()} onDeleteTodo={vi.fn()} onEditTodo={vi.fn()} />,
+    );
+
+    fireEvent.dblClick(container.firstChild as Element);
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('double-click lên một việc KHÔNG gọi onSelect', () => {
+    const onSelect = vi.fn();
+    render(
+      <TodoCell data={monthCellData()} onSelect={onSelect} onToggleTodo={vi.fn()} onDeleteTodo={vi.fn()} onEditTodo={vi.fn()} />,
+    );
+
+    fireEvent.dblClick(screen.getByRole('button', { name: 'Sửa Việc trong tháng' }));
+
+    expect(onSelect).not.toHaveBeenCalled();
+  });
 });

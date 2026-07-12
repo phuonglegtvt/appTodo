@@ -23,8 +23,17 @@ export function TodoCell({ data, onSelect, onToggleTodo, onDeleteTodo, onEditTod
   const [expanded, setExpanded] = useState(false);
   const { visible, overflow } = visibleTodos(data.todos, expanded);
 
+  function handleDoubleClick(e: React.MouseEvent) {
+    // Bỏ qua khi double-click rơi vào phần tử tương tác (việc, checkbox, ✕, ô thêm).
+    if ((e.target as HTMLElement).closest('button, input, form')) return;
+    onSelect();
+  }
+
   return (
-    <div className="flex min-h-[9rem] flex-col gap-1.5 rounded-lg border border-border bg-surface p-2 dark:border-border-dark dark:bg-surface-dark">
+    <div
+      onDoubleClick={handleDoubleClick}
+      title="Bấm đúp để mở"
+      className="flex min-h-[9rem] flex-col gap-1.5 rounded-lg border border-border bg-surface p-2 dark:border-border-dark dark:bg-surface-dark">
       <button
         type="button"
         onClick={onSelect}
