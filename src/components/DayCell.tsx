@@ -32,7 +32,7 @@ export function DayCell({
 
   return (
     <div
-      className={`flex min-h-[6rem] flex-col gap-1 rounded-lg border bg-surface p-1.5 dark:bg-surface-dark ${
+      className={`flex min-h-[8rem] flex-col gap-1.5 rounded-lg border bg-surface p-2 dark:bg-surface-dark ${
         isToday ? 'border-primary dark:border-primary-dark' : 'border-border dark:border-border-dark'
       }`}
     >
@@ -40,18 +40,18 @@ export function DayCell({
         type="button"
         onClick={onOpenFull}
         aria-label={`Mở ngày ${dayNumber}`}
-        className={`self-start text-xs font-semibold transition-colors hover:text-primary dark:hover:text-primary-dark ${
+        className={`self-start text-sm font-semibold transition-colors hover:text-primary dark:hover:text-primary-dark ${
           isToday ? 'text-primary dark:text-primary-dark' : 'text-text dark:text-text-dark'
         }`}
       >
         {dayNumber}
       </button>
 
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-1">
         {visible.map((t) => (
           <div
             key={t.id}
-            className={`group flex min-w-0 items-center gap-1 rounded px-1 text-[10px] ${
+            className={`group flex min-w-0 items-center gap-1.5 rounded px-1.5 py-0.5 text-[12px] font-medium ${
               t.is_done
                 ? 'text-text-muted line-through dark:text-text-muted-dark'
                 : 'bg-primary-soft text-primary dark:bg-primary-soft-dark dark:text-primary-dark'
@@ -62,7 +62,7 @@ export function DayCell({
               checked={t.is_done}
               onChange={() => onToggle(t.id, !t.is_done)}
               aria-label={t.title}
-              className="h-3 w-3 shrink-0 accent-primary dark:accent-primary-dark"
+              className="h-3.5 w-3.5 shrink-0 accent-primary dark:accent-primary-dark"
             />
             <button
               type="button"
@@ -76,7 +76,7 @@ export function DayCell({
               type="button"
               onClick={() => onDelete(t.id)}
               aria-label={`Xóa ${t.title}`}
-              className="shrink-0 px-0.5 text-text-muted opacity-0 transition hover:text-red-600 group-hover:opacity-100 dark:text-text-muted-dark dark:hover:text-red-300"
+              className="shrink-0 rounded px-1 text-[11px] text-text-muted opacity-0 transition hover:text-red-600 group-hover:opacity-100 dark:text-text-muted-dark dark:hover:text-red-300"
             >
               ✕
             </button>
@@ -87,7 +87,7 @@ export function DayCell({
             type="button"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
-            className="px-1 text-left text-[10px] text-text-muted hover:underline dark:text-text-muted-dark"
+            className="px-1 text-left text-[11px] text-text-muted hover:underline dark:text-text-muted-dark"
           >
             {expanded ? 'thu gọn' : `+${overflow} việc`}
           </button>

@@ -22,7 +22,7 @@ export function CellAddForm({ onAdd }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-auto self-start px-1 text-[10px] text-text-muted transition hover:text-primary dark:text-text-muted-dark dark:hover:text-primary-dark"
+        className="mt-auto self-start px-1 text-[11px] text-text-muted transition hover:text-primary dark:text-text-muted-dark dark:hover:text-primary-dark"
       >
         + thêm việc
       </button>

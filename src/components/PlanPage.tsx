@@ -168,7 +168,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
       ) : (
         <div className="flex flex-col gap-1.5">
           {(horizon === 'month' || horizon === 'week') && (
-            <div className="grid grid-cols-7 gap-1.5 text-center text-[10px] font-semibold text-text-muted dark:text-text-muted-dark">
+            <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-semibold text-text-muted dark:text-text-muted-dark">
               {WEEKDAY_LABELS.map((w) => (
                 <div key={w}>{w}</div>
               ))}
