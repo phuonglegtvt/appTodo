@@ -4,6 +4,8 @@ import type { NewTodo, Recurrence, Todo } from '../types/todo';
 export function nextDueDate(dueDate: string, recurrence: Recurrence): string {
   const [year, month, day] = dueDate.split('-').map(Number);
   switch (recurrence) {
+    case 'daily':
+      return addDays(year, month, day, 1);
     case 'weekly':
       return addDays(year, month, day, 7);
     case 'monthly':

@@ -24,6 +24,15 @@ describe('nextDueDate', () => {
   it('none: giữ nguyên ngày', () => {
     expect(nextDueDate('2026-07-15', 'none')).toBe('2026-07-15');
   });
+  it('daily: cộng 1 ngày', () => {
+    expect(nextDueDate('2026-07-12', 'daily')).toBe('2026-07-13');
+  });
+  it('daily: qua ranh giới cuối tháng', () => {
+    expect(nextDueDate('2026-07-31', 'daily')).toBe('2026-08-01');
+  });
+  it('daily: qua ranh giới cuối năm', () => {
+    expect(nextDueDate('2026-12-31', 'daily')).toBe('2027-01-01');
+  });
 });
 
 function makeTodo(over: Partial<Todo>): Todo {

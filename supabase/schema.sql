@@ -62,7 +62,7 @@ alter table public.todos replica identity full;
 -- docs/superpowers/specs/2026-07-05-recurring-tasks-design.md).
 alter table public.todos
   add column if not exists recurrence text not null default 'none'
-  check (recurrence in ('none', 'weekly', 'monthly', 'yearly'));
+  check (recurrence in ('none', 'daily', 'weekly', 'monthly', 'yearly'));
 
 -- Phase 2b: mục tiêu theo tầng thời gian (xem
 -- docs/superpowers/specs/2026-07-07-goal-horizons-design.md).

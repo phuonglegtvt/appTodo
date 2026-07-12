@@ -52,6 +52,10 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
           </section>
         );
       })}
+      <p className="text-[11px] text-text-muted dark:text-text-muted-dark">
+        <span className="font-semibold text-red-600 dark:text-red-400">Đỏ</span> = trên giá bảo vệ (đắt) ·{' '}
+        <span className="font-semibold text-green-600 dark:text-green-400">Xanh</span> = chạm giá ngưỡng (đáng mua)
+      </p>
     </div>
   );
 }

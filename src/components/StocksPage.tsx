@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStocks } from '../hooks/useStocks';
 import { fetchPrices } from '../lib/stockPrice';
+import { filterStocks } from '../lib/stockFilters';
 import type { StockGroup } from '../types/stock';
 import { PortfolioSummary } from './PortfolioSummary';
 import { StockForm } from './StockForm';
@@ -17,6 +18,7 @@ export function StocksPage({ userId }: Props) {
   const [profile, setProfile] = useState<StockGroup>('balance');
   const [priceError, setPriceError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [query, setQuery] = useState('');
 
   async function handleUpdatePrices() {
     setPriceError(null);
@@ -50,13 +52,17 @@ export function StocksPage({ userId }: Props) {
     if (confirm('Xóa mã này?')) deleteStock(id);
   };
 
+  const visibleStocks = filterStocks(stocks, query);
+
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-auto p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[22px] font-bold tracking-tight text-text dark:text-text-dark">Cổ phiếu</div>
           <div className="mt-0.5 text-[13px] text-text-muted dark:text-text-muted-dark">
-            {stocks.length} mã · giá theo nghìn đồng, số tiền theo đồng
+            {query.trim()
+              ? `${visibleStocks.length}/${stocks.length} mã khớp "${query.trim()}"`
+              : `${stocks.length} mã · giá theo nghìn đồng, số tiền theo đồng`}
           </div>
         </div>
         <button
@@ -71,6 +77,15 @@ export function StocksPage({ userId }: Props) {
       {error && <ErrorBanner message={error} onClose={clearError} />}
       {priceError && <ErrorBanner message={priceError} onClose={() => setPriceError(null)} />}
 
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Tìm theo mã hoặc tên công ty…"
+        aria-label="Tìm cổ phiếu"
+        className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:placeholder:text-text-muted-dark dark:focus:border-primary-dark"
+      />
+
       <PortfolioSummary stocks={stocks} profile={profile} onProfile={setProfile} />
 
       <StockForm onAdd={addStock} />
@@ -81,8 +96,12 @@ export function StocksPage({ userId }: Props) {
         <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-text-muted dark:border-border-dark dark:text-text-muted-dark">
           Chưa có mã nào. Thêm mã đầu tiên ở form trên.
         </p>
+      ) : visibleStocks.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border py-8 text-center text-sm text-text-muted dark:border-border-dark dark:text-text-muted-dark">
+          Không có mã nào khớp "{query.trim()}".
+        </p>
       ) : (
-        <StockTable stocks={stocks} onUpdate={updateStock} onDelete={removeStock} />
+        <StockTable stocks={visibleStocks} onUpdate={updateStock} onDelete={removeStock} />
       )}
     </div>
   );

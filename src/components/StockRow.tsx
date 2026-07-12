@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Stock, StockUpdate } from '../types/stock';
-import { computeYield, isBelowThreshold } from '../lib/stockCalc';
+import { computeYield, isBelowThreshold, isAboveProtect } from '../lib/stockCalc';
 import { parseVnNumber } from '../lib/parseNumber';
 
 function fmt(n: number | null): string {
@@ -13,7 +13,7 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-/** Một dòng cổ phiếu: hiển thị hoặc sửa inline. Mã "chạm ngưỡng" tô đỏ. */
+/** Một dòng cổ phiếu: hiển thị hoặc sửa inline. Mã "đắt" (trên giá bảo vệ) tô đỏ, mã "đáng mua" (dưới giá ngưỡng) tô xanh. */
 export function StockRow({ stock, onUpdate, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   // Bản nháp khi sửa (giữ dạng chuỗi để nhập được thoải mái).
@@ -41,7 +41,9 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   }
 
   const yieldPct = computeYield(stock);
-  const below = isBelowThreshold(stock);
+  const above = isAboveProtect(stock);
+  // "đáng mua" chỉ khi không đồng thời "đắt" (đỏ ưu tiên nếu dữ liệu bất thường).
+  const cheap = !above && isBelowThreshold(stock);
   const cell = 'px-2 py-2 text-sm text-text dark:text-text-dark';
   const editInput =
     'w-24 rounded border border-border bg-surface px-1.5 py-1 text-sm outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark';
@@ -73,13 +75,24 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
     );
   }
 
+  const rowTint = above
+    ? 'bg-red-50 dark:bg-red-950/30'
+    : cheap
+      ? 'bg-green-50 dark:bg-green-950/30'
+      : '';
+  const emphasize = above
+    ? 'font-semibold text-red-600 dark:text-red-400'
+    : cheap
+      ? 'font-semibold text-green-600 dark:text-green-400'
+      : '';
+
   return (
-    <tr className={`border-t border-border dark:border-border-dark ${below ? 'bg-red-50 dark:bg-red-950/30' : ''}`}>
-      <td className={`${cell} font-semibold ${below ? 'text-red-600 dark:text-red-400' : ''}`}>{stock.ticker}</td>
+    <tr className={`border-t border-border dark:border-border-dark ${rowTint}`}>
+      <td className={`${cell} font-semibold ${emphasize}`}>{stock.ticker}</td>
       <td className={cell}>{stock.company_name}</td>
       <td className={cell}>{fmt(stock.price_threshold)}</td>
       <td className={cell}>{fmt(stock.price_protect)}</td>
-      <td className={`${cell} ${below ? 'font-semibold text-red-600 dark:text-red-400' : ''}`}>{fmt(stock.current_price)}</td>
+      <td className={`${cell} ${emphasize}`}>{fmt(stock.current_price)}</td>
       <td className={cell}>{fmt(stock.dividend)}</td>
       <td className={cell}>{yieldPct == null ? '—' : yieldPct.toFixed(1) + '%'}</td>
       <td className={cell}>{fmt(stock.invested_amount)}</td>
