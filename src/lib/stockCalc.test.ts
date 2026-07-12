@@ -4,6 +4,7 @@ import {
   groupWeights,
   compareToTarget,
   isBelowThreshold,
+  isAboveProtect,
   TARGET_PROFILES,
 } from './stockCalc';
 import type { Stock, StockGroup } from '../types/stock';
@@ -127,5 +128,21 @@ describe('isBelowThreshold', () => {
   it('false khi thiếu dữ liệu', () => {
     expect(isBelowThreshold({ current_price: null, price_threshold: 30.1 })).toBe(false);
     expect(isBelowThreshold({ current_price: 29, price_threshold: null })).toBe(false);
+  });
+});
+
+describe('isAboveProtect', () => {
+  it('true khi giá hiện tại > giá bảo vệ', () => {
+    expect(isAboveProtect({ current_price: 32, price_protect: 30 })).toBe(true);
+  });
+  it('false khi giá hiện tại = giá bảo vệ', () => {
+    expect(isAboveProtect({ current_price: 30, price_protect: 30 })).toBe(false);
+  });
+  it('false khi giá hiện tại < giá bảo vệ', () => {
+    expect(isAboveProtect({ current_price: 28, price_protect: 30 })).toBe(false);
+  });
+  it('false khi thiếu dữ liệu', () => {
+    expect(isAboveProtect({ current_price: null, price_protect: 30 })).toBe(false);
+    expect(isAboveProtect({ current_price: 32, price_protect: null })).toBe(false);
   });
 });

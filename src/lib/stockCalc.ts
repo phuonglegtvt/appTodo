@@ -63,3 +63,11 @@ export function isBelowThreshold(
   const { current_price, price_threshold } = stock;
   return current_price != null && price_threshold != null && current_price <= price_threshold;
 }
+
+/** Mã "đắt": giá hiện tại đã vượt trên giá bảo vệ tích sản. */
+export function isAboveProtect(
+  stock: Pick<Stock, 'current_price' | 'price_protect'>,
+): boolean {
+  const { current_price, price_protect } = stock;
+  return current_price != null && price_protect != null && current_price > price_protect;
+}
