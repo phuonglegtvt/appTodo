@@ -1,4 +1,4 @@
-import type { NewTodo, Recurrence, Todo } from '../types/todo';
+import type { Recurrence } from '../types/todo';
 
 /** Ngày đến hạn kế tiếp cho một kỳ lặp, tính từ ngày đến hạn hiện tại. */
 export function nextDueDate(dueDate: string, recurrence: Recurrence): string {
@@ -58,19 +58,4 @@ export function nthDueDate(startDate: string, recurrence: Recurrence, k: number)
     case 'none':
       return startDate;
   }
-}
-
-/** Dữ liệu để tạo việc cho kỳ lặp tiếp theo, dựa trên việc của kỳ hiện tại. */
-export function buildNextOccurrence(todo: Todo): NewTodo {
-  if (!todo.due_date) {
-    throw new Error('Việc lặp phải có hạn chót để tính kỳ tiếp theo.');
-  }
-  return {
-    title: todo.title,
-    notes: todo.notes,
-    due_date: nextDueDate(todo.due_date, todo.recurrence),
-    priority: todo.priority,
-    tags: todo.tags,
-    recurrence: todo.recurrence,
-  };
 }

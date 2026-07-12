@@ -22,6 +22,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { PlanPage } from '../components/PlanPage';
 import { StocksPage } from '../components/StocksPage';
 import { CryptoPage } from '../components/CryptoPage';
+import { recurringToggle } from './recurringToggle';
 
 type Page = 'todos' | 'plan' | 'stocks' | 'crypto';
 
@@ -44,8 +45,7 @@ interface AppPageProps {
 }
 
 export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps) {
-  const { todos, loading, error, addTodo, updateTodo, deleteTodo, reorderTodos, completeRecurring, clearError } =
-    useTodos(userId);
+  const { todos, loading, error, addTodo, updateTodo, deleteTodo, reorderTodos, clearError } = useTodos(userId);
 
   const [page, setPage] = useState<Page>('todos');
   const [view, setView] = useState<SmartView>('all');
@@ -60,25 +60,37 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
   // 'en-CA' cho định dạng YYYY-MM-DD.
   const today = new Date().toLocaleDateString('en-CA');
 
+  // Việc lặp hiện 1 lần trong list phẳng: done phản ánh completed_dates ở ngày bắt đầu
+  // (để bộ lọc today/done và checkbox đúng). PlanPage KHÔNG dùng cái này — nó tự expand.
+  const todosForList = useMemo(
+    () =>
+      todos.map((t) =>
+        t.recurrence !== 'none' && t.due_date
+          ? { ...t, is_done: t.completed_dates.includes(t.due_date) }
+          : t,
+      ),
+    [todos],
+  );
+
   const visible = useMemo(() => {
-    let list = applySmartView(todos, view, today);
+    let list = applySmartView(todosForList, view, today);
     list = searchTodos(list, query);
     list = filterByPriority(list, priority);
     list = filterByTag(list, tag);
     return sortByOrder(list);
-  }, [todos, view, query, priority, tag, today]);
+  }, [todosForList, view, query, priority, tag, today]);
 
   // Số đếm cho smart views + nhãn (dùng toàn bộ todos, không phụ thuộc bộ lọc hiện tại).
   const counts = useMemo(
     () =>
       SMART_VIEWS.reduce(
         (acc, v) => {
-          acc[v] = applySmartView(todos, v, today).length;
+          acc[v] = applySmartView(todosForList, v, today).length;
           return acc;
         },
         {} as Record<SmartView, number>,
       ),
-    [todos, today],
+    [todosForList, today],
   );
 
   const tagCounts = useMemo(
@@ -101,15 +113,12 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
     reorderTodos(fullOrder);
   };
 
-  // Việc lặp: tick xong không chỉ set is_done — phải sinh kỳ sau trước
-  // (xem completeRecurring trong useTodos.ts). Việc thường giữ nguyên hành vi cũ.
+  // Việc lặp: done tính theo completed_dates (theo ngày). Việc thường giữ is_done.
   const toggleDone = (id: string, isDone: boolean) => {
-    if (isDone) {
-      const todo = todos.find((t) => t.id === id);
-      if (todo && todo.recurrence !== 'none') {
-        completeRecurring(todo);
-        return;
-      }
+    const todo = todos.find((t) => t.id === id);
+    if (todo && todo.recurrence !== 'none') {
+      recurringToggle(todo, updateTodo);
+      return;
     }
     updateTodo(id, { is_done: isDone });
   };

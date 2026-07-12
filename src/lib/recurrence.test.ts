@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Todo } from '../types/todo';
-import { nextDueDate, buildNextOccurrence } from './recurrence';
+import { nextDueDate } from './recurrence';
 
 describe('nextDueDate', () => {
   it('weekly: cộng 7 ngày', () => {
@@ -35,39 +34,3 @@ describe('nextDueDate', () => {
   });
 });
 
-function makeTodo(over: Partial<Todo>): Todo {
-  return {
-    id: over.id ?? 'x',
-    user_id: 'u1',
-    title: over.title ?? 'Đóng thẻ VPBank',
-    notes: over.notes ?? null,
-    is_done: over.is_done ?? false,
-    due_date: over.due_date === undefined ? '2026-07-15' : over.due_date,
-    priority: over.priority ?? 'medium',
-    tags: over.tags ?? [],
-    recurrence: over.recurrence ?? 'monthly',
-    completed_dates: over.completed_dates ?? [],
-    sort_order: over.sort_order ?? 0,
-    created_at: '2026-07-01T00:00:00Z',
-    updated_at: '2026-07-01T00:00:00Z',
-  };
-}
-
-describe('buildNextOccurrence', () => {
-  it('copy title/notes/priority/tags/recurrence, tính due_date kỳ sau', () => {
-    const todo = makeTodo({ title: 'Đóng thẻ VPBank', tags: ['tài chính'], priority: 'high' });
-    const next = buildNextOccurrence(todo);
-    expect(next).toEqual({
-      title: 'Đóng thẻ VPBank',
-      notes: null,
-      due_date: '2026-08-15',
-      priority: 'high',
-      tags: ['tài chính'],
-      recurrence: 'monthly',
-    });
-  });
-  it('báo lỗi nếu việc lặp không có due_date', () => {
-    const todo = makeTodo({ due_date: null });
-    expect(() => buildNextOccurrence(todo)).toThrow();
-  });
-});
