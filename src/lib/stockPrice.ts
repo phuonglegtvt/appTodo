@@ -25,35 +25,53 @@ export function parseLatestClose(json: unknown): number | null {
   return typeof last === 'number' && Number.isFinite(last) ? last : null;
 }
 
+/** Kết quả lấy giá: giá lấy được + danh sách mã lỗi (kèm lý do) để báo rõ, không nuốt. */
+export interface FetchPricesResult {
+  /** Map ticker (viết hoa) → giá (nghìn đồng). Chỉ chứa mã lấy được giá. */
+  prices: Record<string, number>;
+  /** Các mã lỗi (mạng/CORS/HTTP/nguồn đổi shape) kèm lý do, để hiện cho người dùng. */
+  failed: { ticker: string; message: string }[];
+}
+
+/** Lấy giá đóng cửa mới nhất cho một mã. Ném lỗi rõ ràng khi mạng/CORS/HTTP/shape lỗi. */
+async function fetchOnePrice(sym: string, from: number, to: number): Promise<number | null> {
+  const url = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${sym}&resolution=D&from=${from}&to=${to}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const body: unknown = await res.json();
+  return parseLatestClose(body);
+}
+
 /**
- * Lấy giá hiện tại cho danh sách mã. Trả map ticker (viết hoa) → giá (nghìn đồng).
- * Một request/mã tới dchart, gom song song. Mã không có dữ liệu (no_data) bị bỏ khỏi map.
- * Ném lỗi rõ ràng khi mạng/CORS/HTTP lỗi/nguồn đổi shape (không fallback im lặng).
+ * Lấy giá hiện tại cho danh sách mã. Gom song song, mỗi mã một request tới dchart.
+ * Dùng `Promise.allSettled`: một mã lỗi KHÔNG làm hỏng cả lần cập nhật — các mã còn lại
+ * vẫn được cập nhật, mã lỗi được gom vào `failed` để báo rõ (không nuốt lỗi).
+ * Mã không có dữ liệu (no_data) bị bỏ khỏi `prices` nhưng KHÔNG tính là lỗi.
  */
-export async function fetchPrices(tickers: string[]): Promise<Record<string, number>> {
+export async function fetchPrices(tickers: string[]): Promise<FetchPricesResult> {
   const symbols = tickers.map((t) => t.trim().toUpperCase()).filter(Boolean);
-  if (symbols.length === 0) return {};
+  if (symbols.length === 0) return { prices: {}, failed: [] };
 
   // Cửa sổ ~15 ngày gần nhất để chắc chắn có ít nhất một phiên (trừ cuối tuần/lễ).
   const to = Math.floor(Date.now() / 1000);
   const from = to - 15 * 24 * 60 * 60;
 
-  const entries = await Promise.all(
-    symbols.map(async (sym) => {
-      const url = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${sym}&resolution=D&from=${from}&to=${to}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`Lỗi lấy giá ${sym}: HTTP ${res.status}`);
-      }
-      const body: unknown = await res.json();
-      const close = parseLatestClose(body);
-      return [sym, close] as const;
-    }),
+  const settled = await Promise.allSettled(
+    symbols.map((sym) => fetchOnePrice(sym, from, to)),
   );
 
-  const out: Record<string, number> = {};
-  for (const [sym, close] of entries) {
-    if (close != null) out[sym] = close;
-  }
-  return out;
+  const prices: Record<string, number> = {};
+  const failed: { ticker: string; message: string }[] = [];
+  settled.forEach((result, i) => {
+    const sym = symbols[i];
+    if (result.status === 'fulfilled') {
+      if (result.value != null) prices[sym] = result.value;
+    } else {
+      const reason = result.reason;
+      failed.push({ ticker: sym, message: reason instanceof Error ? reason.message : String(reason) });
+    }
+  });
+  return { prices, failed };
 }

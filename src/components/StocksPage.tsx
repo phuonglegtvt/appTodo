@@ -24,13 +24,18 @@ export function StocksPage({ userId }: Props) {
     if (tickers.length === 0) return;
     setUpdating(true);
     try {
-      const prices = await fetchPrices(tickers);
-      // Cập nhật current_price cho từng mã có giá trả về.
+      const { prices, failed } = await fetchPrices(tickers);
+      // Cập nhật current_price cho từng mã lấy được giá (mã lỗi để nguyên giá cũ).
       await Promise.all(
         stocks
           .filter((s) => prices[s.ticker.toUpperCase()] != null)
           .map((s) => updateStock(s.id, { current_price: prices[s.ticker.toUpperCase()] })),
       );
+      // Có mã lỗi nhưng không hỏng cả lần: báo rõ mã nào lỗi, không nuốt.
+      if (failed.length > 0) {
+        const detail = failed.map((f) => `${f.ticker} (${f.message})`).join(', ');
+        setPriceError(`Không lấy được giá ${failed.length} mã: ${detail}. Có thể nhập giá tay.`);
+      }
     } catch (err) {
       // KHÔNG nuốt lỗi: log + hiện banner; người dùng vẫn nhập tay được.
       console.error('Lỗi cập nhật giá:', err);
