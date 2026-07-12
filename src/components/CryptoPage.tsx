@@ -91,6 +91,16 @@ export function CryptoPage({ userId }: Props) {
             {currencyBtn('USD', 'USD')}
             {currencyBtn('VND', loadingRate ? 'VND…' : 'VND')}
           </div>
+          {/* Tỷ giá được cache ở localStorage nên có thể cũ theo thời gian → cho phép làm mới thủ công khi đang xem VND. */}
+          {currency === 'VND' && (
+            <button
+              onClick={refreshRate}
+              disabled={loadingRate}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-semibold text-text shadow-soft transition hover:shadow-md active:scale-95 disabled:opacity-50 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:shadow-soft-dark"
+            >
+              {loadingRate ? 'Đang lấy tỷ giá…' : 'Làm mới tỷ giá'}
+            </button>
+          )}
           <button
             onClick={handleUpdatePrices}
             disabled={updating || cryptos.length === 0}
