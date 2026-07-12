@@ -3,8 +3,8 @@ import { tagColor } from '../lib/tagColor';
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed';
 
 interface Props {
-  page: 'todos' | 'plan' | 'stocks';
-  onPage: (p: 'todos' | 'plan' | 'stocks') => void;
+  page: 'todos' | 'plan' | 'stocks' | 'crypto';
+  onPage: (p: 'todos' | 'plan' | 'stocks' | 'crypto') => void;
   view: SmartView;
   onView: (v: SmartView) => void;
   counts: Record<SmartView, number>;
@@ -26,6 +26,7 @@ const PAGES: { key: Props['page']; label: string; icon: string }[] = [
   { key: 'todos', label: 'Việc', icon: '✓' },
   { key: 'plan', label: 'Kế hoạch', icon: '◎' },
   { key: 'stocks', label: 'Cổ phiếu', icon: '▤' },
+  { key: 'crypto', label: 'Crypto', icon: '₿' },
 ];
 
 /** Sidebar dashboard (desktop): smart views + nhãn + tài khoản. Chỉ nhận props, không gọi mạng. */

@@ -21,8 +21,9 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { PlanPage } from '../components/PlanPage';
 import { StocksPage } from '../components/StocksPage';
+import { CryptoPage } from '../components/CryptoPage';
 
-type Page = 'todos' | 'plan' | 'stocks';
+type Page = 'todos' | 'plan' | 'stocks' | 'crypto';
 
 type ViewMode = 'list' | 'board';
 
@@ -155,7 +156,9 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        {page === 'stocks' ? (
+        {page === 'crypto' ? (
+          <CryptoPage userId={userId} />
+        ) : page === 'stocks' ? (
           <StocksPage userId={userId} />
         ) : page === 'plan' ? (
           <div className="flex flex-1 flex-col gap-4 overflow-auto p-5 sm:p-6">
