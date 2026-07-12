@@ -42,6 +42,7 @@ export function TodoEditModal({ todo, onSave, onDelete, onClose }: Props) {
       priority,
       due_date: dueDate || null,
       recurrence: dueDate ? recurrence : 'none',
+      ...(dueDate && recurrence !== 'none' ? {} : { completed_dates: [] }),
       tags: tagsText
         .split(',')
         .map((s) => s.trim())
