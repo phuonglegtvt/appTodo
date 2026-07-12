@@ -148,6 +148,12 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     onUpdateTodo(ref ? ref.templateId : id, patch);
   }
 
+  // Kéo-thả tab Ngày chỉ sắp xếp việc THẬT; occurrence ảo (id tổng hợp) không lưu thứ tự
+  // (loại trước khi lên reorder để không phá state — xem parseOccurrenceId).
+  function handleReorderOccurrences(ordered: Todo[]) {
+    onReorderTodos(ordered.filter((t) => parseOccurrenceId(t.id) === null));
+  }
+
   const dayTodos = useMemo(
     () =>
       horizon === 'day'
@@ -206,7 +212,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
           onToggle={handleToggleOccurrence}
           onUpdate={handleUpdateOccurrence}
           onDelete={handleDeleteOccurrence}
-          onReorder={onReorderTodos}
+          onReorder={handleReorderOccurrences}
           defaultShowNotes
         />
       ) : loading ? (
