@@ -30,8 +30,16 @@ export function DayCell({
   const [expanded, setExpanded] = useState(false);
   const { visible, overflow } = visibleTodos(todos, expanded, maxLines);
 
+  function handleDoubleClick(e: React.MouseEvent) {
+    // Bỏ qua khi double-click rơi vào phần tử tương tác (số ngày, việc, checkbox, ✕, ô thêm).
+    if ((e.target as HTMLElement).closest('button, input, form')) return;
+    onOpenFull();
+  }
+
   return (
     <div
+      onDoubleClick={handleDoubleClick}
+      title="Bấm đúp để mở"
       className={`flex min-h-[8rem] flex-col gap-1.5 rounded-lg border bg-surface p-2 dark:bg-surface-dark ${
         isToday ? 'border-primary dark:border-primary-dark' : 'border-border dark:border-border-dark'
       }`}
