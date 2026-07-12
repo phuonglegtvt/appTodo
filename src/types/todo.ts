@@ -12,6 +12,7 @@ export interface Todo {
   priority: Priority;
   tags: string[];
   recurrence: Recurrence;
+  completed_dates: string[]; // ngày (YYYY-MM-DD) đã tick xong của chuỗi lặp
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,6 @@ export interface NewTodo {
 export type TodoUpdate = Partial<
   Pick<
     Todo,
-    'title' | 'notes' | 'is_done' | 'due_date' | 'priority' | 'tags' | 'recurrence' | 'sort_order'
+    'title' | 'notes' | 'is_done' | 'due_date' | 'priority' | 'tags' | 'recurrence' | 'sort_order' | 'completed_dates'
   >
 >;

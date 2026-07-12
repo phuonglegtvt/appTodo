@@ -6,6 +6,7 @@ function todo(partial: Partial<Todo>): Todo {
   return {
     id: 'id', user_id: 'u', title: 't', notes: null, is_done: false,
     due_date: null, priority: 'medium', tags: [], recurrence: 'none',
+    completed_dates: [],
     sort_order: 0, created_at: '', updated_at: '', ...partial,
   };
 }

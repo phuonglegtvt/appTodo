@@ -3,6 +3,12 @@ import { supabase } from '../lib/supabaseClient';
 import { buildNextOccurrence } from '../lib/recurrence';
 import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
 
+/** Chuẩn hóa row từ Supabase: đảm bảo completed_dates luôn là mảng. */
+function toTodo(row: unknown): Todo {
+  const r = row as Todo;
+  return { ...r, completed_dates: r.completed_dates ?? [] };
+}
+
 interface UseTodos {
   todos: Todo[];
   loading: boolean;
@@ -39,7 +45,7 @@ export function useTodos(userId: string): UseTodos {
           console.error('Lỗi tải việc:', error);
           setError('Không tải được danh sách việc: ' + error.message);
         } else {
-          setTodos((data ?? []) as Todo[]);
+          setTodos((data ?? []).map(toTodo));
         }
         setLoading(false);
       });
@@ -58,12 +64,12 @@ export function useTodos(userId: string): UseTodos {
         (payload) => {
           setTodos((prev) => {
             if (payload.eventType === 'INSERT') {
-              const row = payload.new as Todo;
+              const row = toTodo(payload.new);
               if (prev.some((t) => t.id === row.id)) return prev;
               return [...prev, row];
             }
             if (payload.eventType === 'UPDATE') {
-              const row = payload.new as Todo;
+              const row = toTodo(payload.new);
               return prev.map((t) => (t.id === row.id ? row : t));
             }
             if (payload.eventType === 'DELETE') {

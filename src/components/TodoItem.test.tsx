@@ -8,6 +8,7 @@ import type { Todo } from '../types/todo';
 const todo: Todo = {
   id: '1', user_id: 'u', title: 'Mua sữa', notes: null, is_done: false,
   due_date: null, priority: 'medium', tags: [], recurrence: 'none',
+  completed_dates: [],
   sort_order: 0, created_at: '', updated_at: '',
 };
 

@@ -15,6 +15,7 @@ function todo(partial: Partial<Todo>): Todo {
     priority: 'medium',
     tags: [],
     recurrence: 'none',
+    completed_dates: [],
     sort_order: 0,
     created_at: '',
     updated_at: '',

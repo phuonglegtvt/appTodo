@@ -10,6 +10,7 @@ create table if not exists public.todos (
   due_date date,
   priority text not null default 'medium' check (priority in ('high', 'medium', 'low')),
   tags text[] not null default '{}',
+  completed_dates text[] not null default '{}',
   sort_order numeric not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

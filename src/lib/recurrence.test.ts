@@ -46,6 +46,7 @@ function makeTodo(over: Partial<Todo>): Todo {
     priority: over.priority ?? 'medium',
     tags: over.tags ?? [],
     recurrence: over.recurrence ?? 'monthly',
+    completed_dates: over.completed_dates ?? [],
     sort_order: over.sort_order ?? 0,
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
