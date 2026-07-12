@@ -44,7 +44,7 @@ export function Sidebar({
   const { collapsed, toggle } = useSidebarCollapsed();
   return (
     <aside
-      className={`hidden flex-none flex-col gap-1 border-r border-border bg-surface py-[18px] md:flex dark:border-border-dark dark:bg-surface-dark ${
+      className={`hidden flex-none flex-col gap-1 border-r border-border bg-surface py-[18px] transition-[width,padding] duration-200 md:flex dark:border-border-dark dark:bg-surface-dark ${
         collapsed ? 'w-[64px] px-2' : 'w-[258px] px-3.5'
       }`}
     >
@@ -88,6 +88,7 @@ export function Sidebar({
               onClick={() => onPage(p.key)}
               aria-current={active ? 'page' : undefined}
               title={collapsed ? p.label : undefined}
+              aria-label={p.label}
               className={`flex items-center gap-2.5 rounded-[9px] border-l-2 py-2 text-sm transition-colors ${
                 collapsed ? 'justify-center px-0' : 'px-2.5'
               } ${
