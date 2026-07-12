@@ -65,3 +65,44 @@ describe('TodoItem — click để sửa', () => {
     expect(onDelete).toHaveBeenCalledWith('1');
   });
 });
+
+describe('TodoItem — hiện ghi chú sẵn', () => {
+  it('defaultShowNotes → ghi chú hiện ngay không cần click', () => {
+    render(
+      <DndContext>
+        <SortableContext items={['1']}>
+          <ul>
+            <TodoItem
+              todo={{ ...todo, notes: 'Nội dung ghi chú' }}
+              today="2026-07-12"
+              onToggle={vi.fn()}
+              onUpdate={vi.fn()}
+              onDelete={vi.fn()}
+              defaultShowNotes
+            />
+          </ul>
+        </SortableContext>
+      </DndContext>,
+    );
+    expect(screen.getByText('Nội dung ghi chú')).toBeInTheDocument();
+  });
+
+  it('không truyền defaultShowNotes → ghi chú vẫn ẩn', () => {
+    render(
+      <DndContext>
+        <SortableContext items={['1']}>
+          <ul>
+            <TodoItem
+              todo={{ ...todo, notes: 'Nội dung ghi chú' }}
+              today="2026-07-12"
+              onToggle={vi.fn()}
+              onUpdate={vi.fn()}
+              onDelete={vi.fn()}
+            />
+          </ul>
+        </SortableContext>
+      </DndContext>,
+    );
+    expect(screen.queryByText('Nội dung ghi chú')).not.toBeInTheDocument();
+  });
+});

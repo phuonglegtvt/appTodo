@@ -12,6 +12,7 @@ interface Props {
   onToggle: (id: string, done: boolean) => void;
   onUpdate: (id: string, patch: TodoUpdate) => void;
   onDelete: (id: string) => void;
+  defaultShowNotes?: boolean; // tab Ngày bật để hiện ghi chú sẵn
 }
 
 const editInput =
@@ -24,7 +25,7 @@ const PRIORITY_BORDER_COLOR: Record<Priority, string> = {
   low: '#12A150',
 };
 
-export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
+export function TodoItem({ todo, today, onToggle, onUpdate, onDelete, defaultShowNotes }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
   });
@@ -36,7 +37,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
   };
   const overdue = isOverdue(todo, today);
   const [editing, setEditing] = useState(false);
-  const [showNotes, setShowNotes] = useState(false);
+  const [showNotes, setShowNotes] = useState(defaultShowNotes ?? false);
   const [title, setTitle] = useState(todo.title);
   const [priority, setPriority] = useState<Priority>(todo.priority);
   const [dueDate, setDueDate] = useState(todo.due_date ?? '');

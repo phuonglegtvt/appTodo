@@ -162,6 +162,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
           onUpdate={onUpdateTodo}
           onDelete={onDeleteTodo}
           onReorder={onReorderTodos}
+          defaultShowNotes
         />
       ) : loading ? (
         <p className="py-8 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải…</p>

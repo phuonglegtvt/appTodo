@@ -23,10 +23,11 @@ interface Props {
   onUpdate: (id: string, patch: TodoUpdate) => void;
   onDelete: (id: string) => void;
   onReorder: (ordered: Todo[]) => void;
+  defaultShowNotes?: boolean;
 }
 
 /** Danh sách việc kéo-thả sắp xếp được (dnd-kit). Nhận dữ liệu đã lọc sẵn. */
-export function TodoList({ todos, today, onToggle, onUpdate, onDelete, onReorder }: Props) {
+export function TodoList({ todos, today, onToggle, onUpdate, onDelete, onReorder, defaultShowNotes }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -60,6 +61,7 @@ export function TodoList({ todos, today, onToggle, onUpdate, onDelete, onReorder
               onToggle={onToggle}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              defaultShowNotes={defaultShowNotes}
             />
           ))}
         </ul>
