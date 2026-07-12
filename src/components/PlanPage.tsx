@@ -8,7 +8,8 @@ import {
   shiftPeriod,
 } from '../lib/goalFilters';
 import type { Todo, NewTodo, TodoUpdate } from '../types/todo';
-import type { ViewHorizon } from '../types/goal';
+import type { ViewHorizon, Horizon } from '../types/goal';
+import { expandRecurring, parseOccurrenceId, toggleDateInList, occurrenceDatesInRange } from '../lib/recurringOccurrences';
 import { HorizonSwitcher } from './HorizonSwitcher';
 import { MonthGrid } from './MonthGrid';
 import { YearGrid } from './YearGrid';
@@ -108,8 +109,50 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     setPeriodKey(date);
   }
 
+  function handleToggleOccurrence(id: string, done: boolean) {
+    const ref = parseOccurrenceId(id);
+    if (!ref) {
+      onToggleTodo(id, done);
+      return;
+    }
+    const template = todos.find((t) => t.id === ref.templateId);
+    if (!template || !template.due_date) return;
+    if (ref.kind === 'day') {
+      onUpdateTodo(template.id, { completed_dates: toggleDateInList(template.completed_dates, ref.date) });
+      return;
+    }
+    // kind === 'period': bật/tắt cả kỳ.
+    const childHorizon: Horizon = horizon === 'five_year' ? 'year' : 'month';
+    const { start, end } = getPeriodRange(childHorizon, ref.periodKey);
+    const dates = occurrenceDatesInRange(template.due_date, template.recurrence, start, end);
+    const allDone = dates.every((d) => template.completed_dates.includes(d));
+    const set = new Set(template.completed_dates);
+    dates.forEach((d) => (allDone ? set.delete(d) : set.add(d)));
+    onUpdateTodo(template.id, { completed_dates: [...set].sort() });
+  }
+
+  function handleEditOccurrence(todo: Todo) {
+    const ref = parseOccurrenceId(todo.id);
+    const template = ref ? todos.find((t) => t.id === ref.templateId) : todo;
+    if (template) setEditingTodo(template);
+  }
+
+  function handleDeleteOccurrence(id: string) {
+    const ref = parseOccurrenceId(id);
+    onDeleteTodo(ref ? ref.templateId : id);
+  }
+
+  // Sửa inline trong tab Ngày: occurrence ảo → áp cho template (sửa cả chuỗi).
+  function handleUpdateOccurrence(id: string, patch: TodoUpdate) {
+    const ref = parseOccurrenceId(id);
+    onUpdateTodo(ref ? ref.templateId : id, patch);
+  }
+
   const dayTodos = useMemo(
-    () => (horizon === 'day' ? sortByDoneThenOrder(todos.filter((t) => t.due_date === periodKey)) : []),
+    () =>
+      horizon === 'day'
+        ? sortByDoneThenOrder(expandRecurring(todos, periodKey, periodKey).filter((t) => t.due_date === periodKey))
+        : [],
     [todos, horizon, periodKey],
   );
 
@@ -125,6 +168,8 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
 
   const dayGrid = useMemo((): { leadingBlanks: number; cells: DayCellData[] } | null => {
     if (horizon !== 'month' && horizon !== 'week') return null;
+    const { start, end } = getPeriodRange(horizon, periodKey);
+    const expanded = expandRecurring(todos, start, end);
     const dates = getChildPeriods(horizon, periodKey);
     let leadingBlanks = 0;
     if (horizon === 'month') {
@@ -135,7 +180,7 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
     const cells = dates.map((date) => ({
       date,
       dayNumber: Number(date.slice(8, 10)),
-      todos: sortByDoneThenOrder(todos.filter((t) => t.due_date === date)),
+      todos: sortByDoneThenOrder(expanded.filter((t) => t.due_date === date)),
     }));
     return { leadingBlanks, cells };
   }, [horizon, periodKey, todos]);
@@ -158,9 +203,9 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
         <TodoList
           todos={dayTodos}
           today={today}
-          onToggle={onToggleTodo}
-          onUpdate={onUpdateTodo}
-          onDelete={onDeleteTodo}
+          onToggle={handleToggleOccurrence}
+          onUpdate={handleUpdateOccurrence}
+          onDelete={handleDeleteOccurrence}
           onReorder={onReorderTodos}
           defaultShowNotes
         />
@@ -182,27 +227,27 @@ export function PlanPage({ userId, todos, today, onAddTodo, onToggleTodo, onUpda
               today={today}
               maxLines={3}
               onAdd={handleAddOnDay}
-              onToggle={onToggleTodo}
-              onDelete={onDeleteTodo}
-              onEdit={setEditingTodo}
+              onToggle={handleToggleOccurrence}
+              onDelete={handleDeleteOccurrence}
+              onEdit={handleEditOccurrence}
               onOpenFull={handleOpenFull}
             />
           ) : monthCells ? (
             <MonthGrid
               cells={monthCells}
               onSelect={handleSelectCell}
-              onToggleTodo={onToggleTodo}
-              onDeleteTodo={onDeleteTodo}
-              onEditTodo={setEditingTodo}
+              onToggleTodo={handleToggleOccurrence}
+              onDeleteTodo={handleDeleteOccurrence}
+              onEditTodo={handleEditOccurrence}
               onAddTodo={handleAddOnMonth}
             />
           ) : yearCells ? (
             <YearGrid
               cells={yearCells}
               onSelect={handleSelectCell}
-              onToggleTodo={onToggleTodo}
-              onDeleteTodo={onDeleteTodo}
-              onEditTodo={setEditingTodo}
+              onToggleTodo={handleToggleOccurrence}
+              onDeleteTodo={handleDeleteOccurrence}
+              onEditTodo={handleEditOccurrence}
             />
           ) : null}
         </div>
