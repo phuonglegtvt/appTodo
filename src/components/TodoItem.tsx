@@ -103,6 +103,7 @@ export function TodoItem({ todo, today, onToggle, onUpdate, onDelete }: Props) {
               title={!dueDate ? 'Chọn hạn chót trước để bật lặp lại' : undefined}
             >
               <option value="none">Không lặp</option>
+              <option value="daily">Hàng ngày</option>
               <option value="weekly">Hàng tuần</option>
               <option value="monthly">Hàng tháng</option>
               <option value="yearly">Hàng năm</option>
