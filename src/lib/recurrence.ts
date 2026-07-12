@@ -26,14 +26,23 @@ function addDays(year: number, month: number, day: number, days: number): string
 /**
  * Cộng thêm `months` tháng; nếu ngày gốc không tồn tại ở tháng đích (VD 31/1
  * cộng 1 tháng → tháng 2 không có ngày 31) thì dồn về ngày cuối tháng đó.
+ * Nếu hiện tại là ngày cuối tháng hiện, cố gắng dùng ngày cuối tháng đích.
  */
 function addMonths(year: number, month: number, day: number, months: number): string {
   const totalMonths = month - 1 + months;
   const targetYear = year + Math.floor(totalMonths / 12);
   const targetMonth = ((totalMonths % 12) + 12) % 12;
+
+  // Check if current day is the last day of the current month
+  const lastDayOfCurrentMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const isLastDayOfCurrentMonth = day === lastDayOfCurrentMonth;
+
   const lastDayOfTargetMonth = new Date(Date.UTC(targetYear, targetMonth + 1, 0)).getUTCDate();
-  const clampedDay = Math.min(day, lastDayOfTargetMonth);
-  return toDateString(new Date(Date.UTC(targetYear, targetMonth, clampedDay)));
+
+  // If we're at the last day of the current month, use the last day of the target month.
+  // Otherwise, use the provided day, clamped to the last day of target month.
+  const targetDay = isLastDayOfCurrentMonth ? lastDayOfTargetMonth : Math.min(day, lastDayOfTargetMonth);
+  return toDateString(new Date(Date.UTC(targetYear, targetMonth, targetDay)));
 }
 
 function toDateString(date: Date): string {
