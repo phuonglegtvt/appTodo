@@ -46,6 +46,12 @@ describe('occurrenceDatesInRange', () => {
     ]);
   });
 
+  it('monthly ngày 30 qua tháng 2 KHÔNG trôi thành 31', () => {
+    expect(occurrenceDatesInRange('2026-01-30', 'monthly', '2026-01-01', '2026-04-30')).toEqual([
+      '2026-01-30', '2026-02-28', '2026-03-30', '2026-04-30',
+    ]);
+  });
+
   it('none: trả startDate nếu trong khoảng, ngược lại rỗng', () => {
     expect(occurrenceDatesInRange('2026-07-12', 'none', '2026-07-01', '2026-07-31')).toEqual(['2026-07-12']);
     expect(occurrenceDatesInRange('2026-06-12', 'none', '2026-07-01', '2026-07-31')).toEqual([]);

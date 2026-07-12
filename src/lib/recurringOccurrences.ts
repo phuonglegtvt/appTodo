@@ -1,5 +1,5 @@
 import type { Recurrence, Todo } from '../types/todo';
-import { nextDueDate } from './recurrence';
+import { nthDueDate } from './recurrence';
 
 export type OccurrenceRef =
   | { templateId: string; kind: 'day'; date: string }
@@ -34,11 +34,10 @@ export function occurrenceDatesInRange(
     return startDate >= rangeStart && startDate <= rangeEnd ? [startDate] : [];
   }
   const out: string[] = [];
-  let d = startDate;
-  while (d < rangeStart) d = nextDueDate(d, recurrence); // bỏ kỳ trước khoảng
-  while (d <= rangeEnd) {
-    out.push(d);
-    d = nextDueDate(d, recurrence);
+  for (let k = 0; ; k++) {
+    const d = nthDueDate(startDate, recurrence, k); // strictly tăng theo k → vòng lặp dừng
+    if (d > rangeEnd) break;
+    if (d >= rangeStart) out.push(d);
   }
   return out;
 }
