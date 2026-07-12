@@ -1,6 +1,6 @@
 export type Priority = 'high' | 'medium' | 'low';
 export type SmartView = 'today' | 'upcoming' | 'all' | 'done';
-export type Recurrence = 'none' | 'weekly' | 'monthly' | 'yearly';
+export type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Todo {
   id: string;
