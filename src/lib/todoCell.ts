@@ -2,6 +2,7 @@ import type { Todo } from '../types/todo';
 import { getChildPeriods, getPeriodRange } from './goalFilters';
 import type { Horizon } from '../types/goal';
 import { sortByDoneThenOrder } from './todoFilters';
+import { occurrenceDatesInRange } from './recurringOccurrences';
 
 export interface TodoCellData {
   key: string; // 'YYYY-MM' (ô tháng) | 'YYYY' (ô năm)
@@ -11,11 +12,26 @@ export interface TodoCellData {
   totalCount: number;
 }
 
-/** Dựng 1 ô: gom todo có due_date nằm trong kỳ [start,end] của kỳ con. */
+/** Dựng 1 ô gom: việc thường lọc theo kỳ; việc lặp gộp thành 1 đại diện/kỳ. */
 function cellFrom(todos: Todo[], childHorizon: Horizon, key: string, label: string): TodoCellData {
   const { start, end } = getPeriodRange(childHorizon, key);
-  const inRange = todos.filter((t) => t.due_date !== null && t.due_date >= start && t.due_date <= end);
-  const sorted = sortByDoneThenOrder(inRange);
+  const items: Todo[] = [];
+  for (const t of todos) {
+    if (t.recurrence !== 'none' && t.due_date) {
+      const dates = occurrenceDatesInRange(t.due_date, t.recurrence, start, end);
+      if (dates.length > 0) {
+        items.push({
+          ...t,
+          id: `${t.id}::P${key}`,
+          due_date: dates[0],
+          is_done: dates.every((d) => t.completed_dates.includes(d)),
+        });
+      }
+    } else if (t.due_date !== null && t.due_date >= start && t.due_date <= end) {
+      items.push(t);
+    }
+  }
+  const sorted = sortByDoneThenOrder(items);
   return {
     key,
     label,

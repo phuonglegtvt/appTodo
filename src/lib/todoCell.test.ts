@@ -45,6 +45,24 @@ describe('buildMonthCells', () => {
     expect(march.doneCount).toBe(1);
     expect(march.todos.map((t) => t.id)).toEqual(['b', 'a']);
   });
+
+  it('việc lặp daily hiện 1 đại diện/kỳ trong ô tháng, id có ::P', () => {
+    const daily = todo({ id: 'd1', due_date: '2026-01-05', recurrence: 'daily', completed_dates: [] });
+    const cells = buildMonthCells([daily], '2026');
+    const march = cells.find((c) => c.key === '2026-03')!;
+    expect(march.todos).toHaveLength(1);
+    expect(march.todos[0].id).toBe('d1::P2026-03');
+    expect(march.totalCount).toBe(1);
+  });
+
+  it('đại diện kỳ is_done = mọi occurrence trong kỳ đã xong', () => {
+    // Tháng 2/2026 có 28 ngày; đánh dấu xong đủ 28 ngày.
+    const all = Array.from({ length: 28 }, (_, i) => `2026-02-${String(i + 1).padStart(2, '0')}`);
+    const daily = todo({ id: 'd1', due_date: '2026-01-05', recurrence: 'daily', completed_dates: all });
+    const cells = buildMonthCells([daily], '2026');
+    const feb = cells.find((c) => c.key === '2026-02')!;
+    expect(feb.todos[0].is_done).toBe(true);
+  });
 });
 
 describe('buildYearCells', () => {
