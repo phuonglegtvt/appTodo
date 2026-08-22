@@ -26,9 +26,10 @@ import { buildActionPlan } from './actionPlan';
 import { allocate } from './allocate';
 import { computeDrawdown } from './drawdown';
 import { DEFAULT_CRASH_LEVELS } from './crashReserve';
+import { roundDownTo, sumVnd } from './money';
 import { ASSET_CLASSES, DEFAULT_CONFIG } from './types';
 import type {
-  ActionPlan, AllocationFormula, AssetClass, CrashEventRecord, PlanStatus,
+  ActionPlan, AllocationFormula, AssetClass, CrashEventRecord, EngineConfig, PlanStatus,
   PortfolioSnapshot, StockGroupVi, TargetBand, WatchlistItem,
 } from './types';
 
@@ -439,6 +440,285 @@ describe('BẤT BIẾN của allocate — luồng tiền mới (addsToTotal = tr
   });
 });
 
+describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (không chỉ pin tổng)', () => {
+  // LỖ THẬT mà bất biến "Σ phân bổ + chưa phân bổ === pool" không thấy:
+  // allocate.ts:159 ĐỊNH NGHĨA unallocatedVnd = poolVnd − Σ allocations, nên
+  // bất biến tổng là ĐỒNG NHẤT THỨC theo cách viết code — nó xanh ngay cả khi
+  // phần dư rơi NHẦM nhóm. Property test này thêm một MÔ HÌNH THAM CHIẾU
+  // (oracle) mirror lại — không suy diễn — đúng công thức của allocate.ts, để
+  // biết CHÍNH XÁC nhóm nào phải nhận bao nhiêu, rồi so khớp TUYỆT ĐỐI với
+  // kết quả thật. Sai đích đến (dù tổng vẫn đúng) sẽ làm lệch MỘT giá trị cụ
+  // thể trong `model.amounts`, không chỉ lệch một bộ đếm.
+  //
+  // QUY TẮC TỰ DẪN TỪ CODE (không chép mô tả work order làm chân lý):
+  //
+  //   · allocate.ts:69-81 (`splitByPriority`, chỉ chạy khi formula =
+  //     PRIORITY_WATERFALL): nếu pool > tổng khoảng thiếu của các ứng viên,
+  //     phần dư TRƯỚC LÀM TRÒN dồn hết vào `order[0]` — ứng viên có
+  //     `config.classPriority` CAO NHẤT trong các ỨNG VIÊN (không phải cao
+  //     nhất toàn cục 4 nhóm — CASH có thể bị loại bởi
+  //     `cashEligibleForNewCapital`, nhóm có gap ≤ 0 không phải ứng viên).
+  //
+  //   · allocate.ts:141-151 (SAU LÀM TRÒN — DÙNG CHUNG CHO CẢ HAI CÔNG THỨC):
+  //     ⚠️ ĐIỂM WORK ORDER MÔ TẢ KHÁC VỚI CODE, đã tự kiểm và báo lại ở
+  //     task-13-report.md: work order gắn nhánh này riêng cho
+  //     PROPORTIONAL_GAP, nhưng đọc code thì bước này nằm SAU chỗ chọn công
+  //     thức (dòng 137-139) và chạy VÔ ĐIỀU KIỆN trên `rounded` — nên
+  //     PRIORITY_WATERFALL cũng đi qua bước này y hệt, có thể CỘNG DỒN với
+  //     phần dư của chính splitByPriority trên cùng một ca. Nếu làm tròn
+  //     xuống làm mất một phần pool (`residualVnd > 0` sau làm tròn), phần
+  //     mất đó dồn vào ứng viên có `gap` GỐC (trước làm tròn) LỚN NHẤT — hoà
+  //     thì ứng viên đứng trước trong ASSET_CLASSES thắng (do `reduce` dùng
+  //     `>` chứ không `>=`).
+  //
+  // Vì hai đường có thể cộng dồn trên cùng một ca, một bất đẳng thức đơn giản
+  // kiểu "order[0] phải lớn hơn các ứng viên khác" sẽ báo OAN khi phần dư sau
+  // làm tròn rơi vào một ứng viên khác order[0]. Model dưới đây tính đủ CẢ
+  // HAI bước để tránh báo oan, đồng thời vẫn pin được đích đến TUYỆT ĐỐI.
+
+  /**
+   * Mirror công thức allocate.ts, chỉ cho luồng addsToTotal = true (tiền
+   * mới). Nhận `classValues`/`config` trực tiếp (không nhận cả
+   * `PortfolioSnapshot`) để dùng lại được cho cả CORPUS thật lẫn các ca dựng
+   * tay ở nhánh mở rộng bộ sinh bên dưới.
+   */
+  function expectedAllocation(
+    classValues: Record<AssetClass, number>,
+    config: EngineConfig,
+    poolVnd: number,
+  ): {
+    amounts: Record<AssetClass, number>;
+    waterfallOrder: AssetClass[] | null;
+    waterfallRemaining: number;
+    postRoundingResidualVnd: number;
+  } {
+    const amounts: Record<AssetClass, number> = {
+      STOCKS: 0, CRYPTO: 0, GOLD: 0, CASH: 0,
+    };
+    const total = sumVnd(ASSET_CLASSES.map((c) => classValues[c]));
+    const newTotal = total + poolVnd;
+    const gaps = {} as Record<AssetClass, number>;
+    for (const c of ASSET_CLASSES) {
+      gaps[c] = newTotal * (TARGETS[c].targetPct / 100) - classValues[c];
+    }
+
+    let candidates = ASSET_CLASSES.filter((c) => gaps[c] > 0);
+    if (!config.cashEligibleForNewCapital) candidates = candidates.filter((c) => c !== 'CASH');
+
+    if (poolVnd === 0 || candidates.length === 0) {
+      return {
+        amounts, waterfallOrder: null, waterfallRemaining: 0, postRoundingResidualVnd: 0,
+      };
+    }
+
+    const raw = {} as Record<AssetClass, number>;
+    let waterfallOrder: AssetClass[] | null = null;
+    let waterfallRemaining = 0;
+
+    if (config.formula === 'PRIORITY_WATERFALL') {
+      const order = [...candidates].sort(
+        (a, b) => config.classPriority[b] - config.classPriority[a],
+      );
+      waterfallOrder = order;
+      let remaining = poolVnd;
+      for (const c of order) {
+        const take = Math.min(remaining, gaps[c]);
+        raw[c] = take;
+        remaining -= take;
+        if (remaining <= 0) break;
+      }
+      waterfallRemaining = remaining;
+      if (remaining > 0) raw[order[0]] = (raw[order[0]] ?? 0) + remaining;
+    } else {
+      const totalGap = sumVnd(candidates.map((c) => gaps[c]));
+      for (const c of candidates) raw[c] = poolVnd * (gaps[c] / totalGap);
+    }
+
+    const rounded = {} as Record<AssetClass, number>;
+    for (const c of candidates) rounded[c] = roundDownTo(raw[c] ?? 0, config.roundingStepVnd);
+    const postRoundingResidualVnd = poolVnd - sumVnd(candidates.map((c) => rounded[c] ?? 0));
+    if (postRoundingResidualVnd > 0) {
+      const largestGap = candidates.reduce((a, b) => (gaps[b] > gaps[a] ? b : a));
+      rounded[largestGap] = (rounded[largestGap] ?? 0) + postRoundingResidualVnd;
+    }
+    for (const c of candidates) amounts[c] = rounded[c] ?? 0;
+
+    return {
+      amounts, waterfallOrder, waterfallRemaining, postRoundingResidualVnd,
+    };
+  }
+
+  it('mô hình tham chiếu khớp TUYỆT ĐỐI với allocate() ở TỪNG NHÓM — pin đích đến, không chỉ pin tổng', () => {
+    let casesChecked = 0;
+    let waterfallResidualCases = 0;
+    const postRoundingResidualByFormula: Record<AllocationFormula, number> = {
+      PROPORTIONAL_GAP: 0, PRIORITY_WATERFALL: 0,
+    };
+
+    CORPUS.forEach((s, index) => {
+      const pool = s.monthlyContributionVnd;
+      const res = allocate({
+        classValues: s.classValues, targets: TARGETS, poolVnd: pool,
+        addsToTotal: true, config: s.config,
+      });
+      const model = expectedAllocation(s.classValues, s.config, pool);
+
+      const actualAmounts: Record<AssetClass, number> = {
+        STOCKS: 0, CRYPTO: 0, GOLD: 0, CASH: 0,
+      };
+      for (const a of res.allocations) actualAmounts[a.assetClass] = a.amountVnd;
+
+      for (const c of ASSET_CLASSES) {
+        expectInvariant(
+          actualAmounts[c] === model.amounts[c],
+          () => `Nhóm ${c} nhận ${actualAmounts[c]} đ, mô hình tham chiếu kỳ vọng `
+            + `${model.amounts[c]} đ — ĐÍCH ĐẾN phần dư SAI (tổng có thể vẫn đúng). `
+            + describeCase(CORPUS_SEED, index, {
+              pool, modelAmounts: model.amounts, actualAmounts,
+            }),
+        );
+      }
+
+      if (model.waterfallOrder !== null && model.waterfallRemaining > 0) {
+        waterfallResidualCases += 1;
+      }
+      if (model.postRoundingResidualVnd > 0) {
+        postRoundingResidualByFormula[s.config.formula] += 1;
+      }
+      casesChecked += 1;
+    });
+
+    expect(casesChecked, 'không có nhánh bỏ qua nào — phải chạy đủ 1.000 ca').toBe(CASE_COUNT);
+    // Ngưỡng đo SAU khi chạy thật (đo được: waterfall=12, PROPORTIONAL_GAP
+    // sau làm tròn=423, PRIORITY_WATERFALL sau làm tròn=104), đúng kỷ luật
+    // addendum §3 — chi tiết ở task-13-report.md, mục Fix round 1.
+    //
+    // waterfallResidualCases đo được CHỈ 12/1.000 trên CORPUS thật —
+    // monthlyContributionVnd bị bộ sinh chặn tối đa 5tr, quá nhỏ so với gap
+    // hàng chục/hàng trăm triệu của danh mục ngẫu nhiên rộng. Đây là nhánh
+    // HIẾM THẬT trong vận hành bình thường, không hạ ngưỡng cho nó — giữ một
+    // sàn thấp chỉ để phát hiện nhánh CHẾT HẲN (về 0), còn độ bao phủ THẬT của
+    // nhánh này chuyển sang bộ sinh MỞ RỘNG riêng ngay dưới đây.
+    expect(
+      waterfallResidualCases,
+      'nhánh dồn phần dư TRƯỚC làm tròn của splitByPriority (allocate.ts:81) đã CHẾT trên CORPUS thật',
+    ).toBeGreaterThanOrEqual(5);
+    expect(
+      postRoundingResidualByFormula.PROPORTIONAL_GAP,
+      'phần dư SAU làm tròn của PROPORTIONAL_GAP (allocate.ts:149) gần như không được chạy',
+    ).toBeGreaterThanOrEqual(200);
+    expect(
+      postRoundingResidualByFormula.PRIORITY_WATERFALL,
+      'phần dư SAU làm tròn của PRIORITY_WATERFALL (allocate.ts:149) gần như không được chạy',
+    ).toBeGreaterThanOrEqual(50);
+  });
+
+  it('MỞ RỘNG BỘ SINH cho nhánh hiếm: pool vượt tổng khoảng thiếu của ứng viên, CASH bị loại bởi cấu hình', () => {
+    // Lý do cần bộ sinh riêng (đúng kỷ luật addendum §3 — KHÔNG hạ ngưỡng cho
+    // nhánh hiếm, MỞ RỘNG bộ sinh): trên CORPUS chính nhánh dồn phần dư TRƯỚC
+    // làm tròn của splitByPriority chỉ chạm 12/1.000 ca.
+    //
+    // Dựng tay theo kiểu suy ngược: chọn TRƯỚC gap mong muốn cho từng nhóm
+    // (STOCKS/CRYPTO/GOLD), rồi suy ra classValues từ
+    // targetAmt_c = newTotal × targetPct_c / 100 (newTotal luôn là bội số của
+    // 20.000.000 để targetAmt của cả bốn nhóm ra SỐ NGUYÊN đúng với target
+    // 50/20/15/15% — đã kiểm bằng node, không còn sai số dấu phẩy động).
+    // `cashEligibleForNewCapital: false` LOẠI CASH khỏi ứng viên bất kể gap
+    // của nó dương hay âm; pool được chọn lớn hơn hẳn tổng gap của các ứng
+    // viên còn lại (tối đa 3 × 2.000.000 = 6.000.000) nên phần dư gần như
+    // luôn dương — đây CHÍNH LÀ cơ chế thật khiến allocate.ts:81 chạy trong
+    // vận hành thực (người dùng tắt "cho phép rót thêm vào Cash").
+    const r = createRandom(20260827);
+    let checked = 0;
+    let residualTriggered = 0;
+    // ≥ 2 ứng viên: chỉ ở ca này đột biến order[0] → order[cuối] mới THỰC SỰ
+    // đổi kết quả (1 ứng viên thì order[0] === order[cuối], đột biến vô hại).
+    let multiCandidateTriggered = 0;
+
+    for (let index = 0; index < 300; index++) {
+      const newTotal = r.int(60, 300) * 20_000_000;
+      const pool = r.int(5, 60) * 1_000_000;
+      const targetAmt: Record<AssetClass, number> = {
+        STOCKS: newTotal * 0.5, CRYPTO: newTotal * 0.2, GOLD: newTotal * 0.15, CASH: newTotal * 0.15,
+      };
+      const desiredGap: Record<'STOCKS' | 'CRYPTO' | 'GOLD', number> = {
+        STOCKS: 0, CRYPTO: 0, GOLD: 0,
+      };
+      let anyCandidate = false;
+      for (const c of ['STOCKS', 'CRYPTO', 'GOLD'] as const) {
+        if (r.next() < 0.65) {
+          desiredGap[c] = r.int(1, 20) * 100_000;   // ứng viên: còn thiếu
+          anyCandidate = true;
+        } else {
+          desiredGap[c] = -r.int(0, 20) * 100_000;  // không phải ứng viên: đã đủ/dư
+        }
+      }
+      if (!anyCandidate) desiredGap.STOCKS = r.int(1, 20) * 100_000; // ép có ít nhất 1 ứng viên
+
+      const total0 = newTotal - pool;
+      const classValues: Record<AssetClass, number> = {
+        STOCKS: targetAmt.STOCKS - desiredGap.STOCKS,
+        CRYPTO: targetAmt.CRYPTO - desiredGap.CRYPTO,
+        GOLD: targetAmt.GOLD - desiredGap.GOLD,
+        CASH: 0,
+      };
+      // CASH nhận đúng phần còn lại để tổng bốn nhóm khớp total0 — CASH
+      // KHÔNG cần tự nó thiếu, nó bị loại bởi cấu hình bất kể gap dương/âm.
+      classValues.CASH = total0 - (classValues.STOCKS + classValues.CRYPTO + classValues.GOLD);
+
+      const config: EngineConfig = {
+        ...DEFAULT_CONFIG,
+        formula: 'PRIORITY_WATERFALL',
+        roundingStepVnd: r.pick(ROUNDING_STEPS),
+        cashEligibleForNewCapital: false,
+      };
+
+      const res = allocate({
+        classValues, targets: TARGETS, poolVnd: pool, addsToTotal: true, config,
+      });
+      const model = expectedAllocation(classValues, config, pool);
+
+      const actualAmounts: Record<AssetClass, number> = {
+        STOCKS: 0, CRYPTO: 0, GOLD: 0, CASH: 0,
+      };
+      for (const a of res.allocations) actualAmounts[a.assetClass] = a.amountVnd;
+
+      for (const c of ASSET_CLASSES) {
+        expectInvariant(
+          actualAmounts[c] === model.amounts[c],
+          () => `Nhóm ${c} nhận ${actualAmounts[c]} đ, mô hình tham chiếu kỳ vọng `
+            + `${model.amounts[c]} đ — ĐÍCH ĐẾN phần dư SAI. `
+            + describeCase(20260827, index, {
+              classValues, pool, config, modelAmounts: model.amounts, actualAmounts,
+            }),
+        );
+      }
+
+      if (model.waterfallOrder !== null && model.waterfallRemaining > 0) {
+        residualTriggered += 1;
+        if (model.waterfallOrder.length >= 2) multiCandidateTriggered += 1;
+      }
+      checked += 1;
+    }
+
+    expect(checked).toBe(300);
+    // Ngưỡng đo SAU khi chạy thật (đo được: residualTriggered = 300/300,
+    // multiCandidateTriggered = 221/300) — chi tiết ở task-13-report.md.
+    // residualTriggered gần như luôn đúng theo cách dựng (pool tối đa 6tr so
+    // với tổng gap ứng viên, pool tối thiểu 5tr) nhưng KHÔNG tuyệt đối về mặt
+    // toán học (biên dưới pool và biên trên tổng gap có thể chạm nhau ở ca
+    // xấu nhất) — nên dùng ngưỡng cao (250) thay vì `toBe(300)` cứng.
+    expect(
+      residualTriggered,
+      'bộ sinh mở rộng vẫn không tạo đủ ca chạm nhánh dồn phần dư trước làm tròn',
+    ).toBeGreaterThanOrEqual(250);
+    expect(
+      multiCandidateTriggered,
+      'quá ít ca có ≥ 2 ứng viên — đột biến order[0] → order[cuối] sẽ không đổi được kết quả ở đa số ca',
+    ).toBeGreaterThanOrEqual(100);
+  });
+});
+
 describe('BẤT BIẾN: hai nhánh NÉM LỖI của allocate', () => {
   it('pool âm luôn bị từ chối — không bao giờ lặng lẽ quy về 0', () => {
     const r = createRandom(20260824);
@@ -452,7 +732,10 @@ describe('BẤT BIẾN: hai nhánh NÉM LỖI của allocate', () => {
           classValues: s.classValues, targets: TARGETS, poolVnd: pool, addsToTotal,
           config: s.config,
         }),
-        describeCase(20260824, index, { pool, addsToTotal }),
+        // `s` lấy từ CORPUS[index] (seed CORPUS_SEED), KHÔNG phải từ seed
+        // 20260824 của `r` ở trên — `r` chỉ sinh pool/addsToTotal. In seed
+        // 20260824 ở đây là in SAI, chỉ người debug đi tái lập nhầm chỗ.
+        describeCase(CORPUS_SEED, index, { pool, addsToTotal, snapshot: s }),
       ).toThrow(/không được âm/);
       checked += 1;
     }
@@ -476,7 +759,9 @@ describe('BẤT BIẾN: hai nhánh NÉM LỖI của allocate', () => {
       });
 
       if (pool > cash) {
-        expect(call, describeCase(20260825, index, { pool, cash })).toThrow(/lớn hơn số dư Cash/);
+        // Seed 20260825 ở đây ĐÚNG (s = randomSnapshot(r) cùng r seed này),
+        // nhưng payload thiếu snapshot đầy đủ — bổ sung để tái lập được.
+        expect(call, describeCase(20260825, index, { pool, cash, snapshot: s })).toThrow(/lớn hơn số dư Cash/);
         thrown += 1;
       } else {
         const res = call();
