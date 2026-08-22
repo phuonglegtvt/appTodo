@@ -166,6 +166,7 @@ export interface DrawdownStats {
 }
 
 export type AlertCode =
+  | 'BAND_WATCH'          // trong band nhưng lệch đáng kể — §21 gọi là REBALANCE WARNING
   | 'OUT_OF_BAND'
   | 'REBALANCE_REQUIRED'
   | 'STOCK_DRAWDOWN'
