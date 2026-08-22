@@ -13,6 +13,8 @@
 // engine tính, không sửa engine cho vừa số viết tay.
 //
 // BẤT BIẾN: sum(allocations) + unallocatedVnd === poolVnd, LUÔN LUÔN.
+// Giữ được VÔ ĐIỀU KIỆN vì pool âm bị NÉM LỖI ngay đầu hàm chứ không bị lặng lẽ
+// quy về 0 — quy về 0 thì 0 + 0 ≠ pool âm, bất biến vỡ và tiền biến mất im lặng.
 
 import { ASSET_CLASSES } from './types';
 import { roundDownTo, sumVnd } from './money';
@@ -67,15 +69,40 @@ function splitByPriority(
 export function allocate(input: AllocateInput): AllocationResult {
   const { classValues, targets, poolVnd, addsToTotal, config } = input;
 
-  if (poolVnd <= 0) return { allocations: [], unallocatedVnd: 0 };
+  // Pool âm là DỮ LIỆU SAI, không phải "không có gì để phân bổ". Nuốt im lặng
+  // (coi như 0) sẽ phá bất biến tổng và làm tiền biến mất — nên ném lỗi.
+  if (poolVnd < 0) {
+    throw new Error(
+      `Số tiền cần phân bổ không được âm: nhận được ${poolVnd} VND. `
+      + 'Kiểm tra lại tiền mới hàng tháng / cổ tức trong dữ liệu đầu vào.',
+    );
+  }
+  // 0 là hợp lệ: không có gì để phân bổ, cũng không có gì dư.
+  if (poolVnd === 0) return { allocations: [], unallocatedVnd: 0 };
 
   const total = sumVnd(ASSET_CLASSES.map((c) => classValues[c]));
   const newTotal = total + (addsToTotal ? poolVnd : 0);
 
-  // Z được nộp vào ví TRƯỚC khi mua ⇒ giá trị CASH trước phân bổ đã gồm Z.
-  // Không làm bước này thì Cash bị coi là thiếu hơn thực tế.
+  // QUY TẮC: pool LUÔN nằm NGOÀI baseline dùng để tính khoảng thiếu.
+  // Lý do: phân bổ cho CASH cũng được CỘNG vào CASH y như mọi class khác, nên
+  // baseline của CASH phải là "CASH chưa có pool". Cộng pool vào baseline là đếm
+  // pool hai lần ⇒ CASH bị bỏ đói (addsToTotal = true), hoặc bị coi là đã đủ nên
+  // tiền đáng để lại trong ví bị giải ngân hết (addsToTotal = false).
+  //   addsToTotal = true  (§4 tiền mới): pool còn NGOÀI classValues ⇒ giữ nguyên.
+  //   addsToTotal = false (§5 cổ tức)  : pool ĐÃ nằm trong CASH     ⇒ phải trừ ra.
+  // `addsToTotal` chỉ quyết định newTotal có tăng hay không.
   const preValues = { ...classValues };
-  if (addsToTotal) preValues.CASH += poolVnd;
+  if (!addsToTotal) {
+    // Cổ tức không thể lớn hơn toàn bộ tiền đang có trong ví — đầu vào tự mâu thuẫn.
+    if (poolVnd > classValues.CASH) {
+      throw new Error(
+        `Cổ tức ${poolVnd} VND lớn hơn số dư Cash ${classValues.CASH} VND. `
+        + 'Với addsToTotal = false, cổ tức phải ĐÃ nằm trong Cash nên không thể '
+        + 'lớn hơn Cash.',
+      );
+    }
+    preValues.CASH -= poolVnd;
+  }
 
   const gaps = {} as Record<AssetClass, number>;
   for (const c of ASSET_CLASSES) {

@@ -71,6 +71,8 @@ export interface Allocation {
  * BẤT BIẾN: sum(allocations.amountVnd) + unallocatedVnd === poolVnd, LUÔN LUÔN.
  * Khi mọi class đều thừa (không có ứng viên), toàn bộ pool rơi vào unallocatedVnd
  * — tiền không được phép biến mất.
+ * "LUÔN LUÔN" là vô điều kiện vì pool âm bị NÉM LỖI thay vì trả về kết quả: mọi
+ * lần TRẢ VỀ một AllocationResult đều thoả bất biến, không có ngoại lệ nào.
  */
 export interface AllocationResult {
   allocations: Allocation[];

@@ -562,14 +562,21 @@ Cách giải: đọc §21 làm chuẩn. §21 hiện *"REBALANCE WARNING: Crypto 
 ```
 newTotal      = total + (addsToTotal ? pool : 0)
 targetValue_c = newTotal × targetPct_c
-currentValue_CASH += (addsToTotal ? pool : 0)     -- Z nộp vào ví trước khi mua
-gap_c         = targetValue_c − currentValue_c
+baseline_c    = currentValue_c                                 -- mọi class trừ CASH
+baseline_CASH = currentValue_CASH − (addsToTotal ? 0 : pool)   -- pool LUÔN ngoài baseline
+gap_c         = targetValue_c − baseline_c
 
 ứng viên      = { c : gap_c > 0 }
                 (loại CASH nếu cfg.cashEligibleForNewCapital = false)
 phânBổ_c      = pool × gap_c / Σ gap(ứng viên)
 → làm tròn xuống bội số roundingStepVnd; phần dư dồn vào class có gap lớn nhất
 ```
+
+**`pool` LUÔN nằm NGOÀI baseline tính `gap`.** Vì phần phân bổ cho CASH cũng được **cộng vào** CASH y như mọi class khác, baseline của CASH phải là "CASH **chưa** có pool". Cộng pool vào baseline là đếm pool hai lần: với `addsToTotal = true` (§4, pool còn ở ngoài `classValues`) thì CASH bị bỏ đói và một danh mục đúng y target lại bị đẩy ra khỏi target; với `addsToTotal = false` (§5, pool đã nằm trong CASH) thì CASH bị coi là đã đủ nên tiền đáng để lại trong ví bị giải ngân hết. `addsToTotal` chỉ quyết định `newTotal` có tăng hay không, **không** quyết định baseline.
+
+Kiểm bằng mô phỏng 24 tháng, Z = 3tr/tháng, bắt đầu từ đúng 500/200/150/150tr: cộng pool vào baseline cho ra `50,271 / 20,009 / 15,000 / 14,720` (%) — CASH rò rỉ thường trực ~0,28đ%, đúng kiểu làm Crash Reserve §8 cạn dần. Để pool ngoài baseline cho ra đúng `50,000 / 20,000 / 15,000 / 15,000`.
+
+`addsToTotal = false` mà `pool > currentValue_CASH` là đầu vào tự mâu thuẫn (cổ tức không thể lớn hơn toàn bộ tiền trong ví) ⇒ **ném lỗi**, không nuốt im lặng. `pool < 0` cũng **ném lỗi** — quy về 0 sẽ phá bất biến `Σ phân bổ + chưa phân bổ = pool`. `pool = 0` là hợp lệ (không có gì để phân bổ).
 
 **Vì sao đây là mặc định:** chia tỷ lệ theo khoảng thiếu tính bằng VND là phân bổ **duy nhất tối thiểu hoá tổng bình phương độ lệch** sau khi giải ngân — tức chính xác mục tiêu số 2 của §18 *"MINIMIZE DEVIATION FROM TARGET"*. Chứng minh được, không phải chọn cảm tính.
 
@@ -583,15 +590,19 @@ Hai công thức thay thế có sẵn trong Settings (`allocation_formula`): `PR
 
 | Ví dụ | Lệch của các class underweight | Spec kỳ vọng | Engine tính ra |
 |---|---|---|---|
-| §4 | Stocks −3, Crypto −3 | 1,5tr / 1,5tr | **1,6tr / 1,4tr** |
-| §5 | Stocks −3, Crypto −3 | 3tr / 2tr | **2,5tr / 2,5tr** |
-| §21 | Stocks −2,8 · Cash −3,5 | 2tr / 1tr | **1,4tr / 1,6tr** |
+| §4 | Stocks −3, Crypto −3 | 1,5tr / 1,5tr | **1,6tr / 1,4tr** (Stocks / Crypto) |
+| §5 | Stocks −3, Crypto −3 | 3tr / 2tr | **2,4tr / 2,3tr / 0,3tr** (Stocks / Crypto / Cash) |
+| §21 | Stocks −2,8 · Cash −3,5 | 2tr / 1tr | **1,3tr / 1,7tr** (Stocks / Cash) |
 
 **Cả ba ví dụ đều không tái lập được**, mỗi ví dụ lệch theo một hướng khác nhau —
 xác nhận rằng đây là số minh hoạ viết tay, không phải kết quả của một công thức.
 Riêng §4 lệch vì §17 bắt tính khoảng thiếu trên `newTotal = tổng cũ + Z`: phần Z
 chia theo target làm khoảng thiếu của Stocks (31,5tr) lớn hơn Crypto (30,6tr),
 nên không còn chia đều nữa.
+
+Ở §5, cổ tức 5tr bị **trừ khỏi** baseline Cash (150tr − 5tr = 145tr) nên Cash
+đang thiếu đúng 5tr và **cũng là ứng viên** — 0,3tr cổ tức được giữ lại trong ví
+thay vì giải ngân hết. Xem quy tắc "pool luôn ngoài baseline" ở mục 4.4.
 
 **Không có công thức đơn nào cho ra cả ba.** §4 nói *"The exact formula should be configurable"* — đây chính là chỗ đó.
 
@@ -606,16 +617,16 @@ class    hiện có         %      target VND      gap VND
 Stocks   513.300.000   47,2%   545.250.000   +31.950.000   ← ứng viên
 Crypto   269.700.000   24,8%   218.100.000   −51.600.000   ← loại
 Gold     179.437.500   16,5%   163.575.000   −15.862.500   ← loại
-Cash     128.062.500*          163.575.000   +35.512.500   ← ứng viên
-                                 Σ gap(+) =    67.462.500
-   (*) 125.062.500 + Z
+Cash     125.062.500*  11,5%   163.575.000   +38.512.500   ← ứng viên
+                                 Σ gap(+) =    70.462.500
+   (*) Z nằm NGOÀI baseline — KHÔNG cộng vào Cash (mục 4.4)
 
-Stocks = 3.000.000 × 31.950.000 / 67.462.500 = 1.420.789 → làm tròn 1.400.000
-Cash   = 3.000.000 × 35.512.500 / 67.462.500 = 1.579.211 → 1.500.000 + dư 100.000
-                                                          = 1.600.000
+Stocks = 3.000.000 × 31.950.000 / 70.462.500 = 1.360.298 → làm tròn 1.300.000
+Cash   = 3.000.000 × 38.512.500 / 70.462.500 = 1.639.702 → làm tròn 1.600.000
+dư = 3.000.000 − 2.900.000 = 100.000 → dồn vào gap lớn nhất (Cash) = 1.700.000
 ```
 
-**Kết quả:** `MUA Stocks 1.400.000` · `GIỮ Cash 1.600.000` · `KHÔNG MUA Crypto, Gold`
+**Kết quả:** `MUA Stocks 1.300.000` · `GIỮ Cash 1.700.000` · `KHÔNG MUA Crypto, Gold`
 
 Đối chiếu §21:
 
@@ -626,8 +637,8 @@ Cash   = 3.000.000 × 35.512.500 / 67.462.500 = 1.579.211 → 1.500.000 + dư 10
 | Crypto cảnh báo +4,8đ% | ✓ | ✓ `WATCH` | khớp |
 | Gold trong band | ✓ | ✓ `OK` | khớp |
 | Chưa cần bán | ✓ | ✓ | khớp |
-| Số tiền Stocks | 2.000.000 | **1.400.000** | lệch |
-| Số tiền Cash | 1.000.000 | **1.600.000** | lệch |
+| Số tiền Stocks | 2.000.000 | **1.300.000** | lệch |
+| Số tiền Cash | 1.000.000 | **1.700.000** | lệch |
 
 Engine khớp **toàn bộ kết luận định tính** của §21; chỉ lệch hai con số — mà hai con số đó không suy ra được từ bất cứ công thức nào.
 
