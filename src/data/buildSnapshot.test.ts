@@ -120,6 +120,45 @@ describe('mapToSnapshot — dữ liệu bất thường mà DB không chặn', (
       ],
     }))).toThrow(/FPT/);
   });
+
+  // Final review Việc 1 (Important I-1), ca (a): trigger tx_validate không kiểm
+  // số dư nên một túi CASH (kể cả túi DCA) đạt tới được cash_balance_vnd âm thật
+  // trên DB. Lọt qua sẽ cộng thẳng vào earmarkedPots, sinh một kế hoạch TRÔNG
+  // hợp lệ mà tỷ trọng các nhóm khác đã sai hẳn.
+  it('cash_balance_vnd của túi CASH âm → ném lỗi rõ ràng, nêu túi và số dư', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      allocation: [
+        row({ symbol: 'VND-DCA-STOCKS', asset_class: 'CASH', earmarked_for: 'STOCKS',
+              cash_balance_vnd: -200_000_000, market_value_vnd: -200_000_000 }),
+      ],
+    }))).toThrow(/cash_balance_vnd/);
+  });
+
+  // Final review Việc 1, ca (d) — nửa đầu: cash_balance_vnd là NaN thì `< 0`
+  // không bắt được (NaN < 0 luôn false), nhưng vẫn phải chặn vì nó biến cả
+  // classValues.CASH lẫn earmarkedPots thành NaN một cách âm thầm.
+  it('cash_balance_vnd là NaN → ném lỗi rõ ràng, không lọt qua vì NaN < 0 là false', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      allocation: [
+        row({ symbol: 'VND-RESERVE', asset_class: 'CASH', cash_balance_vnd: NaN,
+              market_value_vnd: NaN }),
+      ],
+    }))).toThrow(/cash_balance_vnd/);
+  });
+
+  // Final review Việc 1, ca (d) — nửa sau: market_value_vnd là NaN không phải
+  // null nên không rơi vào nhánh missingPriceSymbols — nó cộng thẳng vào
+  // classValues. Hậu quả kín hơn cả throw: `gaps[c] > 0` với NaN luôn false,
+  // allocate coi như "không nhóm nào thiếu" và trả unallocatedVnd = pool —
+  // TRÔNG như một kế hoạch hợp lệ bình thường (xem allocate.ts).
+  it('market_value_vnd là NaN → ném lỗi rõ ràng, không âm thầm lan NaN vào classValues', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      allocation: [
+        row({ symbol: 'FPT', asset_class: 'STOCKS', quantity: 100,
+              price_vnd: 100_000, market_value_vnd: NaN }),
+      ],
+    }))).toThrow(/market_value_vnd/);
+  });
 });
 
 describe('mapToSnapshot — phát hiện tài sản thiếu giá', () => {
@@ -191,9 +230,33 @@ describe('mapToSnapshot — cấu hình', () => {
     }))).toThrow(/sell_to/);
   });
 
+  // Final review Việc 1, ca (b): cột monthly_contribution_vnd không có CHECK
+  // constraint (core.sql:114) nên DB nhận giá trị âm. Lọt qua sẽ ném exception
+  // KHÔNG AI BẮT từ allocate.ts, thay vì một lỗi tiếng Việt rõ ràng ngay ở biên.
+  it('monthly_contribution_vnd âm trong settings → ném lỗi rõ ràng, không tụt về mặc định', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      settings: { ...buildSourceData().settings!, monthly_contribution_vnd: -3_000_000 },
+    }))).toThrow(/monthly_contribution_vnd/);
+  });
+
   it('thiếu target của một nhóm → NÉM lỗi rõ ràng, không đoán bừa', () => {
     expect(() => mapToSnapshot(buildSourceData({
       targets: [{ asset_class: 'STOCKS', target_pct: 50, min_pct: 40, max_pct: 55 }],
     }))).toThrow(/CRYPTO/);
+  });
+
+  // Final review Việc 1, ca (c): core.sql:100-109 chỉ có constraint band_hop_le
+  // (min ≤ target ≤ max của TỪNG nhóm) — không ép tổng bốn target_pct = 100.
+  // Với Σ=90%, allocate từng chia vượt cả gap thật của một nhóm (STOCKS nhận
+  // 58,9tr cho gap chỉ 50tr) mà không có dấu hiệu gì lộ ra là kế hoạch sai.
+  it('tổng target_pct khác 100 → ném lỗi rõ ràng, không âm thầm chạy tiếp', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      targets: [
+        { asset_class: 'STOCKS', target_pct: 40, min_pct: 30, max_pct: 50 },
+        { asset_class: 'CRYPTO', target_pct: 20, min_pct: 15, max_pct: 25 },
+        { asset_class: 'GOLD',   target_pct: 15, min_pct: 10, max_pct: 20 },
+        { asset_class: 'CASH',   target_pct: 15, min_pct: 7,  max_pct: 20 },
+      ],
+    }))).toThrow(/target_pct/);
   });
 });

@@ -36,7 +36,7 @@ select u.id from auth.users u where u.email = 'phuonglegtvt92@gmail.com'
 on conflict (user_id) do nothing;
 
 -- ---------- allocation_targets: 50/20/15/15 + band ----------
--- Giá trị band khớp với DEFAULT_CONFIG đã dùng trong src/domain (bands.test.ts):
+-- Giá trị band khớp với fixture TARGETS dùng trong test miền domain (vd. bands.test.ts) —
 -- STOCKS 50 (40–55) · CRYPTO 20 (15–25) · GOLD 15 (10–20) · CASH 15 (7–20).
 insert into portfolio.allocation_targets
   (user_id, asset_class, target_pct, min_pct, max_pct)

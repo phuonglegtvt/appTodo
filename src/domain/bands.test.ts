@@ -36,6 +36,16 @@ describe('classifyBand — trong band', () => {
     expect(check('CASH', 11.5)).toBe('WATCH');  // lệch −3,5
   });
 
+  // Final review Minor M-1: mutation `>=` → `>` ở bands.ts:29 sống sót toàn bộ
+  // 373 test vì chưa có ca nào lệch ĐÚNG BẰNG watchDeviationPp (3,0đ%) — các ca
+  // trên đều lệch xa hơn (3,5 / 4,8) nên cả hai toán tử đều ra cùng kết quả.
+  // GOLD target 15%, band 10–20: weightPct 18,0% → lệch đúng +3,0đ%, vẫn trong
+  // band ⇒ phải là WATCH. Với `>` thay vì `>=`, 3,0 > 3,0 là false ⇒ ra 'OK' —
+  // test này đỏ ngay khi mutation đó lọt qua.
+  it('lệch ĐÚNG BẰNG watchDeviationPp (3,0đ%) → vẫn là WATCH (test biên cho mutation >= → >)', () => {
+    expect(check('GOLD', 18.0)).toBe('WATCH');
+  });
+
   it('GIẢI MÂU THUẪN §7: Cash 9% lệch −6đ% mà vẫn trong band 7–20 → WATCH, KHÔNG phải REBALANCE_REQUIRED', () => {
     // §7 nói "do nothing while inside the band" VÀ "rebalance khi lệch ≥5đ%".
     // Band là cổng ⇒ trong band thì không bao giờ mở khoá lệnh bán.

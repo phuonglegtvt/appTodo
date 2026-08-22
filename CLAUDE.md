@@ -56,7 +56,7 @@ Giao diện và trao đổi bằng **tiếng Việt** (thuật ngữ kỹ thuậ
 
 ## Module Portfolio (Phase 3)
 
-Module cân bằng danh mục đầu tư, nằm ở tab `portfolio`.
+Module cân bằng danh mục đầu tư, sẽ nằm ở tab `portfolio` (đợt 4).
 - Yêu cầu & thiết kế: `docs/superpowers/specs/2026-08-22-portfolio-rebalancing-design.md`
 - Dữ liệu: schema Postgres riêng `portfolio` (KHÔNG dùng `public`). Bảng
   `public.stocks` / `public.cryptos` giữ nguyên, chỉ đọc, đóng vai watchlist.
@@ -65,8 +65,8 @@ Module cân bằng danh mục đầu tư, nằm ở tab `portfolio`.
 - **0 dependency.** Cấm import `@supabase/supabase-js`, `react`, và mọi thứ gọi `fetch`.
 - **Cấm `Date.now()` và `new Date()` không tham số.** Thời điểm truyền vào qua tham số
   (`snapshot.asOf`) để test tái lập được và để tính lại kế hoạch tháng cũ.
-- **Đơn vị: VND (đồng) tuyệt đối.** Quy đổi nghìn đồng / USD chỉ được xảy ra trong
-  `src/providers/`.
+- **Đơn vị: VND (đồng) tuyệt đối.** Quy đổi nghìn đồng / USD chỉ được xảy ra ở tầng
+  biên đọc dữ liệu (`src/data/portfolioRepo.ts` hôm nay, `src/providers/` từ đợt 4).
 - Mỗi module một trách nhiệm, mỗi module một file test cạnh nó.
 
 ### Sổ giao dịch bất biến

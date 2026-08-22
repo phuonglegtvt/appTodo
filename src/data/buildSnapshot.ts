@@ -39,6 +39,17 @@ function isValidSellTo(value: string): value is EngineConfig['sellTo'] {
 function buildEngineConfig(row: SettingsRow | null): EngineConfig {
   if (row === null) return DEFAULT_CONFIG;
 
+  // Cột `numeric` không có CHECK constraint nào chặn giá trị âm (core.sql:114).
+  // "Góp âm hàng tháng" không phải trạng thái nghiệp vụ hợp lệ nào — nếu lọt qua
+  // sẽ ném exception KHÔNG AI BẮT từ allocate.ts, thay vì một trạng thái chặn có
+  // lý do tiếng Việt rõ ràng ở ngay biên đọc dữ liệu này.
+  if (row.monthly_contribution_vnd < 0) {
+    throw new Error(
+      `Giá trị monthly_contribution_vnd trong portfolio.settings đang âm: ` +
+      `${row.monthly_contribution_vnd} đ. Số tiền góp hàng tháng không thể âm.`,
+    );
+  }
+
   if (!isValidAllocationFormula(row.allocation_formula)) {
     throw new Error(
       `Giá trị allocation_formula không hợp lệ trong portfolio.settings: ` +
@@ -82,6 +93,23 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
   for (const r of input.allocation) {
     if (r.asset_class === 'CASH') {
       const balance = r.cash_balance_vnd ?? 0;
+      // trigger tx_validate KHÔNG kiểm số dư nên một túi CASH (kể cả túi DCA)
+      // đạt tới được số dư âm thật trên DB. Lọt qua đây thì nó cộng thẳng vào
+      // classValues/earmarkedPots — kế hoạch sinh ra TRÔNG hợp lệ mà sai hẳn tỷ
+      // trọng các nhóm khác (một nhóm bị trừ đúng phần bị nhóm này "vay").
+      if (!Number.isFinite(balance)) {
+        throw new Error(
+          `Túi CASH "${r.symbol}" có cash_balance_vnd không phải số hữu hạn ` +
+          `(${balance}) trong portfolio.v_allocation. Kiểm tra lại dữ liệu nguồn.`,
+        );
+      }
+      if (balance < 0) {
+        throw new Error(
+          `Túi CASH "${r.symbol}" có cash_balance_vnd âm (${balance} đ) trong ` +
+          `portfolio.v_allocation — số dư tiền mặt không thể âm. Kiểm tra lại ` +
+          `portfolio.transactions.`,
+        );
+      }
       classValues.CASH += balance;
       if (r.earmarked_for === null) {
         cashReserveVnd += balance;
@@ -122,6 +150,17 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
       missingPriceSymbols.push(r.symbol);
       continue;
     }
+    if (!Number.isFinite(r.market_value_vnd)) {
+      // NaN không phải null nên không rơi vào nhánh missingPriceSymbols ở trên —
+      // nó cộng thẳng vào classValues và biến cả nhóm tài sản thành NaN. Hậu quả
+      // còn kín hơn cả throw: `gaps[c] > 0` với NaN luôn là false, allocate coi
+      // như "không nhóm nào thiếu" và trả unallocatedVnd = pool — TRÔNG như một
+      // kế hoạch hợp lệ bình thường.
+      throw new Error(
+        `Vị thế "${r.symbol}" có market_value_vnd không phải số hữu hạn ` +
+        `(${r.market_value_vnd}) trong portfolio.v_allocation. Kiểm tra lại dữ liệu nguồn.`,
+      );
+    }
     classValues[r.asset_class] += r.market_value_vnd;
   }
 
@@ -135,6 +174,18 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
       );
     }
     targets[c] = { targetPct: t.target_pct, minPct: t.min_pct, maxPct: t.max_pct };
+  }
+
+  // core.sql:100-109 chỉ có constraint band_hop_le (min ≤ target ≤ max của TỪNG
+  // nhóm) — không có constraint nào ép tổng bốn target_pct = 100. Lệch tổng lọt
+  // qua sẽ không tự lộ ra: allocate vẫn chạy, chỉ âm thầm chia gap sai (Σ=90%
+  // từng khiến một nhóm nhận nhiều hơn cả gap thật của chính nó).
+  const targetPctSum = ASSET_CLASSES.reduce((sum, c) => sum + targets[c].targetPct, 0);
+  if (Math.abs(targetPctSum - 100) > 0.01) {
+    throw new Error(
+      `Tổng target_pct của portfolio.allocation_targets là ${targetPctSum}%, phải bằng ` +
+      `100%. Kiểm tra lại cấu hình phân bổ mục tiêu.`,
+    );
   }
 
   const settings = input.settings;

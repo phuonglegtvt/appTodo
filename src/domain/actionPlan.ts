@@ -269,20 +269,20 @@ export function buildActionPlan(s: PortfolioSnapshot): ActionPlan {
       `${w.targetPct}% — ${direction} ${Math.abs(w.deviationPp).toFixed(1)} điểm %`;
 
     if (status === 'WATCH') {
-      alerts.push({ code: 'BAND_WATCH', severity: 'INFO',
+      alerts.push({ code: 'BAND_WATCH', severity: 'INFO', assetClass: w.assetClass,
         message: `${description}. Vẫn trong band, chưa cần bán.` });
     } else if (status === 'OUT_OF_BAND') {
-      alerts.push({ code: 'OUT_OF_BAND', severity: 'WARN',
+      alerts.push({ code: 'OUT_OF_BAND', severity: 'WARN', assetClass: w.assetClass,
         message: `${description}. Đã ra ngoài band — ưu tiên dồn tiền mới vào.` });
     } else if (status === 'REBALANCE_REQUIRED') {
-      alerts.push({ code: 'REBALANCE_REQUIRED', severity: 'ACTION',
+      alerts.push({ code: 'REBALANCE_REQUIRED', severity: 'ACTION', assetClass: w.assetClass,
         message: `${description}. Ngoài band và lệch lớn — cần cân lại danh mục.` });
     }
   }
 
   const cashWeight = weightOf(weights, 'CASH');
   if (cashWeight.weightPct < s.targets.CASH.minPct) {
-    alerts.push({ code: 'CASH_BELOW_MIN', severity: 'ACTION',
+    alerts.push({ code: 'CASH_BELOW_MIN', severity: 'ACTION', assetClass: 'CASH',
       message:
         `Tiền mặt ${cashWeight.weightPct.toFixed(1)}% đã xuống dưới mức tối thiểu ` +
         `${s.targets.CASH.minPct}% — Crash Reserve đang bị bòn rút.` });
@@ -291,7 +291,7 @@ export function buildActionPlan(s: PortfolioSnapshot): ActionPlan {
   for (const c of ASSET_CLASSES) {
     const code = DRAWDOWN_CODE[c];
     if (code !== null && s.drawdowns[c] >= drawdownThresholdPct) {
-      alerts.push({ code, severity: 'ACTION',
+      alerts.push({ code, severity: 'ACTION', assetClass: c,
         message:
           `${CLASS_NAME_VI[c]} đã sụt ${s.drawdowns[c].toFixed(1)}% từ đỉnh — ` +
           `vượt ngưỡng ${drawdownThresholdPct}%.` });

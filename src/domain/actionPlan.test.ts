@@ -118,9 +118,11 @@ describe('buildActionPlan — ví dụ §21 đầu tới cuối', () => {
   });
 
   it('có alert BAND_WATCH cho Crypto (đúng REBALANCE WARNING của §21)', () => {
-    // Message của domain là tiếng Việt nên nhận diện qua tên "Tiền mã hoá".
+    // Final review Việc 2 (Important I-5): nhận diện qua assetClass, không còn
+    // phải parse chuỗi tiếng Việt trong message — UI đợt sau gắn thẳng alert
+    // vào đúng dòng bảng bằng trường này.
     const a = p.alerts.find(
-      (x) => x.code === 'BAND_WATCH' && x.message.includes('Tiền mã hoá'),
+      (x) => x.code === 'BAND_WATCH' && x.assetClass === 'CRYPTO',
     );
     expect(a).toBeDefined();
     expect(a!.severity).toBe('INFO');

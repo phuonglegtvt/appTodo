@@ -180,6 +180,12 @@ export interface Alert {
   code: AlertCode;
   severity: 'INFO' | 'WARN' | 'ACTION';
   message: string;
+  /**
+   * Nhóm tài sản sinh ra alert này — để UI gắn đúng dòng bảng mà không phải
+   * parse `message` tiếng Việt. Optional: alert không thuộc riêng nhóm nào
+   * (VD PORTFOLIO_DRAWDOWN, CONTRIBUTION_MISSING) thì để trống.
+   */
+  assetClass?: AssetClass;
 }
 
 export type PlanStatus = 'READY' | 'EMPTY_PORTFOLIO' | 'MISSING_PRICES' | 'EARMARK_EXCEEDS_CASH';
