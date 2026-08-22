@@ -92,6 +92,36 @@ describe('mapToSnapshot — danh mục mới toanh (chưa có giao dịch)', () 
   });
 });
 
+describe('mapToSnapshot — dữ liệu bất thường mà DB không chặn', () => {
+  // Fix round 1, finding Minor #1: constraint earmark_chi_cho_cash trong DB
+  // chỉ đòi "earmarked_for is null or asset_class = 'CASH'" — không cấm
+  // earmarked_for = 'CASH'. Một túi CASH "đặt tên cho chính CASH" là vô nghĩa
+  // nghiệp vụ và vi phạm hợp đồng domain (earmarkedPots.CASH luôn = 0). Phải
+  // ném lỗi, không được âm thầm cộng vào earmarkedPots.CASH.
+  it('túi CASH có earmarked_for = CASH → ném lỗi rõ ràng tiếng Việt', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      allocation: [
+        row({ symbol: 'VND-DCA-CASH', asset_class: 'CASH', earmarked_for: 'CASH',
+              cash_balance_vnd: 2_000_000, market_value_vnd: 2_000_000 }),
+      ],
+    }))).toThrow(/earmarked_for/);
+  });
+
+  // Fix round 1, finding Minor #2: `isHeld = (quantity ?? 0) > 0` cũ coi
+  // quantity âm giống hệt "chưa mua" (quantity 0/null) rồi bỏ qua bằng
+  // continue — tài sản biến mất khỏi classValues mà không ai biết. Số lượng
+  // âm nghĩa là sổ giao dịch có SELL vượt quá số đang giữ, một lỗi dữ liệu
+  // thật, phải được báo tường minh, không được nuốt im lặng.
+  it('quantity âm (SELL vượt số đang giữ) → ném lỗi rõ ràng, không âm thầm bỏ qua', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      allocation: [
+        row({ symbol: 'FPT', asset_class: 'STOCKS', quantity: -10,
+              price_vnd: 100_000, market_value_vnd: -1_000_000 }),
+      ],
+    }))).toThrow(/FPT/);
+  });
+});
+
 describe('mapToSnapshot — phát hiện tài sản thiếu giá', () => {
   it('mã ĐANG GIỮ mà market_value null → vào missingPriceSymbols', () => {
     const s = mapToSnapshot(buildSourceData({

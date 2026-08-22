@@ -1,12 +1,16 @@
-// Nối DB với tầng domain. mapToSnapshot là HÀM THUẦN — toàn bộ phần biến đổi
-// dữ liệu nằm ở đây để test được không cần DB. loadSnapshot chỉ ghép I/O.
+// mapToSnapshot là HÀM THUẦN — toàn bộ phần biến đổi dữ liệu nằm ở đây để test
+// được không cần DB, không cần mock supabase. File này CHỈ được import
+// '../domain/types' và '../types/portfolio' — không import portfolioRepo hay
+// bất cứ gì chạm supabase, để tránh kéo theo lib/supabaseClient.ts (module đó
+// ném lỗi NGAY LÚC IMPORT nếu thiếu biến môi trường, sẽ làm biến mất toàn bộ
+// test file này thay vì cho fail đúng lý do). loadSnapshot (ghép I/O) nằm ở
+// portfolioRepo.ts, không nằm ở đây.
 
 import { ASSET_CLASSES, DEFAULT_CONFIG } from '../domain/types';
 import type {
   AssetClass, EngineConfig, PortfolioSnapshot, TargetBand,
 } from '../domain/types';
 import type { SettingsRow, SnapshotSourceData } from '../types/portfolio';
-import * as repo from './portfolioRepo';
 
 /**
  * Z mặc định khi chưa có dòng `portfolio.settings` — khớp giá trị default của
@@ -79,13 +83,38 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
     if (r.asset_class === 'CASH') {
       const balance = r.cash_balance_vnd ?? 0;
       classValues.CASH += balance;
-      if (r.earmarked_for !== null) earmarkedPots[r.earmarked_for] += balance;
-      else cashReserveVnd += balance;
+      if (r.earmarked_for === null) {
+        cashReserveVnd += balance;
+      } else if (r.earmarked_for === 'CASH') {
+        // Hợp đồng domain (types.ts: "earmarkedPots.CASH luôn = 0") không được
+        // DB cưỡng chế: constraint earmark_chi_cho_cash chỉ đòi asset_class =
+        // 'CASH', không cấm earmarked_for = 'CASH'. Một túi CASH "đặt tên cho
+        // chính CASH" là vô nghĩa nghiệp vụ (không phải trạng thái hợp lệ nào
+        // của DCA) — nếu lọt qua sẽ bị toEarmarkedValues (actionPlan.ts) bỏ
+        // sót vì hàm đó chỉ cộng STOCKS+CRYPTO+GOLD, tức tiền biến mất khỏi cả
+        // earmarkedPots lẫn cashReserveVnd. Ném lỗi thay vì nuốt im lặng.
+        throw new Error(
+          `Túi CASH "${r.symbol}" có earmarked_for = CASH — vô nghĩa (một túi CASH ` +
+          `không thể "đặt tên" cho chính CASH). Kiểm tra lại portfolio.instruments.earmarked_for.`,
+        );
+      } else {
+        earmarkedPots[r.earmarked_for] += balance;
+      }
       continue;
     }
 
-    const isHeld = (r.quantity ?? 0) > 0;
-    if (!isHeld) continue; // mã watchlist chưa mua: bỏ qua, không chặn kế hoạch
+    const quantity = r.quantity ?? 0;
+    if (quantity < 0) {
+      // Số lượng âm nghĩa là sổ giao dịch có SELL vượt quá số đang giữ — một
+      // lỗi dữ liệu thật sự, không phải "chưa mua" (đó là quantity = 0/null).
+      // Bỏ qua âm thầm sẽ khiến tài sản này biến mất khỏi classValues mà
+      // không ai biết, nên phải ném lỗi rõ ràng thay vì continue.
+      throw new Error(
+        `Vị thế "${r.symbol}" có số lượng âm (${quantity}) trong portfolio.v_allocation — ` +
+        `sổ giao dịch có SELL vượt quá số đang giữ. Kiểm tra lại portfolio.transactions.`,
+      );
+    }
+    if (quantity === 0) continue; // mã watchlist chưa mua: bỏ qua, không chặn kế hoạch
 
     if (r.market_value_vnd === null) {
       // Đang giữ mà không biết giá ⇒ phải chặn kế hoạch, không được coi là 0đ
@@ -136,10 +165,4 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
     watchlist: input.watchlist,
     config: buildEngineConfig(settings),
   };
-}
-
-/** Ghép I/O rồi gọi mapToSnapshot. Mọi biến đổi dữ liệu đều nằm trong hàm thuần trên. */
-export async function loadSnapshot(userId: string, asOf: string): Promise<PortfolioSnapshot> {
-  const sources = await repo.fetchSnapshotSources(userId, asOf);
-  return mapToSnapshot(sources);
 }

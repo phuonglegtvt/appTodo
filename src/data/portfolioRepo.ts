@@ -9,6 +9,8 @@
 // không bị chặn; đừng để bất kỳ đường nào ở đây đi qua service key.
 
 import { supabase } from '../lib/supabaseClient';
+import { mapToSnapshot } from './buildSnapshot';
+import type { PortfolioSnapshot } from '../domain/types';
 import type {
   AllocationRow, CrashEventRow, CrashLevelRow, SettingsRow,
   SnapshotSourceData, TargetRow, WatchlistItem,
@@ -32,6 +34,10 @@ function throwIfError(action: string, error: { message: string } | null): void {
  * ⚠️ instrument chưa có giao dịch nào thì KHÔNG có dòng ở đây (không phải
  * dòng quantity = 0) — mapToSnapshot (buildSnapshot.ts) mới là nơi default 0.
  * ⚠️ market_value_vnd = NULL nghĩa là thiếu giá, không phải 0đ.
+ * ⚠️ PostgREST KHÔNG đảm bảo thứ tự dòng khi không có `.order()` — `symbol`
+ * đi thẳng từ đây vào `missingPriceSymbols` rồi hiện lên UI bằng `join(', ')`
+ * (actionPlan.ts), nên phải `.order('symbol')` để danh sách đó ổn định giữa
+ * các lần tải, không xáo trộn ngẫu nhiên.
  */
 export async function fetchAllocation(userId: string): Promise<AllocationRow[]> {
   // LƯU Ý: chuỗi select() phải là MỘT literal duy nhất (không nối bằng `+`) —
@@ -40,7 +46,8 @@ export async function fetchAllocation(userId: string): Promise<AllocationRow[]> 
   const { data, error } = await portfolioSchema()
     .from('v_allocation')
     .select('instrument_id, asset_class, symbol, earmarked_for, quantity, cost_basis_vnd, cash_balance_vnd, price_vnd, price_as_of, market_value_vnd')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .order('symbol');
   throwIfError('tải phân bổ danh mục', error);
   return (data ?? []) as AllocationRow[];
 }
@@ -147,4 +154,20 @@ export async function fetchSnapshotSources(
     currentEpisodeStart: asOf,
     contributionRecordedThisPeriod: false,
   };
+}
+
+/**
+ * Ghép I/O rồi gọi mapToSnapshot. Mọi biến đổi dữ liệu đều nằm trong hàm
+ * thuần đó (buildSnapshot.ts), không lặp lại ở đây.
+ *
+ * Đặt ở FILE NÀY (không phải buildSnapshot.ts) để buildSnapshot.ts không kéo
+ * theo '../lib/supabaseClient' — module đó ném lỗi NGAY LÚC IMPORT khi thiếu
+ * biến môi trường, sẽ làm cả file test của mapToSnapshot "biến mất" (import
+ * lỗi ⇒ 0 test được thu thập) thay vì fail đúng lý do trên máy/CI không có
+ * `.env`. Việc tách này giữ mapToSnapshot test được hoàn toàn không cần DB,
+ * đúng addendum Task 14 mục 8.
+ */
+export async function loadSnapshot(userId: string, asOf: string): Promise<PortfolioSnapshot> {
+  const sources = await fetchSnapshotSources(userId, asOf);
+  return mapToSnapshot(sources);
 }
