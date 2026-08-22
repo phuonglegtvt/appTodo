@@ -13,6 +13,13 @@
 ## Global Constraints
 
 - **Ngôn ngữ:** comment, tên test, message lỗi → **tiếng Việt**. Tên biến/hàm/type → tiếng Anh.
+  > ⚠️ **Ruling 2026-08-22 (sau review Batch A):** các khối code trong plan này vi phạm chính
+  > ràng buộc trên — chúng dùng identifier cục bộ tiếng Việt (`trongBand`, `conLai`, `nguongVe`,
+  > `taoRandom`, `docConfig`…). Convention THẬT của repo là identifier tiếng Anh + comment tiếng
+  > Việt (xem `src/lib/stockCalc.ts`, `cryptoCalc.ts`, `todoFilters.ts`). **Ràng buộc thắng, khối
+  > code thua:** khi hiện thực, đổi mọi biến cục bộ và hàm helper không export sang tiếng Anh.
+  > **Tên export giữ nguyên đúng như khối code** (task sau import theo tên đó). Comment, tên test,
+  > message lỗi giữ tiếng Việt.
 - **Đơn vị tiền:** mọi cột và mọi biến trong `portfolio.*` và `src/domain/` là **VND (đồng)**. Không có nghìn đồng, không có USD. Quy đổi CHỈ xảy ra trong `src/providers/` (không thuộc plan này).
 - **`src/domain/` cấm import:** `@supabase/supabase-js`, `react`, bất kỳ thứ gì gọi `fetch`. **Cấm gọi `Date.now()` và `new Date()` không tham số** — thời điểm luôn truyền vào qua tham số.
 - **KHÔNG nuốt lỗi im lặng** (theo `CLAUDE.md` của repo): thiếu dữ liệu thì trả trạng thái tường minh hoặc ném lỗi có message tiếng Việt rõ ràng. Không bao giờ trả `0` hay `NaN` thay cho "không biết".
