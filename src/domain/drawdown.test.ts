@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeDrawdown } from './drawdown';
 
 /** Chuỗi ngày liên tiếp từ 2026-01-01 để kiểm daysSinceHigh cho tiện. */
-function chuoi(...values: number[]) {
+function series(...values: number[]) {
   return values.map((value, i) => ({
     date: `2026-01-${String(i + 1).padStart(2, '0')}`,
     value,
@@ -10,7 +10,7 @@ function chuoi(...values: number[]) {
 }
 
 describe('computeDrawdown — chuỗi tăng liên tục', () => {
-  const d = computeDrawdown(chuoi(100, 110, 120))!;
+  const d = computeDrawdown(series(100, 110, 120))!;
 
   it('không sụt giảm', () => {
     expect(d.currentPct).toBe(0);
@@ -28,7 +28,7 @@ describe('computeDrawdown — chuỗi tăng liên tục', () => {
 });
 
 describe('computeDrawdown — chuỗi giảm liên tục', () => {
-  const d = computeDrawdown(chuoi(100, 90, 80))!;
+  const d = computeDrawdown(series(100, 90, 80))!;
 
   it('sụt 20% từ đỉnh, và đó cũng là mức sâu nhất', () => {
     expect(d.currentPct).toBeCloseTo(20, 6);
@@ -46,7 +46,7 @@ describe('computeDrawdown — chuỗi giảm liên tục', () => {
 });
 
 describe('computeDrawdown — hình chữ V (đã hồi một phần)', () => {
-  const d = computeDrawdown(chuoi(100, 60, 80))!;
+  const d = computeDrawdown(series(100, 60, 80))!;
 
   it('hiện sụt 20% nhưng ĐÃ TỪNG sụt 40%', () => {
     expect(d.currentPct).toBeCloseTo(20, 6);
@@ -61,7 +61,7 @@ describe('computeDrawdown — hình chữ V (đã hồi một phần)', () => {
 
 describe('computeDrawdown — hai đợt sụt, đỉnh mới ở giữa', () => {
   // 100 → 70 (sụt 30%) → 120 (đỉnh mới) → 90 (sụt 25% từ đỉnh mới)
-  const d = computeDrawdown(chuoi(100, 70, 120, 90))!;
+  const d = computeDrawdown(series(100, 70, 120, 90))!;
 
   it('sụt hiện tại tính từ ĐỈNH CAO NHẤT (120), không phải đỉnh đầu', () => {
     expect(d.currentPct).toBeCloseTo(25, 6);
@@ -84,7 +84,7 @@ describe('computeDrawdown — biên', () => {
   });
 
   it('một điểm duy nhất → không sụt, hồi phục 100%', () => {
-    const d = computeDrawdown(chuoi(100))!;
+    const d = computeDrawdown(series(100))!;
     expect(d.currentPct).toBe(0);
     expect(d.maxPct).toBe(0);
     expect(d.recoveryPct).toBe(100);
@@ -92,7 +92,7 @@ describe('computeDrawdown — biên', () => {
   });
 
   it('toàn số 0 → không chia cho 0, không ra NaN', () => {
-    const d = computeDrawdown(chuoi(0, 0, 0))!;
+    const d = computeDrawdown(series(0, 0, 0))!;
     expect(Number.isNaN(d.currentPct)).toBe(false);
     expect(Number.isNaN(d.maxPct)).toBe(false);
     expect(Number.isNaN(d.recoveryPct)).toBe(false);
@@ -100,20 +100,20 @@ describe('computeDrawdown — biên', () => {
   });
 
   it('chuỗi truyền vào KHÔNG theo thứ tự ngày vẫn tính đúng (tự sắp xếp)', () => {
-    const daoLon = [
+    const shuffled = [
       { date: '2026-01-03', value: 80 },
       { date: '2026-01-01', value: 100 },
       { date: '2026-01-02', value: 60 },
     ];
-    const d = computeDrawdown(daoLon)!;
+    const d = computeDrawdown(shuffled)!;
     expect(d.currentPct).toBeCloseTo(20, 6);
     expect(d.maxPct).toBeCloseTo(40, 6);
   });
 
   it('KHÔNG làm biến đổi mảng đầu vào', () => {
-    const goc = chuoi(100, 60, 80);
-    const ban = [...goc];
-    computeDrawdown(goc);
-    expect(goc).toEqual(ban);
+    const original = series(100, 60, 80);
+    const copy = [...original];
+    computeDrawdown(original);
+    expect(original).toEqual(copy);
   });
 });

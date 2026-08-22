@@ -22,13 +22,13 @@ export function classifyBand(
   config: EngineConfig,
 ): BandStatus {
   // Biên bao gồm hai đầu: đúng 25,0% với band 15–25 vẫn là TRONG band.
-  const trongBand = weight.weightPct >= band.minPct && weight.weightPct <= band.maxPct;
-  const lech = Math.abs(weight.deviationPp);
+  const inBand = weight.weightPct >= band.minPct && weight.weightPct <= band.maxPct;
+  const deviation = Math.abs(weight.deviationPp);
 
-  if (trongBand) {
-    return lech >= config.watchDeviationPp ? 'WATCH' : 'OK';
+  if (inBand) {
+    return deviation >= config.watchDeviationPp ? 'WATCH' : 'OK';
   }
-  return lech >= config.strongRebalancePp ? 'REBALANCE_REQUIRED' : 'OUT_OF_BAND';
+  return deviation >= config.strongRebalancePp ? 'REBALANCE_REQUIRED' : 'OUT_OF_BAND';
 }
 
 export function classifyAll(

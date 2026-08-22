@@ -20,33 +20,33 @@ function makeWeight(assetClass: AssetClass, weightPct: number): Weight {
   };
 }
 
-const xet = (c: AssetClass, pct: number): BandStatus =>
+const check = (c: AssetClass, pct: number): BandStatus =>
   classifyBand(makeWeight(c, pct), TARGETS[c], DEFAULT_CONFIG);
 
 describe('classifyBand — trong band', () => {
   it('lệch nhỏ → OK', () => {
-    expect(xet('STOCKS', 47.2)).toBe('OK');   // lệch −2,8
-    expect(xet('GOLD', 16.5)).toBe('OK');     // lệch +1,5
-    expect(xet('CRYPTO', 20)).toBe('OK');     // lệch 0
+    expect(check('STOCKS', 47.2)).toBe('OK');   // lệch −2,8
+    expect(check('GOLD', 16.5)).toBe('OK');     // lệch +1,5
+    expect(check('CRYPTO', 20)).toBe('OK');     // lệch 0
   });
 
   it('lệch ≥ 3đ% nhưng vẫn trong band → WATCH (cảnh báo mềm, KHÔNG bán)', () => {
     // Chính là Crypto của ví dụ §21: +4,8đ%, band 15–25 → cảnh báo, chưa bán.
-    expect(xet('CRYPTO', 24.8)).toBe('WATCH');
-    expect(xet('CASH', 11.5)).toBe('WATCH');  // lệch −3,5
+    expect(check('CRYPTO', 24.8)).toBe('WATCH');
+    expect(check('CASH', 11.5)).toBe('WATCH');  // lệch −3,5
   });
 
   it('GIẢI MÂU THUẪN §7: Cash 9% lệch −6đ% mà vẫn trong band 7–20 → WATCH, KHÔNG phải REBALANCE_REQUIRED', () => {
     // §7 nói "do nothing while inside the band" VÀ "rebalance khi lệch ≥5đ%".
     // Band là cổng ⇒ trong band thì không bao giờ mở khoá lệnh bán.
-    expect(xet('CASH', 9)).toBe('WATCH');
+    expect(check('CASH', 9)).toBe('WATCH');
   });
 
   it('đúng biên band vẫn tính là TRONG band (bao gồm hai đầu)', () => {
-    expect(xet('CRYPTO', 25)).toBe('WATCH');   // đúng maxPct, lệch +5
-    expect(xet('CRYPTO', 15)).toBe('WATCH');   // đúng minPct, lệch −5
-    expect(xet('STOCKS', 55)).toBe('WATCH');
-    expect(xet('STOCKS', 40)).toBe('WATCH');
+    expect(check('CRYPTO', 25)).toBe('WATCH');   // đúng maxPct, lệch +5
+    expect(check('CRYPTO', 15)).toBe('WATCH');   // đúng minPct, lệch −5
+    expect(check('STOCKS', 55)).toBe('WATCH');
+    expect(check('STOCKS', 40)).toBe('WATCH');
   });
 });
 
@@ -54,17 +54,17 @@ describe('classifyBand — ngoài band', () => {
   it('ngoài band nhưng lệch < 5đ% → OUT_OF_BAND (chưa mở khoá bán)', () => {
     // Cần band HẸP HƠN 5đ% mới đạt tới được trạng thái này — xem ghi nhận
     // trong comment đầu bands.ts. Band mặc định của §2 không tạo ra ca này.
-    const bandHep: TargetBand = { targetPct: 15, minPct: 13, maxPct: 17 };
+    const narrowBand: TargetBand = { targetPct: 15, minPct: 13, maxPct: 17 };
     const w: Weight = { ...makeWeight('GOLD', 18), deviationPp: 3 };
-    expect(classifyBand(w, bandHep, DEFAULT_CONFIG)).toBe('OUT_OF_BAND');
+    expect(classifyBand(w, narrowBand, DEFAULT_CONFIG)).toBe('OUT_OF_BAND');
   });
 
   it('ngoài band VÀ lệch ≥ 5đ% → REBALANCE_REQUIRED (mở khoá lệnh bán)', () => {
-    expect(xet('CRYPTO', 26)).toBe('REBALANCE_REQUIRED');    // lệch +6
-    expect(xet('CRYPTO', 25.5)).toBe('REBALANCE_REQUIRED');  // lệch +5,5
-    expect(xet('STOCKS', 56)).toBe('REBALANCE_REQUIRED');    // lệch +6
-    expect(xet('STOCKS', 38)).toBe('REBALANCE_REQUIRED');    // lệch −12
-    expect(xet('CASH', 6)).toBe('REBALANCE_REQUIRED');       // lệch −9
+    expect(check('CRYPTO', 26)).toBe('REBALANCE_REQUIRED');    // lệch +6
+    expect(check('CRYPTO', 25.5)).toBe('REBALANCE_REQUIRED');  // lệch +5,5
+    expect(check('STOCKS', 56)).toBe('REBALANCE_REQUIRED');    // lệch +6
+    expect(check('STOCKS', 38)).toBe('REBALANCE_REQUIRED');    // lệch −12
+    expect(check('CASH', 6)).toBe('REBALANCE_REQUIRED');       // lệch −9
   });
 });
 

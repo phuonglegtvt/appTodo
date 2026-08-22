@@ -25,12 +25,12 @@ export function computeDrawdown(
   const ath = sorted[athIndex];
 
   // Sụt sâu nhất trong lịch sử: quét bằng đỉnh trượt.
-  let dinhTruot = sorted[0].value;
+  let runningPeak = sorted[0].value;
   let maxPct = 0;
   for (const p of sorted) {
-    if (p.value > dinhTruot) dinhTruot = p.value;
-    if (dinhTruot > 0) {
-      const dd = ((dinhTruot - p.value) / dinhTruot) * 100;
+    if (p.value > runningPeak) runningPeak = p.value;
+    if (runningPeak > 0) {
+      const dd = ((runningPeak - p.value) / runningPeak) * 100;
       if (dd > maxPct) maxPct = dd;
     }
   }
@@ -42,9 +42,9 @@ export function computeDrawdown(
   }
 
   const currentPct = ath.value > 0 ? ((ath.value - last.value) / ath.value) * 100 : 0;
-  const bienDo = ath.value - trough.value;
+  const range = ath.value - trough.value;
   // Chưa từng sụt (đỉnh = đáy) ⇒ coi như đã hồi phục hoàn toàn, không chia cho 0.
-  const recoveryPct = bienDo > 0 ? ((last.value - trough.value) / bienDo) * 100 : 100;
+  const recoveryPct = range > 0 ? ((last.value - trough.value) / range) * 100 : 100;
 
   return {
     currentPct,

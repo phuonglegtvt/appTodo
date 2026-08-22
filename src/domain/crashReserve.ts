@@ -35,46 +35,46 @@ export interface CrashReserveInput {
 export function evaluateCrashReserve(input: CrashReserveInput): CrashRecommendation {
   const { portfolioDrawdownPct, currentEpisodeStart, cashReserveVnd, levels, history } = input;
 
-  const suKienDotNay = history.filter((h) => h.episodeStart === currentEpisodeStart);
+  const episodeEvents = history.filter((h) => h.episodeStart === currentEpisodeStart);
 
   // (a) Mốc tính %: số dư lúc đợt bắt đầu. Đợt chưa có sự kiện nào thì chụp ảnh bây giờ.
-  const reserveAtEpisodeStartVnd = suKienDotNay.length > 0
-    ? suKienDotNay[0].reserveAtEpisodeStartVnd
+  const reserveAtEpisodeStartVnd = episodeEvents.length > 0
+    ? episodeEvents[0].reserveAtEpisodeStartVnd
     : cashReserveVnd;
 
   // (b) Bậc đã dùng TRONG ĐỢT NÀY. Đợt khác không tính.
-  const daDung = new Set(suKienDotNay.map((h) => h.level));
+  const usedLevels = new Set(episodeEvents.map((h) => h.level));
 
-  const theoThuTu = [...levels].sort((a, b) => a.drawdownPct - b.drawdownPct);
+  const sortedLevels = [...levels].sort((a, b) => a.drawdownPct - b.drawdownPct);
 
   const triggeredLevels: CrashRecommendation['triggeredLevels'] = [];
-  let conLai = cashReserveVnd;
+  let remaining = cashReserveVnd;
 
-  for (const l of theoThuTu) {
+  for (const l of sortedLevels) {
     if (l.drawdownPct > portfolioDrawdownPct) continue;   // chưa tới ngưỡng
-    if (daDung.has(l.level)) continue;                    // đã dùng trong đợt này
+    if (usedLevels.has(l.level)) continue;                    // đã dùng trong đợt này
 
-    const muon = reserveAtEpisodeStartVnd * (l.deployPctOfReserve / 100);
+    const requested = reserveAtEpisodeStartVnd * (l.deployPctOfReserve / 100);
     // Không giải ngân quá số tiền đang thực có. Hết tiền vẫn BÁO bậc đã đạt
     // (deployVnd = 0) để người dùng biết, không nuốt im lặng.
-    const cho = Math.max(0, Math.min(muon, conLai));
-    conLai -= cho;
+    const granted = Math.max(0, Math.min(requested, remaining));
+    remaining -= granted;
 
-    triggeredLevels.push({ level: l.level, drawdownPct: l.drawdownPct, deployVnd: cho });
+    triggeredLevels.push({ level: l.level, drawdownPct: l.drawdownPct, deployVnd: granted });
   }
 
-  const bacKeTiep = theoThuTu.find((l) => l.drawdownPct > portfolioDrawdownPct);
+  const nextUntriggered = sortedLevels.find((l) => l.drawdownPct > portfolioDrawdownPct);
 
   return {
     episodeStart: currentEpisodeStart,
     reserveAtEpisodeStartVnd,
     triggeredLevels,
     totalDeployVnd: triggeredLevels.reduce((s, t) => s + t.deployVnd, 0),
-    nextLevel: bacKeTiep
+    nextLevel: nextUntriggered
       ? {
-          level: bacKeTiep.level,
-          drawdownPct: bacKeTiep.drawdownPct,
-          gapPp: bacKeTiep.drawdownPct - portfolioDrawdownPct,
+          level: nextUntriggered.level,
+          drawdownPct: nextUntriggered.drawdownPct,
+          gapPp: nextUntriggered.drawdownPct - portfolioDrawdownPct,
         }
       : null,
   };

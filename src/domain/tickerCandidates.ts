@@ -21,25 +21,25 @@ export function pickCandidates(
   const shortfalls: ShortfallNote[] = [];
 
   for (const item of watchlist) {
-    const { currentPriceVnd: gia, thresholdVnd: nguong, lotSize } = item;
+    const { currentPriceVnd: price, thresholdVnd: threshold, lotSize } = item;
 
     // Thiếu dữ liệu hoặc dữ liệu xấu → bỏ qua, KHÔNG đoán bừa.
-    if (gia === null || nguong === null) continue;
-    if (lotSize <= 0 || nguong <= 0) continue;
+    if (price === null || threshold === null) continue;
+    if (lotSize <= 0 || threshold <= 0) continue;
 
     // Trên ngưỡng tích sản → không phải ứng viên, loại hẳn.
-    if (gia > nguong) continue;
+    if (price > threshold) continue;
 
-    const lotCostVnd = gia * lotSize;
+    const lotCostVnd = price * lotSize;
 
     if (lotCostVnd <= budgetVnd) {
       affordable.push({
         symbol: item.symbol,
         name: item.name,
         group: item.group,
-        priceVnd: gia,
+        priceVnd: price,
         lotCostVnd,
-        belowThresholdPct: ((nguong - gia) / nguong) * 100,
+        belowThresholdPct: ((threshold - price) / threshold) * 100,
       });
     } else {
       const shortfallVnd = lotCostVnd - budgetVnd;

@@ -32,14 +32,14 @@ describe('pickCandidates — ngân sách 1.400.000, Z = 3.000.000', () => {
   });
 
   it('mã TRÊN ngưỡng bị loại hẳn, không xuất hiện ở đâu cả', () => {
-    const moiSymbol = [...r.affordable, ...r.shortfalls].map((x) => x.symbol);
-    expect(moiSymbol).not.toContain('OCB');
+    const allSymbols = [...r.affordable, ...r.shortfalls].map((x) => x.symbol);
+    expect(allSymbols).not.toContain('OCB');
   });
 
   it('mã thiếu giá hoặc thiếu ngưỡng bị loại (không đoán bừa)', () => {
-    const moiSymbol = [...r.affordable, ...r.shortfalls].map((x) => x.symbol);
-    expect(moiSymbol).not.toContain('XXX');
-    expect(moiSymbol).not.toContain('YYY');
+    const allSymbols = [...r.affordable, ...r.shortfalls].map((x) => x.symbol);
+    expect(allSymbols).not.toContain('XXX');
+    expect(allSymbols).not.toContain('YYY');
   });
 
   it('sắp xếp mã mua được theo mức rẻ so với ngưỡng, rẻ nhất lên đầu', () => {
