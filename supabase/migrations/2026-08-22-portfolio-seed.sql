@@ -15,6 +15,21 @@
 -- KHÔNG tạo transactions. Nạp vị thế thật (số lượng, giá mua, ngày) làm ở
 -- màn hình InitialPositionsWizard (đợt 3) — không được bịa ngày giao dịch.
 
+-- ---------- guard: user phải tồn tại (CLAUDE.md "KHÔNG nuốt lỗi im lặng") ----------
+-- Thiếu guard này: sai email ⇒ mọi insert bên dưới lọc "where u.email = ..."
+-- ra 0 dòng ⇒ "INSERT 0 0" bảy lần, exit 0, KHÔNG một cảnh báo — file này
+-- NewPL chạy tay trong SQL Editor, thấy "Success" tưởng đã xong, đến lúc mở
+-- app ra rỗng mới biết là sai. Chặn sớm, nói rõ đang tìm email nào.
+do $$
+begin
+  if not exists (
+    select 1 from auth.users where email = 'phuonglegtvt92@gmail.com'
+  ) then
+    raise exception
+      'Không tìm thấy user với email phuonglegtvt92@gmail.com trong auth.users — kiểm tra lại email đăng nhập (đổi email trong file này nếu NewPL dùng địa chỉ khác) trước khi chạy lại seed';
+  end if;
+end $$;
+
 -- ---------- settings ----------
 insert into portfolio.settings (user_id)
 select u.id from auth.users u where u.email = 'phuonglegtvt92@gmail.com'

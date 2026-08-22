@@ -191,14 +191,33 @@ create table if not exists portfolio.action_plans (
 -- ---------- trigger kiểm tra tính toàn vẹn (spec mục 3.4) ----------
 -- CHECK constraint không tra được bảng khác, nên các ràng buộc liên bảng
 -- đi bằng trigger. Đây là app tiền — thà chặn ở DB.
+--
+-- Fix round 2 (review): trigger gốc (copy verbatim từ spec mục 3.4) không
+-- kiểm instrument có thuộc về CHÍNH user đang ghi hay không, và không có
+-- nhánh nào cho DIVIDEND/FEE. Ba hình dạng sau đều làm vỡ đẳng thức kế toán
+-- kép mà KHÔNG một lỗi nào — đóng cả ba vì cùng một họ ("trigger nhận một
+-- hình dạng giao dịch làm vỡ đẳng thức kế toán"):
+--   (a) instrument_id/cash_instrument_id trỏ sang instrument của NGƯỜI KHÁC
+--       → chân tiền bị RLS lọc mất khỏi view của chính người ghi, đẳng thức
+--       kế toán của người ghi bị lệch dương (đo thực tế: mua 1.000.000 mà
+--       không túi nào bị trừ).
+--   (b) DIVIDEND thiếu cash_instrument_id → v_legs không có chân nào khớp
+--       (không phải chân 1, không phải chân 3) ⇒ tiền biến mất im lặng.
+--   (c) FEE có instrument_id = cash_instrument_id (và túi đó là CASH) →
+--       chân 2 và chân 3 của v_legs CÙNG khớp trên một túi ⇒ bị trừ hai lần.
 create or replace function portfolio.tx_validate() returns trigger
 language plpgsql as $fn$
 declare
   ac_main portfolio.asset_class;
   ac_cash portfolio.asset_class;
 begin
+  -- (a) instrument chính PHẢI thuộc về chính user đang ghi giao dịch.
   select asset_class into ac_main
-    from portfolio.instruments where id = new.instrument_id;
+    from portfolio.instruments
+   where id = new.instrument_id and user_id = new.user_id;
+  if ac_main is null then
+    raise exception 'instrument_id không tồn tại hoặc không thuộc về user này';
+  end if;
 
   -- dòng tiền thuần: instrument_id PHẢI là túi CASH và không có chân đối ứng
   if new.type in ('DEPOSIT','WITHDRAWAL','INTEREST') then
@@ -210,27 +229,71 @@ begin
     end if;
   end if;
 
-  -- BUY/SELL: tài sản không được là CASH, chân tiền phải là CASH
+  -- BUY/SELL: tài sản không được là CASH, chân tiền phải là CASH cùng user
   if new.type in ('BUY','SELL') then
     if ac_main = 'CASH' then
       raise exception 'BUY/SELL không áp dụng cho túi CASH — dùng TRANSFER';
     end if;
+    if new.cash_instrument_id is null then
+      raise exception 'BUY/SELL phải có cash_instrument_id';
+    end if;
     select asset_class into ac_cash
-      from portfolio.instruments where id = new.cash_instrument_id;
+      from portfolio.instruments
+     where id = new.cash_instrument_id and user_id = new.user_id;
+    if ac_cash is null then
+      raise exception 'cash_instrument_id không tồn tại hoặc không thuộc về user này';
+    end if;
     if ac_cash <> 'CASH' then
       raise exception 'cash_instrument_id phải trỏ tới một túi CASH';
     end if;
   end if;
 
-  -- TRANSFER: chỉ giữa hai túi CASH (dùng để đặt tên tiền cho DCA)
+  -- TRANSFER: chỉ giữa hai túi CASH cùng user (dùng để đặt tên tiền cho DCA)
   if new.type = 'TRANSFER' then
+    if new.cash_instrument_id is null then
+      raise exception 'TRANSFER phải có cash_instrument_id';
+    end if;
     select asset_class into ac_cash
-      from portfolio.instruments where id = new.cash_instrument_id;
+      from portfolio.instruments
+     where id = new.cash_instrument_id and user_id = new.user_id;
+    if ac_cash is null then
+      raise exception 'cash_instrument_id không tồn tại hoặc không thuộc về user này';
+    end if;
     if ac_main <> 'CASH' or ac_cash <> 'CASH' then
       raise exception 'TRANSFER chỉ dùng giữa hai túi CASH';
     end if;
     if new.instrument_id = new.cash_instrument_id then
       raise exception 'TRANSFER phải giữa hai túi khác nhau';
+    end if;
+  end if;
+
+  -- (b)+(c) DIVIDEND/FEE: v_legs chỉ biết cộng/trừ tiền qua CHÍNH XÁC một
+  -- trong hai chân (chân 2 qua cash_instrument_id, hoặc chân 3 khi
+  -- instrument_id tự nó là CASH) — không được cả hai (trừ/cộng hai lần)
+  -- và không được thiếu cả hai (tiền biến mất).
+  if new.type in ('DIVIDEND','FEE') then
+    if new.cash_instrument_id is null then
+      -- Không có chân tiền riêng ⇒ instrument_id phải TỰ NÓ là túi CASH,
+      -- nếu không giao dịch không khớp chân nào trong v_legs (tiền biến mất).
+      -- DIVIDEND không có cách nào tự đứng một mình theo thiết kế view hiện
+      -- tại (v_legs không có nhánh DIVIDEND ở chân 3) nên luôn bắt buộc có
+      -- cash_instrument_id.
+      if new.type = 'DIVIDEND' or ac_main <> 'CASH' then
+        raise exception '% phải có cash_instrument_id, nếu không tiền sẽ biến mất khỏi sổ', new.type;
+      end if;
+    else
+      if new.instrument_id = new.cash_instrument_id then
+        raise exception '% không được có instrument_id = cash_instrument_id (sẽ bị trừ/cộng hai lần)', new.type;
+      end if;
+      select asset_class into ac_cash
+        from portfolio.instruments
+       where id = new.cash_instrument_id and user_id = new.user_id;
+      if ac_cash is null then
+        raise exception 'cash_instrument_id không tồn tại hoặc không thuộc về user này';
+      end if;
+      if ac_cash <> 'CASH' then
+        raise exception 'cash_instrument_id phải trỏ tới một túi CASH';
+      end if;
     end if;
   end if;
 
@@ -348,12 +411,32 @@ create policy "benchmark_prices_delete_own" on portfolio.benchmark_prices
 -- ⚠️ Thiếu bước này thì RLS đúng nhưng client vẫn nhận
 -- "permission denied for table instruments" — RLS chỉ lọc HÀNG, không thay
 -- thế GRANT ở cấp bảng.
-grant select, insert, update, delete
-  on all tables in schema portfolio to authenticated;
+--
+-- CỐ TÌNH liệt kê từng bảng, KHÔNG dùng `alter default privileges` (đã bỏ):
+-- spec mục 3.3 chỉ yêu cầu `grant usage on schema` (dòng 156), không yêu cầu
+-- default privileges. `alter default privileges` từng khiến MỌI bảng tạo về
+-- sau trong schema `portfolio` tự động có full CRUD cho `authenticated`
+-- ngay cả khi bảng đó CHƯA bật RLS — nghĩa là quên một dòng
+-- "enable row level security" ở migration tương lai sẽ phơi cả bảng ra cho
+-- mọi user đã đăng nhập, không một triệu chứng nào. Đổi lại: từ nay, một
+-- bảng portfolio mới không có trong danh sách dưới đây sẽ báo lỗi
+-- "permission denied" ồn ào — đúng hướng lỗi cần chọn (thà ồn ào còn hơn
+-- im lặng lộ dữ liệu).
+--
+-- transactions CỐ TÌNH không có UPDATE trong danh sách grant (khớp với việc
+-- không có policy UPDATE — sổ giao dịch bất biến).
+do $$
+declare t text;
+begin
+  foreach t in array array['instruments','prices','allocation_targets','settings',
+                           'crash_reserve_levels','crash_reserve_events','benchmarks',
+                           'benchmark_prices','snapshots','action_plans']
+  loop
+    execute format('grant select, insert, update, delete on portfolio.%I to authenticated', t);
+  end loop;
+end $$;
 
--- Áp cho cả bảng/view tạo về sau (3 view ở migration kế tiếp).
-alter default privileges in schema portfolio
-  grant select, insert, update, delete on tables to authenticated;
+grant select, insert, delete on portfolio.transactions to authenticated;
 
 -- ---------- Realtime (spec mục 3.6) ----------
 -- Chỉ bật cho 3 bảng thay đổi khi dùng: transactions, prices, action_plans.
