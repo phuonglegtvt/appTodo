@@ -5,7 +5,7 @@
 > `docs/superpowers/specs/2026-07-04-todo-app-design.md`; Phase 2a xem
 > `docs/superpowers/specs/2026-07-05-recurring-tasks-design.md`.
 
-- **Phiên bản:** 1.1 (Phase 1 hoàn tất / Phase 2a đang triển khai)
+- **Phiên bản:** 1.2 (Phase 1 hoàn tất / Phase 2a đang triển khai / Phase 3 đang triển khai)
 - **Ngày:** 2026-07-05
 - **Chủ sản phẩm:** phuonglegtvt92@gmail.com
 
@@ -98,7 +98,17 @@ Thiết kế chi tiết: `docs/superpowers/specs/2026-07-05-recurring-tasks-desi
 Mô hình mục tiêu **phẳng** (không lồng cây nhiều tầng ở bản đầu) để giữ độ phức
 tạp vừa phải; có thể nâng cấp lên cây lồng nhau thật sự nếu nhu cầu phát sinh.
 
-### 6.3 Ngoài phạm vi (chưa có kế hoạch)
+### 6.3 Phase 3 — Cân bằng danh mục đầu tư (đang triển khai)
+
+Tab `portfolio`: theo dõi danh mục 4 nhóm tài sản (Stocks 50% / Crypto 20% /
+Gold 15% / Cash 15%), so tỷ trọng thực tế với mục tiêu, và mỗi tháng sinh một
+"kế hoạch hành động" nói rõ tháng này cần mua gì, bao nhiêu, mã nào.
+
+- Không tự đặt lệnh mua/bán. App chỉ đưa đề xuất; người dùng tự thực hiện rồi ghi lại.
+- Yêu cầu & thiết kế đầy đủ:
+  `docs/superpowers/specs/2026-08-22-portfolio-rebalancing-design.md`
+
+### 6.4 Ngoài phạm vi (chưa có kế hoạch)
 Nhập ngôn ngữ tự nhiên, việc con (subtask), nhắc nhở/thông báo đẩy, Pomodoro,
 habit tracker, tính năng AI, cộng tác nhiều người.
 

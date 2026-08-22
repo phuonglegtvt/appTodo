@@ -53,3 +53,22 @@ Nếu chưa có thiết kế từ Claude Design, dựng UI Tailwind tối giản
 
 ## Ngôn ngữ
 Giao diện và trao đổi bằng **tiếng Việt** (thuật ngữ kỹ thuật giữ tiếng Anh).
+
+## Module Portfolio (Phase 3)
+
+Module cân bằng danh mục đầu tư, nằm ở tab `portfolio`.
+- Yêu cầu & thiết kế: `docs/superpowers/specs/2026-08-22-portfolio-rebalancing-design.md`
+- Dữ liệu: schema Postgres riêng `portfolio` (KHÔNG dùng `public`). Bảng
+  `public.stocks` / `public.cryptos` giữ nguyên, chỉ đọc, đóng vai watchlist.
+
+### Luật cứng cho `src/domain/`
+- **0 dependency.** Cấm import `@supabase/supabase-js`, `react`, và mọi thứ gọi `fetch`.
+- **Cấm `Date.now()` và `new Date()` không tham số.** Thời điểm truyền vào qua tham số
+  (`snapshot.asOf`) để test tái lập được và để tính lại kế hoạch tháng cũ.
+- **Đơn vị: VND (đồng) tuyệt đối.** Quy đổi nghìn đồng / USD chỉ được xảy ra trong
+  `src/providers/`.
+- Mỗi module một trách nhiệm, mỗi module một file test cạnh nó.
+
+### Sổ giao dịch bất biến
+`portfolio.transactions` không có policy UPDATE. Ghi sai thì ghi thêm một dòng
+`ADJUSTMENT` bù, không sửa bản ghi cũ. Chỉ được xoá trong 24h đầu.
