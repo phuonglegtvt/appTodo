@@ -5,11 +5,15 @@
 //
 // CÔNG THỨC MẶC ĐỊNH — PROPORTIONAL_GAP (spec mục 4.4):
 //   chia tỷ lệ theo khoảng thiếu tính bằng VND. Lý do chọn: danh mục ĐANG ở
-//   đúng target thì phân bổ mới giữ NGUYÊN target — vì khi đang ở target,
-//   gap_c = targetPct_c × pool với mọi class, nên chia theo tỷ lệ gap cũng
-//   chính là chia theo targetPct_c. Đã kiểm: danh mục 500/200/150/150tr,
-//   Z = 3tr → alloc đúng 1.500.000/600.000/450.000/450.000; mô phỏng 24
-//   tháng giữ nguyên 50/20/15/15%.
+//   đúng target thì phân bổ mới giữ NGUYÊN target. Đúng cho CẢ HAI luồng,
+//   nhưng qua hai cơ chế khác nhau:
+//     · addsToTotal = true (§4, tiền mới): gap_c = targetPct_c × pool với MỌI
+//       class, nên chia theo tỷ lệ gap cũng chính là chia theo targetPct_c.
+//       Đã kiểm: danh mục 500/200/150/150tr, Z = 3tr → alloc đúng
+//       1.500.000/600.000/450.000/450.000; mô phỏng 24 tháng giữ nguyên
+//       50/20/15/15%.
+//     · addsToTotal = false (§5, cổ tức): gap_CASH = pool còn gap ba class kia
+//       = 0, nên toàn bộ cổ tức nằm lại Cash và danh mục không nhúc nhích.
 //
 //   ⚠️ KHÔNG phải phân bổ tối thiểu hoá tổng bình phương độ lệch KHÔNG trọng
 //   số Σ(gap_c − alloc_c)² — phân bổ đó là "water-filling" (dồn hết pool
