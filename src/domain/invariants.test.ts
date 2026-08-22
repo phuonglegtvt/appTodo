@@ -26,7 +26,6 @@ import { buildActionPlan } from './actionPlan';
 import { allocate } from './allocate';
 import { computeDrawdown } from './drawdown';
 import { DEFAULT_CRASH_LEVELS } from './crashReserve';
-import { roundDownTo, sumVnd } from './money';
 import { ASSET_CLASSES, DEFAULT_CONFIG } from './types';
 import type {
   ActionPlan, AllocationFormula, AssetClass, CrashEventRecord, EngineConfig, PlanStatus,
@@ -75,6 +74,24 @@ const TARGETS: Record<AssetClass, TargetBand> = {
 const FORMULAS: readonly AllocationFormula[] = ['PROPORTIONAL_GAP', 'PRIORITY_WATERFALL'];
 const ROUNDING_STEPS: readonly number[] = [1, 1_000, 100_000, 1_000_000];
 const STOCK_GROUPS: readonly StockGroupVi[] = ['attack', 'balance', 'defense'];
+
+// Round 2, item 1 — `classPriority` chưa từng khác mặc định trong bộ sinh cũ,
+// và thứ tự mặc định `{STOCKS:4, CRYPTO:3, GOLD:2, CASH:1}` TRÙNG KHÍT thứ tự
+// tự nhiên `ASSET_CLASSES`, nên `[...candidates].sort(theo classPriority)` ở
+// `allocate.ts:69-71` luôn cho cùng kết quả với `[...candidates]` KHÔNG sort
+// — tức đoạn sort đó là dead-code-equivalent trên toàn corpus. Bốn permutation
+// dưới đây, trong đó có MỘT permutation ĐẢO HẲN so với mặc định, để `order`
+// sau sort thật sự có thể khác thứ tự tự nhiên.
+const CLASS_PRIORITY_VARIANTS: readonly Record<AssetClass, number>[] = [
+  DEFAULT_CONFIG.classPriority,                     // mặc định — giữ để đối chứng
+  { STOCKS: 1, CRYPTO: 2, GOLD: 3, CASH: 4 },        // ĐẢO HẲN so với mặc định
+  { STOCKS: 3, CRYPTO: 1, GOLD: 4, CASH: 2 },        // xáo trộn khác #1
+  { STOCKS: 2, CRYPTO: 4, GOLD: 1, CASH: 3 },        // xáo trộn khác #2
+];
+
+function isDefaultClassPriority(p: Record<AssetClass, number>): boolean {
+  return ASSET_CLASSES.every((c) => p[c] === DEFAULT_CONFIG.classPriority[c]);
+}
 
 /** Bốn dạng danh mục sinh ra. Tỷ lệ chọn ở `pickShape`. */
 type SnapshotShape = 'EMPTY' | 'MISSING_PRICES' | 'NEAR_TARGET' | 'WIDE';
@@ -476,6 +493,23 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
   // làm tròn rơi vào một ứng viên khác order[0]. Model dưới đây tính đủ CẢ
   // HAI bước để tránh báo oan, đồng thời vẫn pin được đích đến TUYỆT ĐỐI.
 
+  // BẢN SAO ĐỘC LẬP của money.ts, viết lại TẠI CHỖ trong test — KHÔNG import
+  // hàm thật từ engine (round 2, item 2). Lý do: nếu oracle gọi thẳng
+  // `roundDownTo`/`sumVnd` của chính module đang bị kiểm, một lỗi BÊN TRONG
+  // hai hàm đó (vd `money.ts:9` đổi `Math.floor` → `Math.round`) sẽ lọt qua
+  // MỌI assert giá trị của oracle — cả hai bên cùng sai theo đúng một cách,
+  // nên không có gì để so lệch. Round 1 từng mù trước lỗi này (Probe B, xem
+  // task-13-findings-round2.md và report mục "Fix round 2"). Hai hàm dưới
+  // đây PHẢI giữ ĐÚNG ngữ nghĩa gốc (làm tròn XUỐNG, cộng thẳng) — nếu không
+  // thì oracle tự sai theo hướng khác, không phải độc lập đúng nghĩa.
+  function testRoundDownTo(value: number, step: number): number {
+    if (step <= 0) return value;
+    return Math.floor(value / step) * step;
+  }
+  function testSumVnd(values: number[]): number {
+    return values.reduce((sum, v) => sum + v, 0);
+  }
+
   /**
    * Mirror công thức allocate.ts, chỉ cho luồng addsToTotal = true (tiền
    * mới). Nhận `classValues`/`config` trực tiếp (không nhận cả
@@ -495,7 +529,7 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
     const amounts: Record<AssetClass, number> = {
       STOCKS: 0, CRYPTO: 0, GOLD: 0, CASH: 0,
     };
-    const total = sumVnd(ASSET_CLASSES.map((c) => classValues[c]));
+    const total = testSumVnd(ASSET_CLASSES.map((c) => classValues[c]));
     const newTotal = total + poolVnd;
     const gaps = {} as Record<AssetClass, number>;
     for (const c of ASSET_CLASSES) {
@@ -530,13 +564,13 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
       waterfallRemaining = remaining;
       if (remaining > 0) raw[order[0]] = (raw[order[0]] ?? 0) + remaining;
     } else {
-      const totalGap = sumVnd(candidates.map((c) => gaps[c]));
+      const totalGap = testSumVnd(candidates.map((c) => gaps[c]));
       for (const c of candidates) raw[c] = poolVnd * (gaps[c] / totalGap);
     }
 
     const rounded = {} as Record<AssetClass, number>;
-    for (const c of candidates) rounded[c] = roundDownTo(raw[c] ?? 0, config.roundingStepVnd);
-    const postRoundingResidualVnd = poolVnd - sumVnd(candidates.map((c) => rounded[c] ?? 0));
+    for (const c of candidates) rounded[c] = testRoundDownTo(raw[c] ?? 0, config.roundingStepVnd);
+    const postRoundingResidualVnd = poolVnd - testSumVnd(candidates.map((c) => rounded[c] ?? 0));
     if (postRoundingResidualVnd > 0) {
       const largestGap = candidates.reduce((a, b) => (gaps[b] > gaps[a] ? b : a));
       rounded[largestGap] = (rounded[largestGap] ?? 0) + postRoundingResidualVnd;
@@ -634,6 +668,9 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
     // ≥ 2 ứng viên: chỉ ở ca này đột biến order[0] → order[cuối] mới THỰC SỰ
     // đổi kết quả (1 ứng viên thì order[0] === order[cuối], đột biến vô hại).
     let multiCandidateTriggered = 0;
+    // Round 2, item 1 — số ca `classPriority` KHÁC mặc định, tức có cơ hội
+    // thật sự làm `order` (sau sort) khác thứ tự tự nhiên `[...candidates]`.
+    let nonDefaultPriorityCases = 0;
 
     for (let index = 0; index < 300; index++) {
       const newTotal = r.int(60, 300) * 20_000_000;
@@ -666,11 +703,13 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
       // KHÔNG cần tự nó thiếu, nó bị loại bởi cấu hình bất kể gap dương/âm.
       classValues.CASH = total0 - (classValues.STOCKS + classValues.CRYPTO + classValues.GOLD);
 
+      const classPriority = r.pick(CLASS_PRIORITY_VARIANTS);
       const config: EngineConfig = {
         ...DEFAULT_CONFIG,
         formula: 'PRIORITY_WATERFALL',
         roundingStepVnd: r.pick(ROUNDING_STEPS),
         cashEligibleForNewCapital: false,
+        classPriority,
       };
 
       const res = allocate({
@@ -698,12 +737,15 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
         residualTriggered += 1;
         if (model.waterfallOrder.length >= 2) multiCandidateTriggered += 1;
       }
+      if (!isDefaultClassPriority(classPriority)) nonDefaultPriorityCases += 1;
       checked += 1;
     }
 
     expect(checked).toBe(300);
-    // Ngưỡng đo SAU khi chạy thật (đo được: residualTriggered = 300/300,
-    // multiCandidateTriggered = 221/300) — chi tiết ở task-13-report.md.
+    // Ngưỡng đo SAU khi chạy thật (đo được ở round 1: residualTriggered =
+    // 300/300, multiCandidateTriggered = 221/300; sau khi thêm classPriority
+    // ở round 2 — xem dưới — RNG bị dịch nên đo lại: 300/300 và 215/300,
+    // vẫn cùng bậc, ngưỡng dưới đây vẫn đúng) — chi tiết ở task-13-report.md.
     // residualTriggered gần như luôn đúng theo cách dựng (pool tối đa 6tr so
     // với tổng gap ứng viên, pool tối thiểu 5tr) nhưng KHÔNG tuyệt đối về mặt
     // toán học (biên dưới pool và biên trên tổng gap có thể chạm nhau ở ca
@@ -715,6 +757,15 @@ describe('BẤT BIẾN của allocate — PIN ĐÍCH ĐẾN của phần dư (kh
     expect(
       multiCandidateTriggered,
       'quá ít ca có ≥ 2 ứng viên — đột biến order[0] → order[cuối] sẽ không đổi được kết quả ở đa số ca',
+    ).toBeGreaterThanOrEqual(100);
+    // Round 2, item 1 — bốn permutation, chọn đều (r.pick) ⇒ 3/4 số ca lẽ ra
+    // rơi vào một permutation KHÁC mặc định. Đo được 216/300 (xem
+    // task-13-report.md, mục "Fix round 2"). Ngưỡng đặt SAU khi đo, ≈ MỘT
+    // NỬA số đo thực tế, làm tròn xuống số tròn — đúng quy ước của báo cáo gốc
+    // §4 (số đo cao hơn ngưỡng ít nhất 1,7×: 216/100 ≈ 2,16×).
+    expect(
+      nonDefaultPriorityCases,
+      'classPriority hầu như luôn là mặc định — đột biến bỏ sort ở allocate.ts:69-71 sẽ không bị bắt',
     ).toBeGreaterThanOrEqual(100);
   });
 });
@@ -777,6 +828,132 @@ describe('BẤT BIẾN: hai nhánh NÉM LỖI của allocate', () => {
     // Hai nhánh phải cùng đông — lệch hẳn về một bên là bộ sinh hỏng.
     expect(thrown, 'quá ít ca chạm nhánh ném lỗi cổ tức > Cash').toBeGreaterThanOrEqual(200);
     expect(allocated, 'quá ít ca cổ tức hợp lệ chạy tới bất biến tổng').toBeGreaterThanOrEqual(200);
+  });
+});
+
+describe('BẤT BIẾN SUY TỪ SPEC: danh mục ĐANG Ở ĐÚNG TARGET nhận tiền mới thì GIỮ NGUYÊN target', () => {
+  // Round 2, item 3. `allocate.ts:6-16` TUYÊN BỐ tính chất này của
+  // PROPORTIONAL_GAP ("danh mục ĐANG ở đúng target thì phân bổ mới giữ
+  // NGUYÊN target — vì khi đang ở target, gap_c = targetPct_c × pool với mọi
+  // class"), nhưng KHÔNG có test nào trong toàn bộ src/domain assert nó ở
+  // dạng property (`allocate.test.ts:187` chỉ kiểm danh mục RỖNG — họ hàng
+  // gần, không phải chính tính chất này).
+  //
+  // KỲ VỌNG được suy TRỰC TIẾP từ targetPct và pool — KHÔNG gọi lại
+  // allocate(), KHÔNG dùng oracle mirror `expectedAllocation()` ở describe
+  // phía trên. Nếu kỳ vọng bị tính lại bằng cách chạy chính implementation,
+  // tính chất này không mua thêm bảo hiểm nào (mirror đã làm việc đó rồi) —
+  // đây phải là một phép tính TOÁN HỌC độc lập với code.
+  //
+  // SUY DIỄN (không chép code):
+  //   Danh mục ở ĐÚNG target ⇒ classValues_c = targetPct_c/100 × total0 với
+  //   MỌI class c (total0 = tổng danh mục TRƯỚC khi nhận pool).
+  //   newTotal = total0 + pool (addsToTotal = true).
+  //   gap_c = targetPct_c/100 × newTotal − classValues_c
+  //         = targetPct_c/100 × (total0 + pool) − targetPct_c/100 × total0
+  //         = targetPct_c/100 × pool.                                   (*)
+  //   Σ_c targetPct_c = 100% ⇒ Σ_c gap_c = pool ĐÚNG KHÍT pool (không dư,
+  //   không thiếu). Hệ quả: BẤT KỂ chia theo TỶ LỆ gap (PROPORTIONAL_GAP)
+  //   hay ĐỔ ĐẦY TUẦN TỰ theo ưu tiên (PRIORITY_WATERFALL, với điều kiện
+  //   cashEligibleForNewCapital = true để CASH cũng là ứng viên — nếu CASH
+  //   bị loại thì Σ gap các ứng viên còn lại < pool và tính chất này VỠ),
+  //   mỗi nhóm đều nhận ĐÚNG gap_c của nó, không nhóm nào bị cắt bớt cho
+  //   nhóm khác — vì tổng khít nhau nên KHÔNG có "phần dư" cần dồn ngược
+  //   (điều kiện `remaining > 0` ở `splitByPriority` và phần dư sau làm
+  //   tròn ở `allocate.ts:147-151` đều không kích hoạt khi không có sai số
+  //   làm tròn). Danh mục sau khi cộng amount_c = gap_c vẫn ở đúng
+  //   targetPct_c (thay total0 bằng newTotal trong công thức trên là ra
+  //   chiều ngược lại).
+  //
+  // `total0` và `pool` được chọn là BỘI SỐ của 20.000 VND (mẫu số chung nhỏ
+  // nhất của 1/2, 1/5, 3/20 — ba phân số ứng với 50%, 20%, 15% — là 20) để
+  // (*) luôn ra SỐ NGUYÊN ĐÚNG, loại hẳn sai số dấu phẩy động; kèm
+  // `roundingStepVnd: 1` để loại nốt nhiễu làm tròn bội số.
+  const SEED = 20260828; // Seed MỚI — không trùng 20260822–20260827 đã dùng.
+  const AT_TARGET_CASE_COUNT = 400;
+
+  it('mỗi nhóm nhận ĐÚNG targetPct_c × pool, và tỷ trọng sau phân bổ vẫn ĐÚNG target', () => {
+    const r = createRandom(SEED);
+    let checked = 0;
+    let proportionalGapChecked = 0;
+    let priorityWaterfallChecked = 0;
+
+    for (let index = 0; index < AT_TARGET_CASE_COUNT; index++) {
+      const total0 = r.int(50, 5_000) * 20_000;
+      const pool = r.int(1, 1_000) * 20_000;
+      const formula = r.pick(FORMULAS);
+
+      const classValues = {} as Record<AssetClass, number>;
+      for (const c of ASSET_CLASSES) {
+        classValues[c] = (total0 * TARGETS[c].targetPct) / 100;
+      }
+      const config: EngineConfig = {
+        ...DEFAULT_CONFIG,
+        formula,
+        roundingStepVnd: 1,
+        // BẮT BUỘC true — xem suy diễn ở trên: CASH phải là ứng viên để
+        // Σ gap các ứng viên khít đúng pool.
+        cashEligibleForNewCapital: true,
+      };
+
+      const res = allocate({
+        classValues, targets: TARGETS, poolVnd: pool, addsToTotal: true, config,
+      });
+      const actualAmounts: Record<AssetClass, number> = {
+        STOCKS: 0, CRYPTO: 0, GOLD: 0, CASH: 0,
+      };
+      for (const a of res.allocations) actualAmounts[a.assetClass] = a.amountVnd;
+      const newTotal = total0 + pool;
+
+      for (const c of ASSET_CLASSES) {
+        // Kỳ vọng suy TRỰC TIẾP từ (*) — không gọi allocate(), không qua oracle.
+        const expectedAmount = (pool * TARGETS[c].targetPct) / 100;
+        expectInvariant(
+          actualAmounts[c] === expectedAmount,
+          () => `Nhóm ${c} nhận ${actualAmounts[c]} đ, SPEC suy ra phải nhận ĐÚNG `
+            + `${expectedAmount} đ (= targetPct ${TARGETS[c].targetPct}% × pool ${pool}). `
+            + describeCase(SEED, index, {
+              formula, total0, pool, classValues, actualAmounts,
+            }),
+        );
+        // Tỷ trọng sau phân bổ vẫn đúng target — so bằng NHÂN CHÉO số
+        // nguyên, không chia dấu phẩy động:
+        //   (classValues_c + amount_c) / newTotal === targetPct_c / 100
+        //   ⇔ (classValues_c + amount_c) × 100 === targetPct_c × newTotal
+        const newValue = classValues[c] + actualAmounts[c];
+        expectInvariant(
+          newValue * 100 === TARGETS[c].targetPct * newTotal,
+          () => `Tỷ trọng ${c} sau phân bổ lệch target: (${classValues[c]}+${actualAmounts[c]})×100 `
+            + `= ${newValue * 100}, kỳ vọng targetPct×newTotal = `
+            + `${TARGETS[c].targetPct * newTotal}. `
+            + describeCase(SEED, index, {
+              formula, total0, pool, classValues, actualAmounts,
+            }),
+        );
+      }
+      expectInvariant(
+        res.unallocatedVnd === 0,
+        () => `Danh mục đúng target nhận thêm tiền mà vẫn còn ${res.unallocatedVnd} đ chưa `
+          + `phân bổ — SPEC suy ra phải phân bổ HẾT vì Σ gap = pool khít tuyệt đối. `
+          + describeCase(SEED, index, { formula, total0, pool }),
+      );
+
+      if (formula === 'PROPORTIONAL_GAP') proportionalGapChecked += 1;
+      else priorityWaterfallChecked += 1;
+      checked += 1;
+    }
+
+    expect(checked, 'không có nhánh bỏ qua nào — phải chạy đủ 400 ca').toBe(AT_TARGET_CASE_COUNT);
+    // Hai công thức đều phải có đủ ca — mutation của splitProportionalToGap
+    // (nghiệm thu round 2, item 3) chỉ chạm nhánh PROPORTIONAL_GAP, nên
+    // nhánh đó phải đủ đông để chắc chắn bắt được. Đo được (r.pick đều trên
+    // 2 công thức, 400 ca): PROPORTIONAL_GAP = 218, PRIORITY_WATERFALL =
+    // 182. Ngưỡng đặt SAU khi đo, ở khoảng nửa số đo THẤP HƠN (182), làm
+    // tròn xuống số tròn — margin cả hai đều > 1,7× (218/100 ≈ 2,18×,
+    // 182/100 ≈ 1,82×).
+    expect(proportionalGapChecked, 'quá ít ca PROPORTIONAL_GAP để đột biến splitProportionalToGap có cơ hội bị bắt')
+      .toBeGreaterThanOrEqual(100);
+    expect(priorityWaterfallChecked, 'quá ít ca PRIORITY_WATERFALL').toBeGreaterThanOrEqual(100);
   });
 });
 
