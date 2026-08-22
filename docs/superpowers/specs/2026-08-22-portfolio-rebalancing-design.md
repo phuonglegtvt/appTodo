@@ -964,7 +964,7 @@ appTodo/
 | # | Mâu thuẫn | Xử lý |
 |---|---|---|
 | 1 | **§7**: "do nothing while inside the band" **vs** "rebalance mạnh khi lệch ≥5đ%". Cash band 7–20% quanh target 15% ⇒ lệch −8đ% mà vẫn trong band | 4 mức trạng thái, **band là cổng, đ% chỉ nâng mức độ**. Tái lập chính xác kết luận §21. Xem mục 4.3 |
-| 2 | **§4 / §5 / §21**: số trong ba ví dụ không cùng một công thức (§5 chia 60:40 khi hai class lệch bằng nhau; §21 ưu tiên class lệch ÍT hơn) | `PROPORTIONAL_GAP` là chuẩn (chứng minh được là tối thiểu hoá độ lệch). **CẢ BA** §4/§5/§21 ghi nhận là minh hoạ viết tay (§4 lệch vì §17 bắt tính khoảng thiếu trên `newTotal`). Công thức đổi được trong Settings. Xem mục 4.5 |
+| 2 | **§4 / §5 / §21**: số trong ba ví dụ không cùng một công thức (§5 chia 60:40 khi hai class lệch bằng nhau; §21 ưu tiên class lệch ÍT hơn) | `PROPORTIONAL_GAP` là chuẩn (giữ danh mục đang đúng target đứng yên ở target; tối thiểu hoá độ lệch **có trọng số theo gap**, KHÔNG phải bản không trọng số — xem mục 4.4). **CẢ BA** §4/§5/§21 ghi nhận là minh hoạ viết tay (§4 lệch vì §17 bắt tính khoảng thiếu trên `newTotal`). Công thức đổi được trong Settings. Xem mục 4.5 |
 | 3 | **§25**: Crash Reserve ở P0 nhưng Drawdown ở P1, trong khi P0 phụ thuộc P1 | gộp drawdown, dividend, CSV vào v1. Xem mục 0, quyết định 7 |
 
 ## 15. Việc spec không nhắc mà thiếu thì app không dùng được thật
