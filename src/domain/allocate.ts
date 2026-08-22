@@ -4,9 +4,21 @@
 // còn cổ tức thì ĐÃ nằm trong Cash rồi. Nên chỉ cần một cờ `addsToTotal`.
 //
 // CÔNG THỨC MẶC ĐỊNH — PROPORTIONAL_GAP (spec mục 4.4):
-//   chia tỷ lệ theo khoảng thiếu tính bằng VND. Đây là phân bổ DUY NHẤT tối
-//   thiểu hoá tổng bình phương độ lệch sau khi giải ngân — đúng mục tiêu 2 của
-//   §18 "MINIMIZE DEVIATION FROM TARGET".
+//   chia tỷ lệ theo khoảng thiếu tính bằng VND. Lý do chọn: danh mục ĐANG ở
+//   đúng target thì phân bổ mới giữ NGUYÊN target — vì khi đang ở target,
+//   gap_c = targetPct_c × pool với mọi class, nên chia theo tỷ lệ gap cũng
+//   chính là chia theo targetPct_c. Đã kiểm: danh mục 500/200/150/150tr,
+//   Z = 3tr → alloc đúng 1.500.000/600.000/450.000/450.000; mô phỏng 24
+//   tháng giữ nguyên 50/20/15/15%.
+//
+//   ⚠️ KHÔNG phải phân bổ tối thiểu hoá tổng bình phương độ lệch KHÔNG trọng
+//   số Σ(gap_c − alloc_c)² — phân bổ đó là "water-filling" (dồn hết pool
+//   vào class có gap lớn nhất). Water-filling phá đúng tính chất ở trên (đổ
+//   hết vào 1 class dù danh mục đang ở target) và cho kế hoạch hàng tháng
+//   lởm chởm — mỗi tháng chỉ mua 1 class, trái tinh thần DCA của §4.
+//   PROPORTIONAL_GAP tối thiểu hoá bản CÓ TRỌNG SỐ theo gap thay vào đó:
+//   Σ(gap_c − alloc_c)² / gap_c — vẫn phục vụ mục tiêu 2 của §18 "MINIMIZE
+//   DEVIATION FROM TARGET", chỉ không phải bản không trọng số.
 //
 // ⚠️ Số trong ví dụ §4, §5, §21 của spec gốc là minh hoạ viết tay, KHÔNG suy ra
 // được từ bất cứ công thức nào. Chi tiết ở spec mục 4.5. Test ở đây ghi số
