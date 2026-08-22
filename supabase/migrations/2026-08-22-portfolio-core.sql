@@ -267,10 +267,28 @@ begin
     end if;
   end if;
 
-  -- (b)+(c) DIVIDEND/FEE: v_legs chỉ biết cộng/trừ tiền qua CHÍNH XÁC một
-  -- trong hai chân (chân 2 qua cash_instrument_id, hoặc chân 3 khi
-  -- instrument_id tự nó là CASH) — không được cả hai (trừ/cộng hai lần)
-  -- và không được thiếu cả hai (tiền biến mất).
+  -- (b)+(c) DIVIDEND/FEE: hai type này KHÔNG đối xứng trong v_legs, nên luật
+  -- chặn cũng không đối xứng — đây là điều bản comment cũ (bản trước fix
+  -- round 3) nói sai, nay sửa lại cho khớp đúng code bên dưới:
+  --   · DIVIDEND chỉ xuất hiện ở chân 2 (qua cash_instrument_id). KHÔNG có
+  --     nhánh DIVIDEND nào ở chân 3 ⇒ instrument_id là CASH hay không KHÔNG
+  --     ảnh hưởng, vô hại. Cái duy nhất làm tiền biến mất là THIẾU hẳn
+  --     cash_instrument_id (không khớp chân nào) ⇒ luôn bắt buộc phải có.
+  --   · FEE xuất hiện ở CẢ chân 2 (qua cash_instrument_id, nếu có) LẪN chân 3
+  --     (khi instrument_id tự nó là CASH, bất kể cash_instrument_id là gì).
+  --     Hễ CÓ cash_instrument_id (đã vào nhánh else, is not null) MÀ
+  --     instrument_id cũng là một túi CASH (dù là cùng túi hay khác túi với
+  --     cash_instrument_id) thì cả hai chân cùng khớp ⇒ bị trừ hai lần.
+  --     Điều kiện chặn vì vậy KHÔNG phải "hai id trùng nhau" mà là
+  --     "ac_main = 'CASH'" — round 3 phát hiện case hai túi CASH KHÁC NHAU
+  --     (instrument_id = túi A, cash_instrument_id = túi B) vẫn lọt qua bản
+  --     kiểm cũ (chỉ so `instrument_id = cash_instrument_id`) vì hai id đó
+  --     không bằng nhau nhưng cả hai chân vẫn cùng khớp trên hai túi khác
+  --     nhau, làm tổng tiền bị trừ 2 lần đo được thực tế: 1.000.000 →
+  --     900.000 ở CẢ HAI túi (đúng ra chỉ một túi bị trừ).
+  --   ⇒ Luật FEE không được widen sang DIVIDEND: DIVIDEND với instrument_id
+  --     là CASH + có cash_instrument_id là shape HỢP LỆ, không bị trừ hai
+  --     lần (vì DIVIDEND không có nhánh chân 3), chặn nó sẽ từ chối oan.
   if new.type in ('DIVIDEND','FEE') then
     if new.cash_instrument_id is null then
       -- Không có chân tiền riêng ⇒ instrument_id phải TỰ NÓ là túi CASH,
@@ -282,8 +300,9 @@ begin
         raise exception '% phải có cash_instrument_id, nếu không tiền sẽ biến mất khỏi sổ', new.type;
       end if;
     else
-      if new.instrument_id = new.cash_instrument_id then
-        raise exception '% không được có instrument_id = cash_instrument_id (sẽ bị trừ/cộng hai lần)', new.type;
+      -- CHỈ áp cho FEE (không áp cho DIVIDEND — xem giải thích ở trên).
+      if new.type = 'FEE' and ac_main = 'CASH' then
+        raise exception '% có cash_instrument_id thì instrument_id không được là túi CASH (dù cùng túi hay khác túi, cả chân 2 và chân 3 sẽ cùng khớp và bị trừ hai lần)', new.type;
       end if;
       select asset_class into ac_cash
         from portfolio.instruments
