@@ -579,15 +579,21 @@ Hai công thức thay thế có sẵn trong Settings (`allocation_formula`): `PR
 
 ### 4.5 ⚠️ Ví dụ §4, §5, §21 KHÔNG cùng một công thức
 
-Đã kiểm tay cả ba:
+Đã kiểm tay cả ba — kể cả chạy qua engine thật (`allocate.ts`), không chỉ suy luận tỷ lệ:
 
-| Ví dụ | Lệch của các class underweight | Spec kỳ vọng | Tỷ lệ ngụ ý |
+| Ví dụ | Lệch của các class underweight | Spec kỳ vọng | Engine tính ra |
 |---|---|---|---|
-| §4 | Stocks −3, Crypto −3 (bằng nhau) | 1,5tr / 1,5tr | 50 : 50 — hợp lý |
-| §5 | Stocks −3, Crypto −3 (**bằng nhau**) | 3tr / 2tr | 60 : 40 — **vô cớ** |
-| §21 | Stocks −2,8 · Cash **−3,5** (Cash lệch nhiều hơn) | Stocks 2tr / Cash 1tr | ưu tiên Stocks — **ngược** |
+| §4 | Stocks −3, Crypto −3 | 1,5tr / 1,5tr | **1,6tr / 1,4tr** |
+| §5 | Stocks −3, Crypto −3 | 3tr / 2tr | **2,5tr / 2,5tr** |
+| §21 | Stocks −2,8 · Cash −3,5 | 2tr / 1tr | **1,4tr / 1,6tr** |
 
-**Không có công thức đơn nào cho ra cả ba.** §4 nói *"The exact formula should be configurable"* — đây chính là chỗ đó. Số trong §5 và §21 là **minh hoạ viết tay**, không phải kết quả tính.
+**Cả ba ví dụ đều không tái lập được**, mỗi ví dụ lệch theo một hướng khác nhau —
+xác nhận rằng đây là số minh hoạ viết tay, không phải kết quả của một công thức.
+Riêng §4 lệch vì §17 bắt tính khoảng thiếu trên `newTotal = tổng cũ + Z`: phần Z
+chia theo target làm khoảng thiếu của Stocks (31,5tr) lớn hơn Crypto (30,6tr),
+nên không còn chia đều nữa.
+
+**Không có công thức đơn nào cho ra cả ba.** §4 nói *"The exact formula should be configurable"* — đây chính là chỗ đó.
 
 **Quyết định:** `PROPORTIONAL_GAP` là chuẩn. Test case ghi theo số engine tính, **kèm comment dẫn chiếu mục này** để người đọc sau không tưởng là bug.
 
