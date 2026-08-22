@@ -10,8 +10,25 @@
 // addsToTotal = false. Bên trong allocate khi đó:
 //   newTotal      = tổng cũ + Z                       ✓ chỉ Z làm tăng tổng
 //   preValues.CASH = (CASH + Z) − (Z + cổ tức)        ✓ pool bị lấy ra đúng một lần
-// Nhánh ném lỗi `poolVnd > classValues.CASH` của allocate không bao giờ chạm tới:
-// điều kiện quy về `cổ tức > CASH gốc`, mà cổ tức đã nằm trong CASH gốc.
+//
+// ⚠️ NHÁNH NÉM LỖI `poolVnd > classValues.CASH` CỦA allocate CHẠM TỚI ĐƯỢC.
+// (Chứng minh cũ ở đây nói "không bao giờ chạm" là SAI: nó viết điều kiện theo
+// CASH GỐC, trong khi code truyền `earmarked.CASH` vào allocate, không phải
+// `s.classValues.CASH`. Bước earmark phá đúng giả thiết của chứng minh đó.)
+// Điều kiện thật, thay classValues := valuesWithZ:
+//   (Z + cổ tức) > (earmarked.CASH + Z)  ⟺  cổ tức > earmarked.CASH
+// tức so với TIỀN MẶT TỰ DO — phần Cash còn lại SAU khi rút túi DCA ra. Cổ tức
+// luôn ≤ Cash gốc, nhưng tiền mặt tự do thì nhỏ hơn Cash gốc, nên vẫn thua được.
+// Ví dụ đời thường: Cash 20tr · túi VND-DCA-STOCKS 18tr · cổ tức 5tr · Z 3tr
+//   ⇒ earmarked.CASH = 2tr, valuesWithZ.CASH = 5tr, pool = 8tr > 5tr ⇒ ném lỗi.
+// Ca cùng họ còn tệ hơn: tổng túi DCA > Cash ⇒ earmarked.CASH ÂM không một tiếng
+// động, weights ra tỷ trọng âm, rồi allocate mới ném với message vô nghĩa.
+//
+// Vì vậy có cổng chặn `EARMARK_EXCEEDS_CASH` NGAY SAU toEarmarkedValues: chặn
+// tường minh bằng trạng thái + lý do tiếng Việt nêu đích danh túi DCA, KHÔNG để
+// exception nổ ở tầng dưới với message chỉ sai chỗ (nó chỉ thấy Cash SAU khi trừ
+// túi nên không biết túi nào gây ra). Chặn chứ không đoán: ngữ nghĩa
+// `incomeReceivedVnd` so với `earmarkedPots` còn là câu hỏi mở của Task 14.
 
 import { ASSET_CLASSES } from './types';
 import { computeWeights, totalVnd } from './weights';
@@ -50,9 +67,72 @@ const DRAWDOWN_CODE: Record<AssetClass, Alert['code'] | null> = {
   STOCKS: 'STOCK_DRAWDOWN', CRYPTO: 'CRYPTO_DRAWDOWN', GOLD: 'GOLD_DRAWDOWN', CASH: null,
 };
 
+/**
+ * Tên túi DCA đúng như trong sổ tài khoản (spec mục 3.2) — lý do chặn phải gọi
+ * đích danh túi thì người dùng mới biết phải sửa ở đâu. CASH không có túi DCA
+ * (`earmarkedPots.CASH` theo hợp đồng kiểu luôn = 0) nên không có tên ở đây.
+ */
+const DCA_POT_NAME: Partial<Record<AssetClass, string>> = {
+  STOCKS: 'VND-DCA-STOCKS', CRYPTO: 'VND-DCA-CRYPTO', GOLD: 'VND-DCA-GOLD',
+};
+
 /** Định dạng số tiền VND cho message hiển thị thẳng cho người dùng. */
 function formatVnd(value: number): string {
   return Math.round(value).toLocaleString('vi-VN');
+}
+
+/** Liệt kê các túi DCA đang có tiền, kèm số tiền — dùng trong lý do chặn. */
+function describeDcaPots(earmarkedPots: Record<AssetClass, number>): string {
+  const parts: string[] = [];
+  for (const c of ASSET_CLASSES) {
+    const potName = DCA_POT_NAME[c];
+    if (potName !== undefined && earmarkedPots[c] !== 0) {
+      parts.push(`${potName} ${formatVnd(earmarkedPots[c])} đ`);
+    }
+  }
+  return parts.length > 0 ? parts.join(' + ') : 'không túi nào có tiền';
+}
+
+/**
+ * Cổng chặn `EARMARK_EXCEEDS_CASH`: bắt hai ca túi DCA mâu thuẫn với số dư tiền mặt.
+ * Trả lý do tiếng Việt nếu phải chặn, `null` nếu qua cổng.
+ *
+ * Cả hai ca đều KHÔNG được để chảy xuống `allocate` — ở đó chúng chỉ còn là một
+ * exception không tầng nào bắt, với message chỉ sai chỗ. Xem chứng minh ở đầu file.
+ */
+function checkEarmarkConflict(
+  s: PortfolioSnapshot,
+  earmarked: Record<AssetClass, number>,
+): string | null {
+  const potsTotalVnd =
+    s.earmarkedPots.STOCKS + s.earmarkedPots.CRYPTO + s.earmarkedPots.GOLD;
+
+  // Ca 1 — túi DCA vượt cả số dư tiền mặt ⇒ `earmarked.CASH` âm. Kiểm TRƯỚC ca 2 vì
+  // đây là gốc: Cash âm làm mọi so sánh phía sau vô nghĩa (0 > số âm cũng thành true).
+  if (potsTotalVnd > s.classValues.CASH) {
+    return (
+      `Tổng các túi DCA ${formatVnd(potsTotalVnd)} đ `
+      + `(${describeDcaPots(s.earmarkedPots)}) lớn hơn số dư tiền mặt `
+      + `${formatVnd(s.classValues.CASH)} đ — thiếu `
+      + `${formatVnd(potsTotalVnd - s.classValues.CASH)} đ. Tiền trong túi DCA phải nằm `
+      + 'TRONG tiền mặt, nên số dư túi hoặc số dư tiền mặt đang sai. Sửa lại rồi tạo '
+      + 'lại kế hoạch.'
+    );
+  }
+
+  // Ca 2 — cổ tức lớn hơn phần tiền mặt còn TỰ DO sau khi rút túi DCA ra.
+  if (s.incomeReceivedVnd > earmarked.CASH) {
+    return (
+      `Cổ tức ${formatVnd(s.incomeReceivedVnd)} đ lớn hơn tiền mặt tự do `
+      + `${formatVnd(earmarked.CASH)} đ. Số dư tiền mặt là `
+      + `${formatVnd(s.classValues.CASH)} đ nhưng ${formatVnd(potsTotalVnd)} đ trong đó đã `
+      + `nằm ở túi DCA (${describeDcaPots(s.earmarkedPots)}), nên phần tự do chỉ còn `
+      + `${formatVnd(earmarked.CASH)} đ. `
+      + 'Rút bớt tiền khỏi túi DCA hoặc kiểm tra lại số cổ tức rồi tạo lại kế hoạch.'
+    );
+  }
+
+  return null;
 }
 
 /** Lấy tỷ trọng của một class. Thiếu là lỗi dữ liệu — báo rõ, không nuốt im lặng. */
@@ -66,6 +146,9 @@ function weightOf(weights: Weight[], assetClass: AssetClass): Weight {
 
 export function buildActionPlan(s: PortfolioSnapshot): ActionPlan {
   const earmarked = toEarmarkedValues(s.classValues, s.earmarkedPots);
+  // Quyết định chặn NGAY tại đây, trước mọi tính toán khác: `earmarked.CASH` có thể
+  // đã âm và không được phép chảy tiếp xuống allocate / rebalanceSell.
+  const earmarkConflictReason = checkEarmarkConflict(s, earmarked);
   const weights = computeWeights(earmarked, s.targets);
   const total = totalVnd(s.classValues);
 
@@ -91,6 +174,16 @@ export function buildActionPlan(s: PortfolioSnapshot): ActionPlan {
   };
 
   // ---- Cổng chặn: kế hoạch tính trên dữ liệu thiếu còn tệ hơn không có kế hoạch ----
+  // BẤT BIẾN TIỀN ở MỌI nhánh chặn: `unallocatedVnd = poolVnd`. Pool là tiền CÓ THẬT,
+  // nó chỉ chưa đi đâu cả — trả 0 là làm tiền biến mất, đúng lỗi đã chốt ở Task 7.
+  if (earmarkConflictReason !== null) {
+    return {
+      ...basePlan,
+      status: 'EARMARK_EXCEEDS_CASH',
+      blockedReason: earmarkConflictReason,
+      unallocatedVnd: basePlan.sources.poolVnd,
+    };
+  }
   if (s.missingPriceSymbols.length > 0) {
     return {
       ...basePlan,
@@ -98,6 +191,7 @@ export function buildActionPlan(s: PortfolioSnapshot): ActionPlan {
       blockedReason:
         `${s.missingPriceSymbols.length} tài sản chưa có giá: ` +
         `${s.missingPriceSymbols.join(', ')}. Nhập giá rồi tạo lại kế hoạch.`,
+      unallocatedVnd: basePlan.sources.poolVnd,
     };
   }
   if (total === 0) {
@@ -106,6 +200,7 @@ export function buildActionPlan(s: PortfolioSnapshot): ActionPlan {
       status: 'EMPTY_PORTFOLIO',
       blockedReason:
         'Danh mục còn rỗng. Hãy ghi các giao dịch đã có, hoặc nhập vị thế ban đầu.',
+      unallocatedVnd: basePlan.sources.poolVnd,
     };
   }
 

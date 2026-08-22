@@ -51,6 +51,13 @@ function snapshot(over: Partial<PortfolioSnapshot> = {}): PortfolioSnapshot {
 const buyAmounts = (p: { buys: { assetClass: AssetClass; amountVnd: number }[] }) =>
   Object.fromEntries(p.buys.map((b) => [b.assetClass, b.amountVnd]));
 
+/** Tổng số tiền được phân bổ mua trong kế hoạch. */
+const tongMua = (p: { buys: { amountVnd: number }[] }) =>
+  p.buys.reduce((sum, b) => sum + b.amountVnd, 0);
+
+/** Định dạng tiền y hệt `formatVnd` của actionPlan.ts, để assert không phụ thuộc ICU. */
+const tien = (value: number) => value.toLocaleString('vi-VN');
+
 describe('buildActionPlan — ví dụ §21 đầu tới cuối', () => {
   const p = buildActionPlan(snapshot());
 
@@ -152,6 +159,11 @@ describe('buildActionPlan — cổng chặn (không tính trên dữ liệu thi�
     expect(p.blockedReason).toContain('VEA');
     expect(p.buys).toEqual([]);
     expect(p.sellPlan).toBeNull();
+    // BẤT BIẾN TIỀN: pool có thật 3.000.000 đ, chưa đi đâu cả ⇒ nằm nguyên ở
+    // unallocatedVnd. Trả 0 là làm tiền biến mất (cùng lỗi với Task 7 Finding 2).
+    expect(p.sources.poolVnd).toBe(3_000_000);
+    expect(p.unallocatedVnd).toBe(3_000_000);
+    expect(tongMua(p) + p.unallocatedVnd).toBe(p.sources.poolVnd);
   });
 
   it('danh mục rỗng → EMPTY_PORTFOLIO, không ra NaN', () => {
@@ -162,6 +174,97 @@ describe('buildActionPlan — cổng chặn (không tính trên dữ liệu thi�
     expect(p.status).toBe('EMPTY_PORTFOLIO');
     expect(p.blockedReason).not.toBeNull();
     for (const w of p.weights) expect(Number.isNaN(w.weightPct)).toBe(false);
+    // BẤT BIẾN TIỀN: danh mục rỗng nhưng 3.000.000 đ tiền vào tháng này là có thật.
+    expect(p.unallocatedVnd).toBe(3_000_000);
+    expect(tongMua(p) + p.unallocatedVnd).toBe(p.sources.poolVnd);
+  });
+});
+
+describe('buildActionPlan — cổng chặn EARMARK_EXCEEDS_CASH (túi DCA mâu thuẫn với Cash)', () => {
+  it('tổng túi DCA lớn hơn số dư tiền mặt → chặn, KHÔNG để Cash âm chảy xuống dưới', () => {
+    // classValues.CASH = 150.000.000; túi DCA Stocks 100.000.000 + Crypto 60.000.000
+    // = 160.000.000 > 150.000.000 ⇒ toEarmarkedValues cho CASH = −10.000.000.
+    // Trước khi có cổng chặn: valuesWithZ.CASH = −10.000.000 + 3.000.000 = −7.000.000,
+    // pool = 3.000.000 > −7.000.000 ⇒ allocate NÉM LỖI với message vô nghĩa
+    // ("Cổ tức 3000000 VND lớn hơn số dư Cash -7000000 VND") — không nêu túi nào gây ra.
+    const p = buildActionPlan(snapshot({
+      classValues: { STOCKS: 500_000_000, CRYPTO: 200_000_000,
+                     GOLD: 150_000_000, CASH: 150_000_000 },
+      cashReserveVnd: 150_000_000,
+      earmarkedPots: { STOCKS: 100_000_000, CRYPTO: 60_000_000, GOLD: 0, CASH: 0 },
+    }));
+    expect(p.status).toBe('EARMARK_EXCEEDS_CASH');
+    // Lý do phải nêu ĐÍCH DANH từng túi DCA và số tiền, không chỉ nói "Cash thiếu".
+    expect(p.blockedReason).toContain('VND-DCA-STOCKS');
+    expect(p.blockedReason).toContain('VND-DCA-CRYPTO');
+    expect(p.blockedReason).toContain(tien(100_000_000));
+    expect(p.blockedReason).toContain(tien(60_000_000));
+    expect(p.blockedReason).toContain(tien(160_000_000)); // tổng túi
+    expect(p.blockedReason).toContain(tien(150_000_000)); // số dư tiền mặt
+    expect(p.blockedReason).toContain(tien(10_000_000));  // phần thiếu
+    // Không tính tiếp trên dữ liệu tự mâu thuẫn.
+    expect(p.buys).toEqual([]);
+    expect(p.sellPlan).toBeNull();
+    // BẤT BIẾN TIỀN.
+    expect(p.unallocatedVnd).toBe(3_000_000);
+    expect(tongMua(p) + p.unallocatedVnd).toBe(p.sources.poolVnd);
+  });
+
+  it('cổ tức lớn hơn tiền mặt TỰ DO sau khi trừ túi DCA → chặn, không ném exception', () => {
+    // Ca reviewer dựng lại: Cash 20tr · túi DCA Stocks 18tr · cổ tức 5tr · Z 3tr.
+    // earmarked.CASH = 20.000.000 − 18.000.000 = 2.000.000 (tiền mặt TỰ DO)
+    // Trước khi có cổng chặn: valuesWithZ.CASH = 2.000.000 + 3.000.000 = 5.000.000,
+    // pool = 3.000.000 + 5.000.000 = 8.000.000 > 5.000.000 ⇒ allocate NÉM LỖI.
+    // Điều kiện thật rút gọn: cổ tức (5tr) > earmarked.CASH (2tr) — KHÔNG phải
+    // "cổ tức > Cash gốc" (5tr ≤ 20tr, luôn đúng, nên chứng minh cũ sai).
+    const p = buildActionPlan(snapshot({
+      classValues: { STOCKS: 513_300_000, CRYPTO: 269_700_000,
+                     GOLD: 179_437_500, CASH: 20_000_000 },
+      cashReserveVnd: 20_000_000,
+      earmarkedPots: { STOCKS: 18_000_000, CRYPTO: 0, GOLD: 0, CASH: 0 },
+      incomeReceivedVnd: 5_000_000,
+    }));
+    expect(p.status).toBe('EARMARK_EXCEEDS_CASH');
+    // Nguyên nhân THẬT là túi DCA — phải xuất hiện trong lý do.
+    expect(p.blockedReason).toContain('VND-DCA-STOCKS');
+    expect(p.blockedReason).toContain(tien(18_000_000)); // tiền trong túi
+    expect(p.blockedReason).toContain(tien(20_000_000)); // Cash gốc
+    expect(p.blockedReason).toContain(tien(2_000_000));  // tiền mặt tự do
+    expect(p.blockedReason).toContain(tien(5_000_000));  // cổ tức
+    expect(p.buys).toEqual([]);
+    expect(p.sellPlan).toBeNull();
+    // BẤT BIẾN TIỀN: pool = 3.000.000 + 5.000.000 = 8.000.000.
+    expect(p.sources.poolVnd).toBe(8_000_000);
+    expect(p.unallocatedVnd).toBe(8_000_000);
+    expect(tongMua(p) + p.unallocatedVnd).toBe(p.sources.poolVnd);
+  });
+
+  it('cổ tức ĐÚNG BẰNG tiền mặt tự do → KHÔNG chặn (cổng khớp đúng mép của allocate)', () => {
+    // Cùng danh mục ca trên nhưng cổ tức = 2.000.000 = earmarked.CASH.
+    // allocate dùng dấu `>` chặt nên 5.000.000 > 5.000.000 là SAI ⇒ không ném.
+    // Cổng chặn cũng phải dùng `>` chặt, nếu không sẽ chặn oan.
+    //
+    // Dẫn số: earmarked = {S 531.300.000, C 269.700.000, G 179.437.500, CASH 2.000.000}
+    //   tổng = 982.437.500 (đúng bằng tổng classValues — toEarmarkedValues bảo toàn)
+    //   valuesWithZ.CASH = 2.000.000 + 3.000.000 = 5.000.000 ⇒ newTotal = 985.437.500
+    //   pool = 3.000.000 + 2.000.000 = 5.000.000 ⇒ preValues.CASH = 5.000.000 − 5.000.000 = 0
+    //   gap S = 985.437.500 × 50% − 531.300.000 = 492.718.750 − 531.300.000 = −38.581.250 ✗
+    //   gap C = 197.087.500 − 269.700.000 = −72.612.500 ✗
+    //   gap G = 147.815.625 − 179.437.500 = −31.621.875 ✗
+    //   gap CASH = 147.815.625 − 0 = +147.815.625 ✓ (ứng viên DUY NHẤT)
+    //   ⇒ CASH nhận trọn 5.000.000 (tỷ lệ gap/gap = 1), làm tròn xuống vẫn 5.000.000, dư 0.
+    const p = buildActionPlan(snapshot({
+      classValues: { STOCKS: 513_300_000, CRYPTO: 269_700_000,
+                     GOLD: 179_437_500, CASH: 20_000_000 },
+      cashReserveVnd: 20_000_000,
+      earmarkedPots: { STOCKS: 18_000_000, CRYPTO: 0, GOLD: 0, CASH: 0 },
+      incomeReceivedVnd: 2_000_000,
+    }));
+    expect(p.status).toBe('READY');
+    expect(p.blockedReason).toBeNull();
+    expect(p.totalVnd).toBe(982_437_500);
+    expect(buyAmounts(p)).toEqual({ CASH: 5_000_000 });
+    expect(p.unallocatedVnd).toBe(0);
   });
 });
 

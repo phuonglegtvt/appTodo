@@ -182,7 +182,7 @@ export interface Alert {
   message: string;
 }
 
-export type PlanStatus = 'READY' | 'EMPTY_PORTFOLIO' | 'MISSING_PRICES';
+export type PlanStatus = 'READY' | 'EMPTY_PORTFOLIO' | 'MISSING_PRICES' | 'EARMARK_EXCEEDS_CASH';
 
 export interface ActionPlan {
   asOf: string;
