@@ -161,6 +161,48 @@ describe('mapToSnapshot — dữ liệu bất thường mà DB không chặn', (
   });
 });
 
+describe('mapToSnapshot — NaN lọt qua mọi phép so sánh', () => {
+  // Bàn giao 2026-08-22 mục 2: `NaN < 0` là false nên guard "góp âm" KHÔNG bắt
+  // được NaN, và `Math.abs(NaN - 100) > 0.01` cũng false nên guard "tổng target
+  // phải = 100" cũng không bắt. Hệ quả đo được: buildActionPlan trả
+  // status READY với poolVnd = NaN — một kế hoạch trông hợp lệ mà sai hoàn toàn.
+  //
+  // Đợt 1+2 để lại vì chưa có đường ghi nào đặt được NaN vào cột đó. Tab Danh
+  // mục (đợt 3) thêm TargetSettingsForm — chính là đường ghi đó — nên lỗ này
+  // hết còn giả thuyết.
+
+  it('monthly_contribution_vnd = NaN → ném lỗi, KHÔNG trả kế hoạch NaN', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      settings: {
+        ...buildSourceData().settings!,
+        monthly_contribution_vnd: NaN,
+      },
+    }))).toThrow(/không phải số/);
+  });
+
+  it('target_pct = NaN → ném lỗi (tổng NaN lọt qua phép so sánh với 100)', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      targets: [
+        { asset_class: 'STOCKS', target_pct: NaN, min_pct: 40, max_pct: 55 },
+        { asset_class: 'CRYPTO', target_pct: 20, min_pct: 15, max_pct: 25 },
+        { asset_class: 'GOLD',   target_pct: 15, min_pct: 10, max_pct: 20 },
+        { asset_class: 'CASH',   target_pct: 15, min_pct: 7,  max_pct: 20 },
+      ],
+    }))).toThrow(/không phải số/);
+  });
+
+  it('min_pct / max_pct = NaN cũng bị chặn — band NaN làm mọi phép so band sai', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      targets: [
+        { asset_class: 'STOCKS', target_pct: 50, min_pct: NaN, max_pct: 55 },
+        { asset_class: 'CRYPTO', target_pct: 20, min_pct: 15, max_pct: 25 },
+        { asset_class: 'GOLD',   target_pct: 15, min_pct: 10, max_pct: 20 },
+        { asset_class: 'CASH',   target_pct: 15, min_pct: 7,  max_pct: 20 },
+      ],
+    }))).toThrow(/không phải số/);
+  });
+});
+
 describe('mapToSnapshot — phát hiện tài sản thiếu giá', () => {
   it('mã ĐANG GIỮ mà market_value null → vào missingPriceSymbols', () => {
     const s = mapToSnapshot(buildSourceData({

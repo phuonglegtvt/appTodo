@@ -22,9 +22,9 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { PlanPage } from '../components/PlanPage';
 import { StocksPage } from '../components/StocksPage';
 import { CryptoPage } from '../components/CryptoPage';
+import { PortfolioPage } from '../components/PortfolioPage';
 import { recurringToggle } from './recurringToggle';
-
-type Page = 'todos' | 'plan' | 'stocks' | 'crypto';
+import type { Page } from '../types/page';
 
 type ViewMode = 'list' | 'board';
 
@@ -165,7 +165,11 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
-        {page === 'crypto' ? (
+        {page === 'portfolio' ? (
+          <div className="flex flex-1 flex-col overflow-auto p-5 sm:p-6">
+            <PortfolioPage userId={userId} />
+          </div>
+        ) : page === 'crypto' ? (
           <CryptoPage userId={userId} />
         ) : page === 'stocks' ? (
           <StocksPage userId={userId} />

@@ -906,16 +906,36 @@ appTodo/
 
 ## 11. Sáu đợt triển khai
 
-| Đợt | Nội dung | Xong thì thấy gì |
-|---|---|---|
-| 1 | migration + seed + `portfolioRepo` + types | đăng nhập, thấy 4 túi tiền và 56 watchlist |
-| 2 | **8 module domain + test** | engine chạy đúng §21 (bằng test, chưa có UI) |
-| 3 | `TransactionForm` + `TransactionLog` + `InitialPositionsWizard` + CSV import | **nạp được danh mục thật vào** |
-| 4 | `Dashboard` + `AllocationBars` + providers giá | nhìn thấy tỷ trọng thật |
-| 5 | `MonthlyPlan` + `tickerCandidates` + crash reserve + alerts | **kế hoạch tháng dùng được** |
-| 6 | `drawdown` + `snapshots` + CSV export + `PortfolioSettings` | đủ v1 |
+| Đợt | Nội dung | Xong thì thấy gì | Trạng thái |
+|---|---|---|---|
+| 1 | migration + seed + `portfolioRepo` + types | đăng nhập, thấy 4 túi tiền và 56 watchlist | ✅ 2026-08-22 |
+| 2 | **8 module domain + test** | engine chạy đúng §21 (bằng test, chưa có UI) | ✅ 2026-08-22 |
+| **3** | **tab Danh mục: biểu đồ tròn + bảng Target vs Thực tế + cột “cần bổ sung” + màn Cấu hình** | **nhìn thấy tỷ trọng thật và biết cần nạp thêm bao nhiêu** | ✅ 2026-08-23 |
+| 4 | providers giá (VNDIRECT / Binance / tỷ giá) | giá tự cập nhật, không nhập tay | |
+| 5 | sổ giao dịch: `TransactionForm` + `TransactionLog` + nạp hàng loạt + CSV | lãi/lỗ đã thực hiện, cổ tức, lịch sử | |
+| 6 | `MonthlyPlan` đầy đủ + `tickerCandidates` + crash reserve + `drawdown` + `snapshots` + CSV export | đủ v1 | |
 
 Đợt 2 làm **trước** UI — engine phải đúng bằng test trước khi có gì để nhìn. Mỗi đợt tự nó đã có ích, không phải đợi tới cuối.
+
+### 11.1 Đợt 3 đã ĐỔI so với bản đầu (2026-08-23)
+
+Bản đầu xếp đợt 3 = sổ giao dịch (`TransactionForm`/`TransactionLog`/wizard/CSV) và đợt 4 = màn hình tỷ trọng. NewPL đổi thứ tự: **làm màn hình trước, sổ giao dịch sau.**
+
+**Vì sao đổi:** thứ NewPL cần thấy — tỷ trọng hiện tại so với mục tiêu và cần bổ sung bao nhiêu vốn — **không cần sổ giao dịch**. Toàn bộ phép tính cho nó đã xong ở đợt 2. Chỗ thiếu duy nhất là *giá trị thị trường theo nhóm*, mà chỗ đó nhỏ:
+
+- `public.cryptos` đã đủ (`quantity` + `current_price`)
+- `public.stocks` thiếu `quantity` (chỉ có `invested_amount`) ⇒ thêm **một cột**
+- vàng chưa có bảng ⇒ thêm bảng `public.golds`, khuôn y hệt `cryptos`
+
+Nguồn số liệu vì vậy là **holdings trực tiếp** (`src/data/holdingsMap.ts`), không phải `portfolio.v_allocation` (view đó dựng vị thế từ sổ giao dịch). Engine domain **không đổi một dòng** — nó nhận `PortfolioSnapshot` và không cần biết số liệu đến từ đâu. Khi đợt 5 làm xong sổ giao dịch thì chỉ đổi nguồn ở tầng `src/data/`.
+
+**Cái mất trong lúc chờ đợt 5:** lãi/lỗ **đã thực hiện**, cổ tức, lịch sử giao dịch, Crash Reserve, drawdown. Lãi/lỗ **chưa thực hiện** thì vẫn có (`invested_amount` cho cổ phiếu, `quantity × avg_buy_price` cho crypto và vàng).
+
+**Cấu hình mặc định đổi theo:** target `60/30/10/0` (CASH = 0%, band 0–0) thay cho `50/20/15/15`. App không theo dõi số dư tiền mặt ở đợt này nên khoá CASH ở 0 để nó luôn “đúng target”, thay vì bị báo lệch mỗi tháng vì một nhóm app không quản. Hành vi này **đã đo**, không suy luận — `src/domain/noCashProfile.test.ts`.
+
+**Ba món nợ của bản bàn giao 2026-08-22 đã trả:** guard `Number.isFinite` cho `monthly_contribution_vnd` và cả ba cột band (`target_pct`/`min_pct`/`max_pct`) — cần thật, vì màn Cấu hình chính là đường ghi đầu tiên khiến `NaN` chạm tới được.
+
+**Món nợ CÒN LẠI, chuyển sang đợt 5 cùng lúc với sổ giao dịch:** `ADJUSTMENT` hiện chỉ cộng được, không trừ được (`core.sql` có `check (amount_vnd >= 0)`, `v_legs` cho `+amount` ở cả chân 1 lẫn chân 3), và `tx_validate` **không có nhánh nào cho `ADJUSTMENT`** nên `quantity` âm lọt tự do còn `cash_instrument_id` bị nuốt im lặng. Hướng đã chốt: thêm `ADJUSTMENT_INCREASE` / `ADJUSTMENT_DECREASE` vào enum, giữ bất biến `amount_vnd >= 0`, dấu nằm ở `type` như mọi type khác; chặn `type = 'ADJUSTMENT'` trần trong `tx_validate`. Chưa nổ vì chưa có đường ghi nào tới bảng đó.
 
 ---
 

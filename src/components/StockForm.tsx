@@ -14,6 +14,7 @@ export function StockForm({ onAdd }: { onAdd: (s: NewStock) => void }) {
   const [priceProtect, setPriceProtect] = useState('');
   const [dividend, setDividend] = useState('');
   const [invested, setInvested] = useState('');
+  const [quantity, setQuantity] = useState('');
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,6 +29,7 @@ export function StockForm({ onAdd }: { onAdd: (s: NewStock) => void }) {
       price_protect: parseVnNumber(priceProtect),
       dividend: parseVnNumber(dividend),
       invested_amount: parseVnNumber(invested),
+      quantity: parseVnNumber(quantity),
     });
     setTicker('');
     setCompanyName('');
@@ -98,6 +100,14 @@ export function StockForm({ onAdd }: { onAdd: (s: NewStock) => void }) {
         aria-label="Số tiền đã đầu tư (đồng)"
         inputMode="numeric"
         className={`w-40 ${inputClass}`}
+      />
+      <input
+        value={quantity}
+        onChange={(e) => setQuantity(e.target.value)}
+        placeholder="Số lượng (cổ)"
+        aria-label="Số cổ phiếu đang giữ"
+        inputMode="numeric"
+        className={`w-32 ${inputClass}`}
       />
       <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:shadow-md active:scale-95 dark:bg-primary-dark dark:shadow-soft-dark dark:hover:shadow-md-dark">
         Thêm mã

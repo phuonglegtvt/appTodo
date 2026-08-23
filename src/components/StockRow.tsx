@@ -21,12 +21,14 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   const [priceProtect, setPriceProtect] = useState('');
   const [dividend, setDividend] = useState('');
   const [invested, setInvested] = useState('');
+  const [quantity, setQuantity] = useState('');
 
   function startEdit() {
     setPriceThreshold(stock.price_threshold?.toString() ?? '');
     setPriceProtect(stock.price_protect?.toString() ?? '');
     setDividend(stock.dividend?.toString() ?? '');
     setInvested(stock.invested_amount?.toString() ?? '');
+    setQuantity(stock.quantity?.toString() ?? '');
     setEditing(true);
   }
 
@@ -36,6 +38,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
       price_protect: parseVnNumber(priceProtect),
       dividend: parseVnNumber(dividend),
       invested_amount: parseVnNumber(invested),
+      quantity: parseVnNumber(quantity),
     });
     setEditing(false);
   }
@@ -68,6 +71,9 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
           <input value={invested} onChange={(e) => setInvested(e.target.value)} className={editInput} aria-label="Số tiền đầu tư" />
         </td>
         <td className={cell}>
+          <input value={quantity} onChange={(e) => setQuantity(e.target.value)} className={editInput} aria-label="Số lượng cổ phiếu" />
+        </td>
+        <td className={cell}>
           <button onClick={save} className="mr-2 font-semibold text-primary dark:text-primary-dark">Lưu</button>
           <button onClick={() => setEditing(false)} className="text-text-muted dark:text-text-muted-dark">Hủy</button>
         </td>
@@ -96,6 +102,22 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
       <td className={cell}>{fmt(stock.dividend)}</td>
       <td className={cell}>{yieldPct == null ? '—' : yieldPct.toFixed(1) + '%'}</td>
       <td className={cell}>{fmt(stock.invested_amount)}</td>
+      <td className={cell}>
+        {stock.quantity != null ? (
+          fmt(stock.quantity)
+        ) : stock.invested_amount != null && stock.invested_amount > 0 ? (
+          // Đã bỏ tiền mà chưa có số lượng ⇒ tab Danh mục không tính được giá
+          // trị mã này. Nói ra ngay tại dòng, không để người dùng phải suy ra.
+          <span
+            title="Chưa nhập số lượng nên tab Danh mục không tính được giá trị mã này"
+            className="font-semibold text-amber-600 dark:text-amber-400"
+          >
+            ⚠ chưa nhập
+          </span>
+        ) : (
+          '—'
+        )}
+      </td>
       <td className={cell}>
         <button onClick={startEdit} className="mr-2 text-text-muted hover:text-primary dark:text-text-muted-dark dark:hover:text-primary-dark" aria-label="Sửa">✎</button>
         <button onClick={() => onDelete(stock.id)} className="text-text-muted hover:text-red-500 dark:text-text-muted-dark" aria-label="Xóa">✕</button>

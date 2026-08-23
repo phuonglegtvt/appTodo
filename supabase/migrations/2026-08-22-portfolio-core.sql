@@ -3,8 +3,11 @@
 -- Mục 3.3 (DDL 11 bảng), 3.4 (trigger toàn vẹn), 3.6 (RLS + realtime).
 --
 -- CÁCH DÙNG: Supabase Dashboard → SQL Editor → dán toàn bộ file → Run.
--- ĐIỀU KIỆN TIÊN QUYẾT: đã thêm `portfolio` vào Settings → API → Exposed schemas
+-- BƯỚC TIẾP THEO (sau khi file này chạy xong): thêm `portfolio` vào Exposed schemas
+-- tại Dashboard → Integrations → Data API → tab Settings. Phải chạy migration TRƯỚC,
+-- vì ô chọn chỉ liệt kê schema đã tồn tại trong DB.
 -- (mục 1.2 của spec — bước con người làm tay, code không làm thay được).
+-- Chi tiết: docs/portfolio-db-setup.md
 --
 -- ĐƠN VỊ: MỌI cột tiền trong schema này là VND (đồng) tuyệt đối. Không có
 -- nghìn đồng (khác `public.stocks.price_threshold`), không có USD.

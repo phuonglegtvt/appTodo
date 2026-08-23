@@ -43,6 +43,16 @@ function buildEngineConfig(row: SettingsRow | null): EngineConfig {
   // "Góp âm hàng tháng" không phải trạng thái nghiệp vụ hợp lệ nào — nếu lọt qua
   // sẽ ném exception KHÔNG AI BẮT từ allocate.ts, thay vì một trạng thái chặn có
   // lý do tiếng Việt rõ ràng ở ngay biên đọc dữ liệu này.
+  // NaN phải chặn RIÊNG: `NaN < 0` là false nên phép so sánh âm ngay dưới đây
+  // không bắt được nó, và NaN sẽ chảy tới poolVnd làm cả kế hoạch thành NaN
+  // trong khi status vẫn là READY (bàn giao 2026-08-22 mục 2).
+  if (!Number.isFinite(row.monthly_contribution_vnd)) {
+    throw new Error(
+      `Giá trị monthly_contribution_vnd trong portfolio.settings không phải số hợp lệ: ` +
+      `${row.monthly_contribution_vnd}. Kiểm tra lại cấu hình số tiền góp hàng tháng.`,
+    );
+  }
+
   if (row.monthly_contribution_vnd < 0) {
     throw new Error(
       `Giá trị monthly_contribution_vnd trong portfolio.settings đang âm: ` +
@@ -173,6 +183,20 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
         `Chạy lại file seed 2026-08-22-portfolio-seed.sql.`,
       );
     }
+    // Cùng lý do như monthly_contribution_vnd: `Math.abs(NaN - 100) > 0.01` là
+    // false, nên phép kiểm "tổng phải bằng 100" ngay dưới KHÔNG bắt được một
+    // target_pct = NaN. Band NaN thì mọi phép so band cũng lặng lẽ ra false.
+    for (const [ten, gia_tri] of [
+      ['target_pct', t.target_pct], ['min_pct', t.min_pct], ['max_pct', t.max_pct],
+    ] as const) {
+      if (!Number.isFinite(gia_tri)) {
+        throw new Error(
+          `Giá trị ${ten} của nhóm ${c} trong portfolio.allocation_targets không phải ` +
+          `số hợp lệ: ${gia_tri}. Kiểm tra lại cấu hình phân bổ mục tiêu.`,
+        );
+      }
+    }
+
     targets[c] = { targetPct: t.target_pct, minPct: t.min_pct, maxPct: t.max_pct };
   }
 

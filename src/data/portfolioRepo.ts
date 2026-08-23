@@ -1,8 +1,9 @@
 // CRUD thuần trên schema `portfolio`. KHÔNG có logic nghiệp vụ ở đây.
 // KHÔNG nuốt lỗi: mọi lỗi Supabase đều ném lên kèm message tiếng Việt.
 //
-// ĐỌC-CHỈ ở đợt này (Task 14): chỉ có các hàm fetch*, không có insert/update/
-// delete nào. Ghi transaction thuộc đợt 3.
+// ĐƯỜNG GHI: chỉ có CẤU HÌNH (allocation_targets, settings) — xem cuối file.
+// KHÔNG có insert/update/delete nào lên `portfolio.transactions`: sổ giao dịch
+// chưa có UI, và bảng đó cố tình không có policy UPDATE (§14 sổ bất biến).
 //
 // service_role KHÔNG có usage trên schema `portfolio` (chỉ grant anon,
 // authenticated — đúng spec §3.3). Các hàm dưới đây dùng session của user nên
@@ -15,6 +16,7 @@ import type {
   AllocationRow, CrashEventRow, CrashLevelRow, SettingsRow,
   SnapshotSourceData, TargetRow, WatchlistItem,
 } from '../types/portfolio';
+import type { AssetClass } from '../domain/types';
 
 /** Mọi truy vấn schema `portfolio` đi qua đây. */
 const portfolioSchema = () => supabase.schema('portfolio');
@@ -170,4 +172,91 @@ export async function fetchSnapshotSources(
 export async function loadSnapshot(userId: string, asOf: string): Promise<PortfolioSnapshot> {
   const sources = await fetchSnapshotSources(userId, asOf);
   return mapToSnapshot(sources);
+}
+
+
+// ---------------------------------------------------------------------------
+// ĐƯỜNG GHI CẤU HÌNH
+// ---------------------------------------------------------------------------
+// Đây là đường ghi ĐẦU TIÊN của module. Hệ quả đáng ghi: hai lỗ `NaN` mà bản
+// bàn giao 2026-08-22 mục 2 để lại ("chưa có đường ghi nào đặt được NaN vào
+// cột đó") từ đây hết còn giả thuyết — guard Number.isFinite trong
+// buildSnapshot.ts là thứ chặn chúng.
+
+/** Một dòng target người dùng sửa được ở màn Cấu hình. */
+export interface TargetUpsert {
+  asset_class: AssetClass;
+  target_pct: number;
+  min_pct: number;
+  max_pct: number;
+}
+
+/**
+ * Ghi lại cả BỐN dòng target trong một lần. Ghi cả bốn chứ không ghi từng dòng:
+ * bất biến "tổng target = 100" là bất biến CỦA CẢ BỘ, nên lưu từng dòng một sẽ
+ * để lại trạng thái trung gian tổng ≠ 100 mà mapToSnapshot ném lỗi khi đọc.
+ *
+ * Kiểm ở client TRƯỚC khi gửi, vì DB không có constraint nào ép tổng = 100
+ * (core.sql chỉ có band_hop_le cho từng nhóm). Không kiểm thì lưu xong mới vỡ
+ * lúc mở tab, và người dùng không biết mình vừa làm gì sai.
+ */
+export async function saveTargets(userId: string, rows: TargetUpsert[]): Promise<void> {
+  if (rows.length !== 4) {
+    throw new Error(`Cần đúng 4 nhóm tỷ trọng, đang có ${rows.length}.`);
+  }
+
+  for (const r of rows) {
+    for (const [ten, v] of [
+      ['tỷ trọng mục tiêu', r.target_pct], ['giới hạn dưới', r.min_pct],
+      ['giới hạn trên', r.max_pct],
+    ] as const) {
+      if (!Number.isFinite(v)) {
+        throw new Error(`${ten} của nhóm ${r.asset_class} không phải số hợp lệ.`);
+      }
+      if (v < 0 || v > 100) {
+        throw new Error(`${ten} của nhóm ${r.asset_class} phải nằm trong 0–100, đang là ${v}.`);
+      }
+    }
+    // Cùng luật với CHECK band_hop_le trong core.sql — báo trước khi DB từ chối,
+    // để message là tiếng Việt chứ không phải tên constraint.
+    if (!(r.min_pct <= r.target_pct && r.target_pct <= r.max_pct)) {
+      throw new Error(
+        `Nhóm ${r.asset_class}: phải có giới hạn dưới ≤ mục tiêu ≤ giới hạn trên ` +
+        `(đang là ${r.min_pct} ≤ ${r.target_pct} ≤ ${r.max_pct}).`,
+      );
+    }
+  }
+
+  const tong = rows.reduce((s, r) => s + r.target_pct, 0);
+  if (Math.abs(tong - 100) > 0.01) {
+    throw new Error(`Tổng tỷ trọng mục tiêu đang là ${tong}%, phải bằng đúng 100%.`);
+  }
+
+  const { error } = await portfolioSchema()
+    .from('allocation_targets')
+    .upsert(
+      rows.map((r) => ({ user_id: userId, ...r })),
+      { onConflict: 'user_id,asset_class' },
+    );
+  throwIfError('lưu tỷ trọng mục tiêu', error);
+}
+
+/**
+ * Lưu số tiền góp hàng tháng (Z). Chặn NaN và số âm tại đây thay vì để chúng
+ * xuống tới engine: `NaN < 0` là false nên phép so sánh âm một mình không đủ.
+ */
+export async function saveMonthlyContribution(
+  userId: string, amountVnd: number,
+): Promise<void> {
+  if (!Number.isFinite(amountVnd)) {
+    throw new Error('Số tiền góp hàng tháng không phải số hợp lệ.');
+  }
+  if (amountVnd < 0) {
+    throw new Error(`Số tiền góp hàng tháng không thể âm (đang là ${amountVnd} đ).`);
+  }
+  const { error } = await portfolioSchema()
+    .from('settings')
+    .update({ monthly_contribution_vnd: amountVnd })
+    .eq('user_id', userId);
+  throwIfError('lưu số tiền góp hàng tháng', error);
 }

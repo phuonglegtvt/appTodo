@@ -11,6 +11,13 @@ export interface Stock {
   current_price: number | null;
   dividend: number | null;
   invested_amount: number | null;
+  /**
+   * Số cổ phiếu đang giữ. `null` = CHƯA NHẬP (khác hẳn 0 = đã bán hết) — tab
+   * Danh mục phải phân biệt hai ca này, không được coi null là 0 đồng.
+   * Cần cột này mới tính được giá trị thị trường: `invested_amount` chỉ nói đã
+   * bỏ vào bao nhiêu tiền, không nói đang giữ bao nhiêu cổ.
+   */
+  quantity: number | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -26,6 +33,7 @@ export interface NewStock {
   current_price?: number | null;
   dividend?: number | null;
   invested_amount?: number | null;
+  quantity?: number | null;
 }
 
 /** Các trường được phép sửa. */
@@ -40,6 +48,7 @@ export type StockUpdate = Partial<
     | 'current_price'
     | 'dividend'
     | 'invested_amount'
+    | 'quantity'
     | 'sort_order'
   >
 >;

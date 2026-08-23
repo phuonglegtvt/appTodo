@@ -9,6 +9,30 @@
   body {
     @apply bg-bg text-text font-sans dark:bg-bg-dark dark:text-text-dark;
   }
+
+  /* Màu bốn nhóm tài sản của tab Danh mục.
+     Khai bằng CSS variable (không phải hằng số trong TSX) để biểu đồ SVG tự đổi
+     màu khi bật/tắt dark mode — `fill` inline không nhận được biến `dark:` của
+     Tailwind, còn gọi useTheme() trong component con lại tạo một state RIÊNG
+     nên toggle ở chỗ khác sẽ không làm biểu đồ vẽ lại.
+
+     Bậc dark là bậc ĐƯỢC CHỌN cho nền tối (#17171C), không phải phép lật tự
+     động của bậc light. Cả hai bộ đã chạy qua validator của skill dataviz và
+     PASS mọi check. Nguồn sự thật song song: src/lib/portfolioClassMeta.ts —
+     sửa một bên phải sửa bên kia. */
+  :root {
+    --viz-stocks: #2a78d6;
+    --viz-crypto: #e87ba4;
+    --viz-gold:   #eda100;
+    --viz-cash:   #1baf7a;
+  }
+
+  .dark {
+    --viz-stocks: #3987e5;
+    --viz-crypto: #d55181;
+    --viz-gold:   #c98500;
+    --viz-cash:   #199e70;
+  }
 }
 
 @layer components {

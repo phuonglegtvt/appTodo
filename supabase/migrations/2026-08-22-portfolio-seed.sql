@@ -35,18 +35,27 @@ insert into portfolio.settings (user_id)
 select u.id from auth.users u where u.email = 'phuonglegtvt92@gmail.com'
 on conflict (user_id) do nothing;
 
--- ---------- allocation_targets: 50/20/15/15 + band ----------
--- Giá trị band khớp với fixture TARGETS dùng trong test miền domain (vd. bands.test.ts) —
--- STOCKS 50 (40–55) · CRYPTO 20 (15–25) · GOLD 15 (10–20) · CASH 15 (7–20).
+-- ---------- allocation_targets: 60/30/10/0 + band ±5đ% ----------
+-- STOCKS 60 (55–65) · CRYPTO 30 (25–35) · GOLD 10 (5–15) · CASH 0 (0–0).
+--
+-- CASH = 0%: tab Danh mục (đợt 3) tính tỷ trọng từ holdings thật của cổ phiếu /
+-- crypto / vàng và KHÔNG theo dõi số dư tiền mặt. Khoá cứng band 0–0 để tiền
+-- mặt luôn "đúng target" thay vì bị báo lệch mỗi tháng vì một nhóm app không
+-- quản. Hành vi này đã đo, không suy luận: xem src/domain/noCashProfile.test.ts.
+-- Muốn theo dõi tiền mặt về sau thì sửa ở màn Cấu hình, không cần migration.
+--
+-- ⚠️ Bốn số target PHẢI cộng đúng 100 — mapToSnapshot ném lỗi nếu lệch.
+-- Đây KHÔNG còn là bộ số dùng trong fixture test domain (test tự khai TARGETS
+-- riêng); đừng sửa file test cho khớp file này hay ngược lại.
 insert into portfolio.allocation_targets
   (user_id, asset_class, target_pct, min_pct, max_pct)
 select u.id, v.ac, v.t, v.mn, v.mx
   from auth.users u
  cross join (values
-   ('STOCKS'::portfolio.asset_class, 50, 40, 55),
-   ('CRYPTO'::portfolio.asset_class, 20, 15, 25),
-   ('GOLD'::portfolio.asset_class,   15, 10, 20),
-   ('CASH'::portfolio.asset_class,   15,  7, 20)
+   ('STOCKS'::portfolio.asset_class, 60, 55, 65),
+   ('CRYPTO'::portfolio.asset_class, 30, 25, 35),
+   ('GOLD'::portfolio.asset_class,   10,  5, 15),
+   ('CASH'::portfolio.asset_class,    0,  0,  0)
  ) as v(ac, t, mn, mx)
  where u.email = 'phuonglegtvt92@gmail.com'
 on conflict (user_id, asset_class) do nothing;
