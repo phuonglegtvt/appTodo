@@ -67,7 +67,7 @@ export async function fetchSettings(userId: string): Promise<SettingsRow | null>
   // (chuỗi select() phải là một literal duy nhất — xem lý do ở fetchAllocation)
   const { data, error } = await portfolioSchema()
     .from('settings')
-    .select('monthly_contribution_vnd, watch_deviation_pp, strong_rebalance_pp, min_sell_amount_vnd, rounding_step_vnd, allocation_formula, cash_eligible_for_new_capital, sell_to')
+    .select('monthly_contribution_vnd, watch_deviation_pp, strong_rebalance_pp, min_sell_amount_vnd, rounding_step_vnd, allocation_formula, cash_eligible_for_new_capital, sell_to, dca_capital_vnd, dca_months')
     .eq('user_id', userId)
     .maybeSingle();
   throwIfError('tải cấu hình', error);
@@ -259,4 +259,39 @@ export async function saveMonthlyContribution(
     .update({ monthly_contribution_vnd: amountVnd })
     .eq('user_id', userId);
   throwIfError('lưu số tiền góp hàng tháng', error);
+}
+
+
+/**
+ * Lưu kế hoạch DCA: vốn có sẵn + số tháng rải. Ghi CẢ HAI trong một lần vì chúng
+ * chỉ có nghĩa cùng nhau — lưu riêng lẻ để lại trạng thái "có vốn, chưa có tháng"
+ * mà app phải hiện cảnh báo, dù người dùng đã điền đủ cả hai ô rồi.
+ *
+ * `months === null` là hợp lệ: xoá kế hoạch, giữ lại vốn.
+ */
+export async function saveDcaPlan(
+  userId: string, capitalVnd: number, months: number | null,
+): Promise<void> {
+  if (!Number.isFinite(capitalVnd)) {
+    throw new Error('Vốn DCA không phải số hợp lệ.');
+  }
+  if (capitalVnd < 0) {
+    throw new Error(`Vốn DCA không thể âm (đang là ${capitalVnd} đ).`);
+  }
+  if (months !== null) {
+    if (!Number.isFinite(months)) {
+      throw new Error('Số tháng DCA không phải số hợp lệ.');
+    }
+    // Cùng luật với CHECK settings_dca_months_duong — báo trước khi DB từ chối,
+    // để message là tiếng Việt chứ không phải tên constraint.
+    if (!Number.isInteger(months) || months <= 0) {
+      throw new Error(`Số tháng DCA phải là số nguyên lớn hơn 0 (đang là ${months}).`);
+    }
+  }
+
+  const { error } = await portfolioSchema()
+    .from('settings')
+    .update({ dca_capital_vnd: capitalVnd, dca_months: months })
+    .eq('user_id', userId);
+  throwIfError('lưu kế hoạch DCA', error);
 }

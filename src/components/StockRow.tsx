@@ -1,11 +1,38 @@
 import { useState } from 'react';
 import type { Stock, StockUpdate } from '../types/stock';
 import { computeYield, isBelowThreshold, isAboveProtect } from '../lib/stockCalc';
-import { drawdownFromPeakPct } from '../lib/peakDrawdown';
+import { drawdownFromPeakPct, gapToPricePct } from '../lib/peakDrawdown';
 import { parseVnNumber } from '../lib/parseNumber';
 
 function fmt(n: number | null): string {
   return n == null ? '—' : n.toLocaleString('vi-VN');
+}
+
+/**
+ * Ô "% so ngưỡng" — còn cách giá ngưỡng tích sản bao nhiêu %.
+ * Màu ngược với ô "% so đỉnh" vì ý nghĩa ngược: ở ĐÂY số ÂM là tin tốt (đã xuống
+ * dưới ngưỡng ⇒ đáng mua), số dương là còn đắt hơn ngưỡng.
+ */
+function OSoNguong({ pct }: { pct: number | null }) {
+  if (pct == null) {
+    return <span className="text-text-muted dark:text-text-muted-dark">—</span>;
+  }
+  const mau =
+    pct <= 0
+      ? 'font-semibold text-green-600 dark:text-green-400'
+      : 'font-semibold text-red-600 dark:text-red-400';
+  return (
+    <span
+      className={mau}
+      title={
+        pct <= 0
+          ? 'Đã ở dưới giá ngưỡng tích sản'
+          : `Còn phải giảm ${pct.toFixed(1)}% mới về giá ngưỡng`
+      }
+    >
+      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+    </span>
+  );
 }
 
 /**
@@ -76,6 +103,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   const yieldPct = computeYield(stock);
   // Cùng đơn vị NGHÌN ĐỒNG nên so trực tiếp, không quy đổi.
   const soDinhPct = drawdownFromPeakPct(stock.current_price, stock.peak_price);
+  const soNguongPct = gapToPricePct(stock.current_price, stock.price_threshold);
   const above = isAboveProtect(stock);
   // "đáng mua" chỉ khi không đồng thời "đắt" (đỏ ưu tiên nếu dữ liệu bất thường).
   const cheap = !above && isBelowThreshold(stock);
@@ -91,6 +119,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
         <td className={cell}>
           <input value={priceThreshold} onChange={(e) => setPriceThreshold(e.target.value)} className={editInput} aria-label="Giá ngưỡng" />
         </td>
+        <td className={cell}><OSoNguong pct={soNguongPct} /></td>
         <td className={cell}>
           <input value={priceProtect} onChange={(e) => setPriceProtect(e.target.value)} className={editInput} aria-label="Giá bảo vệ" />
         </td>
@@ -133,6 +162,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
       <td className={`${cell} font-semibold ${emphasize}`}>{stock.ticker}</td>
       <td className={cell}>{stock.company_name}</td>
       <td className={cell}>{fmt(stock.price_threshold)}</td>
+      <td className={cell}><OSoNguong pct={soNguongPct} /></td>
       <td className={cell}>{fmt(stock.price_protect)}</td>
       <td className={`${cell} ${emphasize}`}>{fmt(stock.current_price)}</td>
       <td className={cell}>{fmt(stock.peak_price)}</td>

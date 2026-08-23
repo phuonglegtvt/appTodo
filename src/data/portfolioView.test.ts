@@ -22,6 +22,7 @@ const SETTINGS: SettingsRow = {
   strong_rebalance_pp: 5, min_sell_amount_vnd: 5_000_000,
   rounding_step_vnd: 100_000, allocation_formula: 'PROPORTIONAL_GAP',
   cash_eligible_for_new_capital: true, sell_to: 'TARGET',
+  dca_capital_vnd: 0, dca_months: null,
 };
 
 function stock(over: Partial<Stock> = {}): Stock {
@@ -174,5 +175,35 @@ describe('buildPortfolioView — thiếu giá thì chặn kế hoạch, không �
 describe('buildPortfolioView — thiếu cấu hình', () => {
   it('chưa chạy seed (targets rỗng) → ném lỗi chỉ rõ phải chạy file nào', () => {
     expect(() => buildPortfolioView({ ...base, targets: [] })).toThrow(/seed/);
+  });
+});
+
+describe('buildPortfolioView — chi tiết tiền chia tháng này (cho UI giải thích)', () => {
+  it('nêu được cả ba phần: tổng, tiền góp, vốn DCA rải ra', () => {
+    const view = buildPortfolioView({
+      ...base,
+      settings: { ...SETTINGS, monthly_contribution_vnd: 3_000_000,
+                  dca_capital_vnd: 120_000_000, dca_months: 12 },
+    });
+    expect(view.monthlyPool.contributionVnd).toBe(3_000_000);
+    expect(view.monthlyPool.dcaSliceVnd).toBe(10_000_000);
+    expect(view.monthlyPool.totalVnd).toBe(13_000_000);
+    // Và đúng bằng số engine dùng để chia — hai chỗ không được lệch nhau.
+    expect(view.snapshot.monthlyContributionVnd).toBe(view.monthlyPool.totalVnd);
+  });
+
+  it('có vốn mà chưa nhập số tháng: nêu lý do để UI nói ra', () => {
+    const view = buildPortfolioView({
+      ...base,
+      settings: { ...SETTINGS, dca_capital_vnd: 120_000_000, dca_months: null },
+    });
+    expect(view.monthlyPool.dcaSliceVnd).toBe(0);
+    expect(view.monthlyPool.lyDoKhongCoDca).toBe('chua-dat-thang');
+  });
+
+  it('settings = null: pool mặc định, không lỗi', () => {
+    const view = buildPortfolioView({ ...base, settings: null });
+    expect(view.monthlyPool.totalVnd).toBe(3_000_000);
+    expect(view.monthlyPool.dcaSliceVnd).toBe(0);
   });
 });

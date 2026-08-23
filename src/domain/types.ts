@@ -19,6 +19,26 @@ export interface TargetBand {
   maxPct: number;
 }
 
+/**
+ * Ba phần của số tiền chia hàng tháng (ĐỒNG). Hàm dựng nó là
+ * `monthlyPool` trong `./dcaPool`; kiểu khai ở đây vì `PortfolioSnapshot` tham
+ * chiếu tới nó và file này không được import bất cứ gì.
+ */
+export interface MonthlyPool {
+  /** Tiền góp đều hàng tháng (Z) — người dùng nhập trực tiếp. */
+  contributionVnd: number;
+  /** Phần vốn có sẵn rải ra tháng này = floor(vốn ÷ số tháng). 0 khi chưa có kế hoạch. */
+  dcaSliceVnd: number;
+  /** Tổng đem đi chia = contributionVnd + dcaSliceVnd. */
+  totalVnd: number;
+  /**
+   * Vì sao `dcaSliceVnd` = 0 — để UI nói ra thay vì để người dùng tự đoán:
+   *   · `null`             → không có gì bất thường (kế hoạch hợp lệ, hoặc vốn = 0)
+   *   · `'chua-dat-thang'` → CÓ vốn nhưng số tháng chưa nhập / ≤ 0
+   */
+  lyDoKhongCoDca: null | 'chua-dat-thang';
+}
+
 export type AllocationFormula = 'PROPORTIONAL_GAP' | 'PRIORITY_WATERFALL';
 
 export interface EngineConfig {
@@ -222,6 +242,12 @@ export interface PortfolioSnapshot {
   /** Số dư túi VND-RESERVE (VND). */
   cashReserveVnd: number;
   targets: Record<AssetClass, TargetBand>;
+  /**
+   * Số tiền engine đem đi chia tháng này. Từ đợt DCA (2026-08-23) nó là TỔNG
+   * `monthlyPool.totalVnd` (tiền góp + vốn DCA rải ra), không còn là cột
+   * `monthly_contribution_vnd` trần. Chi tiết gồm những gì nằm ở
+   * `PortfolioView.monthlyPool` — dữ liệu hiển thị, không thuộc snapshot này.
+   */
   monthlyContributionVnd: number;
   incomeReceivedVnd: number;
   drawdowns: Record<AssetClass, number>;

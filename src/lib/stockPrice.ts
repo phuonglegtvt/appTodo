@@ -25,58 +25,6 @@ export function parseLatestClose(json: unknown): number | null {
   return typeof last === 'number' && Number.isFinite(last) ? last : null;
 }
 
-/** Kết quả lấy giá: giá lấy được + danh sách mã lỗi (kèm lý do) để báo rõ, không nuốt. */
-export interface FetchPricesResult {
-  /** Map ticker (viết hoa) → giá (nghìn đồng). Chỉ chứa mã lấy được giá. */
-  prices: Record<string, number>;
-  /** Các mã lỗi (mạng/CORS/HTTP/nguồn đổi shape) kèm lý do, để hiện cho người dùng. */
-  failed: { ticker: string; message: string }[];
-}
-
-/** Lấy giá đóng cửa mới nhất cho một mã. Ném lỗi rõ ràng khi mạng/CORS/HTTP/shape lỗi. */
-async function fetchOnePrice(sym: string, from: number, to: number): Promise<number | null> {
-  const url = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${sym}&resolution=D&from=${from}&to=${to}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const body: unknown = await res.json();
-  return parseLatestClose(body);
-}
-
-/**
- * Lấy giá hiện tại cho danh sách mã. Gom song song, mỗi mã một request tới dchart.
- * Dùng `Promise.allSettled`: một mã lỗi KHÔNG làm hỏng cả lần cập nhật — các mã còn lại
- * vẫn được cập nhật, mã lỗi được gom vào `failed` để báo rõ (không nuốt lỗi).
- * Mã không có dữ liệu (no_data) bị bỏ khỏi `prices` nhưng KHÔNG tính là lỗi.
- */
-export async function fetchPrices(tickers: string[]): Promise<FetchPricesResult> {
-  const symbols = tickers.map((t) => t.trim().toUpperCase()).filter(Boolean);
-  if (symbols.length === 0) return { prices: {}, failed: [] };
-
-  // Cửa sổ ~15 ngày gần nhất để chắc chắn có ít nhất một phiên (trừ cuối tuần/lễ).
-  const to = Math.floor(Date.now() / 1000);
-  const from = to - 15 * 24 * 60 * 60;
-
-  const settled = await Promise.allSettled(
-    symbols.map((sym) => fetchOnePrice(sym, from, to)),
-  );
-
-  const prices: Record<string, number> = {};
-  const failed: { ticker: string; message: string }[] = [];
-  settled.forEach((result, i) => {
-    const sym = symbols[i];
-    if (result.status === 'fulfilled') {
-      if (result.value != null) prices[sym] = result.value;
-    } else {
-      const reason = result.reason;
-      failed.push({ ticker: sym, message: reason instanceof Error ? reason.message : String(reason) });
-    }
-  });
-  return { prices, failed };
-}
-
-
 // ---------------------------------------------------------------------------
 // ĐỈNH LỊCH SỬ
 // ---------------------------------------------------------------------------
@@ -111,45 +59,67 @@ export function parseMaxHigh(json: unknown): number | null {
   return so.length === 0 ? null : Math.max(...so);
 }
 
-/** Kết quả lấy đỉnh: đỉnh lấy được + mã lỗi kèm lý do (không nuốt). */
-export interface FetchPeaksResult {
-  /** Map ticker (viết hoa) → đỉnh lịch sử (nghìn đồng). */
-  peaks: Record<string, number>;
+/** Giá hiện tại + đỉnh lịch sử của một mã, đều theo NGHÌN ĐỒNG. */
+export interface StockQuote {
+  /** Giá đóng cửa phiên gần nhất. `null` = mã không có dữ liệu (no_data). */
+  priceVnd: number | null;
+  /** Đỉnh lịch sử trong dữ liệu dchart. `null` = không có nến nào. */
+  peakVnd: number | null;
+}
+
+/** Kết quả một lượt lấy số: mã lấy được + mã lỗi kèm lý do (không nuốt). */
+export interface FetchQuotesResult {
+  /** Map ticker (viết hoa) → giá & đỉnh. Chỉ chứa mã gọi thành công. */
+  quotes: Record<string, StockQuote>;
   failed: { ticker: string; message: string }[];
 }
 
-/** Lấy đỉnh lịch sử của một mã. Ném lỗi rõ khi mạng/CORS/HTTP/shape lỗi. */
-async function fetchOnePeak(sym: string, to: number): Promise<number | null> {
-  const url = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${sym}&resolution=M&from=0&to=${to}`;
+/**
+ * Một request lịch sử đầy đủ cho một mã, rút ra CẢ giá hiện tại lẫn đỉnh.
+ *
+ * Vì sao gộp thay vì hai hàm riêng: response `resolution=D&from=0` đã chứa cả hai
+ * — `c` phần tử cuối là giá đóng cửa phiên gần nhất (đã đối chiếu với số đang
+ * hiện trên app: ACB = 22,75), `max(h)` là đỉnh. Gọi tách ra thành hai lượt là
+ * 124 request thay vì 62 mà không lấy thêm được thông tin nào.
+ */
+async function fetchOneQuote(sym: string, to: number): Promise<StockQuote> {
+  const url = `https://dchart-api.vndirect.com.vn/dchart/history?symbol=${sym}&resolution=D&from=0&to=${to}`;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }
+  // Ném lỗi nếu body không phải JSON — dchart trả TEXT "Not support resolution M"
+  // kèm HTTP 200 khi tham số sai, đúng kiểu lỗi im lặng cần lộ ra ngay.
   const body: unknown = await res.json();
-  return parseMaxHigh(body);
+  return { priceVnd: parseLatestClose(body), peakVnd: parseMaxHigh(body) };
 }
 
 /**
- * Lấy đỉnh lịch sử cho danh sách mã. Cùng khuôn `fetchPrices`: một mã lỗi KHÔNG
- * làm hỏng cả lần cập nhật, mã lỗi gom vào `failed` để báo rõ.
+ * Lấy giá + đỉnh cho danh sách mã. `Promise.allSettled`: một mã lỗi KHÔNG làm
+ * hỏng cả lần cập nhật, mã lỗi gom vào `failed` để báo rõ.
+ *
+ * ⚠️ CHI PHÍ MẠNG: mỗi mã ~170 KB (toàn bộ lịch sử ngày từ 2013). 62 mã ≈ 10 MB
+ * mỗi lần bấm "Cập nhật giá". Không tránh được nếu muốn đỉnh THẬT: dchart chỉ hỗ
+ * trợ `resolution=D` (M và W đều trả "Not support resolution"), và không có
+ * endpoint nào trả sẵn đỉnh.
  */
-export async function fetchPeaks(tickers: string[]): Promise<FetchPeaksResult> {
+export async function fetchQuotes(tickers: string[]): Promise<FetchQuotesResult> {
   const symbols = tickers.map((t) => t.trim().toUpperCase()).filter(Boolean);
-  if (symbols.length === 0) return { peaks: {}, failed: [] };
+  if (symbols.length === 0) return { quotes: {}, failed: [] };
 
   const to = Math.floor(Date.now() / 1000);
-  const settled = await Promise.allSettled(symbols.map((sym) => fetchOnePeak(sym, to)));
+  const settled = await Promise.allSettled(symbols.map((sym) => fetchOneQuote(sym, to)));
 
-  const peaks: Record<string, number> = {};
+  const quotes: Record<string, StockQuote> = {};
   const failed: { ticker: string; message: string }[] = [];
   settled.forEach((result, i) => {
     const sym = symbols[i];
     if (result.status === 'fulfilled') {
-      if (result.value != null) peaks[sym] = result.value;
+      quotes[sym] = result.value;
     } else {
       const reason = result.reason;
       failed.push({ ticker: sym, message: reason instanceof Error ? reason.message : String(reason) });
     }
   });
-  return { peaks, failed };
+  return { quotes, failed };
 }

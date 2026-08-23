@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStocks } from '../hooks/useStocks';
-import { fetchPrices, fetchPeaks } from '../lib/stockPrice';
+import { fetchQuotes } from '../lib/stockPrice';
 import { nextPeak } from '../lib/peakDrawdown';
 import { filterStocks } from '../lib/stockFilters';
 import type { StockGroup, StockUpdate } from '../types/stock';
@@ -27,26 +27,22 @@ export function StocksPage({ userId }: Props) {
     if (tickers.length === 0) return;
     setUpdating(true);
     try {
-      // Giá hiện tại và đỉnh lịch sử đi song song: hai loại request khác nhau
-      // (nến ngày / nến tháng) nên không gộp được, nhưng chờ tuần tự thì nút bấm
-      // lâu gấp đôi mà chẳng để làm gì.
-      const [{ prices, failed }, { peaks, failed: peakFailed }] = await Promise.all([
-        fetchPrices(tickers),
-        fetchPeaks(tickers),
-      ]);
+      // MỘT request/mã lấy cả giá lẫn đỉnh — xem fetchQuotes để biết vì sao gộp.
+      const { quotes, failed } = await fetchQuotes(tickers);
 
       // MỘT lần ghi cho mỗi mã, gộp cả giá lẫn đỉnh: ghi hai lần liên tiếp lên
       // cùng một dòng làm realtime bắn hai sự kiện và bảng nháy hai nhịp.
       await Promise.all(
         stocks.map((s) => {
-          const key = s.ticker.toUpperCase();
-          const gia = prices[key];
-          // Đỉnh chỉ được TĂNG (xem nextPeak): API trả thiếu hoặc trả thấp hơn
-          // đỉnh đang lưu thì giữ đỉnh cũ, không đạp xuống.
-          const dinh = nextPeak(s.peak_price, peaks[key], gia ?? s.current_price);
+          const q = quotes[s.ticker.toUpperCase()];
+          if (q === undefined) return null; // mã lỗi: đã nằm trong `failed`
+
+          // Đỉnh chỉ được TĂNG (xem nextPeak): nguồn trả thấp hơn đỉnh đang lưu
+          // thì giữ đỉnh cũ, không đạp xuống.
+          const dinh = nextPeak(s.peak_price, q.peakVnd, q.priceVnd ?? s.current_price);
 
           const patch: StockUpdate = {};
-          if (gia != null) patch.current_price = gia;
+          if (q.priceVnd != null) patch.current_price = q.priceVnd;
           if (dinh != null && dinh !== s.peak_price) patch.peak_price = dinh;
           return Object.keys(patch).length > 0 ? updateStock(s.id, patch) : null;
         }).filter((p): p is Promise<void> => p !== null),
@@ -55,14 +51,9 @@ export function StocksPage({ userId }: Props) {
       // Có mã lỗi nhưng không hỏng cả lần: báo rõ mã nào lỗi, không nuốt.
       if (failed.length > 0) {
         const detail = failed.map((f) => `${f.ticker} (${f.message})`).join(', ');
-        setPriceError(`Không lấy được giá ${failed.length} mã: ${detail}. Có thể nhập giá tay.`);
-      } else if (peakFailed.length > 0) {
-        // Đỉnh lỗi mà giá thì OK: vẫn phải nói ra, nhưng nhẹ hơn — cột "Đỉnh LS"
-        // sửa tay được nên đây không phải chuyện chặn đường.
-        const detail = peakFailed.map((f) => f.ticker).join(', ');
         setPriceError(
-          `Giá đã cập nhật xong. Riêng đỉnh lịch sử không lấy được cho ${peakFailed.length} mã: `
-          + `${detail}. Nhập tay ở cột “Đỉnh LS” nếu cần.`,
+          `Không lấy được số của ${failed.length} mã: ${detail}. `
+          + 'Có thể nhập giá và đỉnh tay.',
         );
       }
     } catch (err) {
