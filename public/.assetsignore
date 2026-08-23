@@ -1,0 +1,17 @@
+# Đường nào khớp ở đây thì Cloudflare Workers KHÔNG upload lên static assets.
+#
+# Vì sao cần: wrangler.jsonc không có `main` (project này là static assets thuần),
+# nên wrangler tự sinh một "no-op worker" tạm và — với wrangler 4.125 — nó ghi
+# file tạm đó vào NGAY TRONG thư mục assets (`dist/assets/.wrangler/tmp/deploy-*/`).
+# Hệ quả đo được ở deploy 2026-08-23: file `no-op-worker.js` và `.map` của nó bị
+# upload và phục vụ công khai (HTTP 200), kèm đường dẫn npx trên máy local trong
+# comment sourcemap. Nội dung vô hại (worker rỗng trả 404) nhưng là rác, và mỗi
+# lần deploy sinh thêm một thư mục tên random mới.
+#
+# File này nằm ở `public/` để Vite copy vào gốc `dist/` mỗi lần build — `dist/`
+# bị .gitignore nên không đặt trực tiếp ở đó được.
+# Bản thân `.assetsignore` không được upload.
+.wrangler/**
+
+# Sourcemap: không cần cho người dùng cuối, và làm lộ cấu trúc thư mục local.
+*.map

@@ -6,6 +6,14 @@ minh riêng — chạy xác minh xong mới sang bước sau.
 > Nguồn: `docs/handoff/2026-08-22-2245-portfolio-dot1-2-hoan-tat.md` mục 1,
 > spec mục 1.2.
 
+> **Đã chạy xong trên project thật `hnohjmonscdbqbqwvxqs` ngày 2026-08-23.**
+> Cả 4 bước PASS, xác minh bằng số chứ không bằng lời: 11 bảng · 3 view ·
+> RLS bật đủ · `transactions` không có policy UPDATE · 3 view đều `security_invoker` ·
+> instruments 72 = 62 stocks + 5 cryptos + 4 túi tiền + 1 vàng (lệch 0) ·
+> target 60/30/10/0 cộng đúng 100 · `public.golds` 4 policy + RLS on.
+> PostgREST tự khai: `Only the following schemas are exposed: public, graphql_public, portfolio`.
+> Checklist dưới đây giữ lại để dựng lại project khác hoặc khi phải làm lại từ đầu.
+
 ---
 
 ## Bước 0 — Xác nhận email đăng nhập (làm TRƯỚC, 30 giây)
