@@ -25,6 +25,7 @@ function buildSourceData(over: Partial<SnapshotSourceData> = {}): SnapshotSource
       strong_rebalance_pp: 5, min_sell_amount_vnd: 5_000_000,
       rounding_step_vnd: 100_000, allocation_formula: 'PROPORTIONAL_GAP',
       cash_eligible_for_new_capital: true, sell_to: 'TARGET',
+      dca_capital_vnd: 0, dca_months: null,
     },
     crashLevels: [{ level: 1, drawdown_pct: 15, deploy_pct_of_reserve: 10 }],
     crashEvents: [],
@@ -300,5 +301,48 @@ describe('mapToSnapshot — cấu hình', () => {
         { asset_class: 'CASH',   target_pct: 15, min_pct: 7,  max_pct: 20 },
       ],
     }))).toThrow(/target_pct/);
+  });
+});
+
+describe('mapToSnapshot — vốn DCA cộng vào tiền chia hàng tháng', () => {
+  it('có vốn + số tháng: monthlyContributionVnd = góp hàng tháng + vốn bổ sung', () => {
+    const s = mapToSnapshot(buildSourceData({
+      settings: {
+        ...buildSourceData().settings!,
+        monthly_contribution_vnd: 3_000_000,
+        dca_capital_vnd: 120_000_000,
+        dca_months: 12,
+      },
+    }));
+    // 3tr góp + 120tr/12 = 10tr bổ sung
+    expect(s.monthlyContributionVnd).toBe(13_000_000);
+  });
+
+  it('chưa đặt kế hoạch DCA: pool = đúng tiền góp hàng tháng, không đổi hành vi cũ', () => {
+    const s = mapToSnapshot(buildSourceData());
+    expect(s.monthlyContributionVnd).toBe(3_000_000);
+  });
+
+  it('có vốn mà chưa nhập số tháng: pool không tăng, và nêu được lý do', () => {
+    const s = mapToSnapshot(buildSourceData({
+      settings: {
+        ...buildSourceData().settings!,
+        dca_capital_vnd: 120_000_000,
+        dca_months: null,
+      },
+    }));
+    // Không tăng pool, nhưng KHÔNG ném lỗi: form điền dở là trạng thái bình thường.
+    expect(s.monthlyContributionVnd).toBe(3_000_000);
+  });
+
+  it('settings = null: pool = mặc định 3tr, dcaSlice = 0', () => {
+    const s = mapToSnapshot(buildSourceData({ settings: null }));
+    expect(s.monthlyContributionVnd).toBe(3_000_000);
+  });
+
+  it('dca_capital_vnd âm trong DB → ném lỗi, không âm thầm trừ vào pool', () => {
+    expect(() => mapToSnapshot(buildSourceData({
+      settings: { ...buildSourceData().settings!, dca_capital_vnd: -1_000_000, dca_months: 12 },
+    }))).toThrow(/dca_capital_vnd/);
   });
 });

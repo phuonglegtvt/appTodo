@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { monthlyPool } from '../domain/dcaPool';
 import { ASSET_CLASSES } from '../domain/types';
 import { CLASS_META } from '../lib/portfolioClassMeta';
 import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
@@ -19,6 +20,7 @@ interface Props {
   settings: SettingsRow | null;
   onSaveTargets: (rows: TargetRow[]) => Promise<void>;
   onSaveContribution: (amountVnd: number) => Promise<void>;
+  onSaveDca: (capitalVnd: number, months: number | null) => Promise<void>;
 }
 
 type Nhap = Record<AssetClass, { target: string; min: string; max: string }>;
@@ -36,12 +38,24 @@ function toNhap(targets: TargetRow[]): Nhap {
   return out;
 }
 
+/** Định dạng tiền VND để hiện lại cho người dùng đọc. */
+function dinhDangVnd(v: number): string {
+  return v.toLocaleString('vi-VN') + ' đ';
+}
+
 export function TargetSettingsForm({
-  targets, settings, onSaveTargets, onSaveContribution,
+  targets, settings, onSaveTargets, onSaveContribution, onSaveDca,
 }: Props) {
   const [nhap, setNhap] = useState<Nhap>(() => toNhap(targets));
   const [z, setZ] = useState(() =>
     settings === null ? '' : String(settings.monthly_contribution_vnd),
+  );
+  const [von, setVon] = useState(() =>
+    settings === null || settings.dca_capital_vnd === 0
+      ? '' : String(settings.dca_capital_vnd),
+  );
+  const [soThang, setSoThang] = useState(() =>
+    settings?.dca_months == null ? '' : String(settings.dca_months),
   );
   const [loi, setLoi] = useState<string | null>(null);
   const [xong, setXong] = useState<string | null>(null);
@@ -53,6 +67,18 @@ export function TargetSettingsForm({
     (s, c) => s + (parseVnNumber(nhap[c].target) ?? 0), 0,
   );
   const tongDung = Math.abs(tongTarget - 100) < 0.01;
+
+  // Tính lại NGAY khi gõ, dùng đúng hàm engine sẽ dùng (domain/dcaPool) — không
+  // viết lại phép chia ở đây, để cái người dùng thấy trước khi Lưu đúng bằng cái
+  // app sẽ tính sau khi Lưu.
+  const zHienTai = parseVndAmount(z) ?? 0;
+  const vonHienTai = parseVndAmount(von) ?? 0;
+  const thangHienTai = parseVnNumber(soThang);
+  const poolXemTruoc = monthlyPool({
+    contributionVnd: Math.max(0, zHienTai),
+    capitalVnd: Math.max(0, vonHienTai),
+    months: thangHienTai,
+  });
 
   function set(c: AssetClass, khoa: 'target' | 'min' | 'max', v: string) {
     setNhap((p) => ({ ...p, [c]: { ...p[c], [khoa]: v } }));
@@ -103,6 +129,37 @@ export function TargetSettingsForm({
       setXong('Đã lưu số tiền góp hàng tháng.');
     } catch (err) {
       console.error('Lỗi lưu số tiền góp hàng tháng:', err);
+      setLoi(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDangLuu(false);
+    }
+  }
+
+  async function luuDca() {
+    setLoi(null);
+    setXong(null);
+
+    const v = parseVndAmount(von);
+    // Ô trống nghĩa là "không có vốn DCA" ⇒ 0, hợp lệ. Nhưng gõ chữ vào thì
+    // parseVndAmount trả null — phải phân biệt hai ca, không nuốt thành 0.
+    const vonSo = von.trim() === '' ? 0 : v;
+    if (vonSo === null) {
+      setLoi('Vốn không phải số tiền hợp lệ.');
+      return;
+    }
+
+    const thangSo = soThang.trim() === '' ? null : parseVnNumber(soThang);
+    if (soThang.trim() !== '' && (thangSo === null || !Number.isInteger(thangSo) || thangSo <= 0)) {
+      setLoi('Số tháng DCA phải là số nguyên lớn hơn 0. Để trống nếu chưa muốn rải.');
+      return;
+    }
+
+    setDangLuu(true);
+    try {
+      await onSaveDca(vonSo, thangSo);
+      setXong('Đã lưu kế hoạch DCA.');
+    } catch (err) {
+      console.error('Lỗi lưu kế hoạch DCA:', err);
       setLoi(err instanceof Error ? err.message : String(err));
     } finally {
       setDangLuu(false);
@@ -223,6 +280,85 @@ export function TargetSettingsForm({
             {dangLuu ? 'Đang lưu…' : 'Lưu'}
           </button>
         </div>
+      </div>
+
+      <hr className="border-border dark:border-border-dark" />
+
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-bold text-text dark:text-text-dark">
+          Vốn có sẵn rải dần (DCA)
+        </h3>
+        <p className="text-[13px] leading-relaxed text-text-muted dark:text-text-muted-dark">
+          Đơn vị <strong>đồng</strong>. Có sẵn một cục vốn và muốn rải trong nhiều
+          tháng thì nhập ở đây. <strong>Vốn bổ sung</strong> mỗi tháng ={' '}
+          <em>Vốn ÷ số tháng</em>, và nó được cộng vào tiền góp hàng tháng để ra số
+          app chia ở cột “Góp tháng này”.
+        </p>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted dark:text-text-muted-dark">
+              Vốn
+            </span>
+            <input
+              value={von}
+              onChange={(e) => { setVon(e.target.value); setXong(null); }}
+              inputMode="numeric"
+              placeholder="120.000.000"
+              aria-label="Vốn có sẵn để rải (đồng)"
+              className={`${oNhap} w-[190px]`}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted dark:text-text-muted-dark">
+              Số tháng DCA
+            </span>
+            <input
+              value={soThang}
+              onChange={(e) => { setSoThang(e.target.value); setXong(null); }}
+              inputMode="numeric"
+              placeholder="12"
+              aria-label="Số tháng rải hết vốn"
+              className={`${oNhap} w-[110px]`}
+            />
+          </label>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted dark:text-text-muted-dark">
+              Vốn bổ sung / tháng
+            </span>
+            {/* Ô CHỈ ĐỌC: đây là số tính ra, không phải số nhập. Cho sửa được thì
+                nó lệch khỏi Vốn ÷ số tháng và không ai biết số nào đang đúng. */}
+            <output
+              className="block w-[190px] rounded-md border border-dashed border-border bg-surface-2 px-2 py-1.5 text-right font-mono text-[13px] font-bold tabular-nums text-text dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark"
+            >
+              {dinhDangVnd(poolXemTruoc.dcaSliceVnd)}
+            </output>
+          </div>
+
+          <button onClick={luuDca} disabled={dangLuu} className={nut}>
+            {dangLuu ? 'Đang lưu…' : 'Lưu'}
+          </button>
+        </div>
+
+        {/* Nói THẲNG vì sao vốn bổ sung = 0 — người dùng nhập vốn rồi rất dễ
+            tưởng app đã rải, trong khi số tháng còn trống. */}
+        {poolXemTruoc.lyDoKhongCoDca === 'chua-dat-thang' && (
+          <p role="alert" className="text-[13px] text-amber-700 dark:text-amber-400">
+            ⚠ Đã có vốn nhưng <strong>chưa nhập số tháng DCA</strong> nên vốn bổ sung
+            vẫn là 0 đ. Nhập số tháng rồi bấm Lưu.
+          </p>
+        )}
+
+        <p className="text-[13px] leading-relaxed text-text dark:text-text-dark">
+          Tháng này app sẽ chia:{' '}
+          <strong>{dinhDangVnd(poolXemTruoc.totalVnd)}</strong>{' '}
+          <span className="text-text-muted dark:text-text-muted-dark">
+            = {dinhDangVnd(poolXemTruoc.contributionVnd)} góp hàng tháng
+            {' + '}{dinhDangVnd(poolXemTruoc.dcaSliceVnd)} vốn bổ sung
+          </span>
+        </p>
       </div>
 
       <div className="rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark">

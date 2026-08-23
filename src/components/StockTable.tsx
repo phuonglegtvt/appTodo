@@ -28,12 +28,13 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
           <section key={g} className="flex flex-col gap-1.5">
             <div className={`text-[12px] font-bold ${GROUP_META[g].head}`}>{GROUP_META[g].label}</div>
             <div className="overflow-x-auto rounded-xl border border-border dark:border-border-dark">
-              <table className="w-full min-w-[900px] border-collapse">
+              <table className="w-full min-w-[1000px] border-collapse">
                 <thead>
                   <tr className="bg-surface-2 dark:bg-surface-2dark">
                     <th className={th}>Mã</th>
                     <th className={th}>Tên công ty</th>
                     <th className={th}>Giá ngưỡng</th>
+                    <th className={th}>% so ngưỡng</th>
                     <th className={th}>Giá bảo vệ</th>
                     <th className={th}>Giá hiện tại</th>
                     <th className={th}>Đỉnh LS</th>
@@ -55,10 +56,20 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
           </section>
         );
       })}
-      <p className="text-[11px] text-text-muted dark:text-text-muted-dark">
-        <span className="font-semibold text-red-600 dark:text-red-400">Đỏ</span> = trên giá bảo vệ (đắt) ·{' '}
-        <span className="font-semibold text-green-600 dark:text-green-400">Xanh</span> = chạm giá ngưỡng (đáng mua)
-      </p>
+      <div className="flex flex-col gap-1 text-[11px] leading-relaxed text-text-muted dark:text-text-muted-dark">
+        <p>
+          <span className="font-semibold text-red-600 dark:text-red-400">Đỏ</span> = trên giá bảo vệ (đắt) ·{' '}
+          <span className="font-semibold text-green-600 dark:text-green-400">Xanh</span> = chạm giá ngưỡng (đáng mua)
+        </p>
+        <p>
+          <strong>% so ngưỡng</strong>: còn phải giảm bao nhiêu % mới về giá ngưỡng
+          tích sản. Số <span className="font-semibold text-red-600 dark:text-red-400">dương</span>{' '}
+          = còn đắt hơn ngưỡng bấy nhiêu, chưa tới lúc mua. Số{' '}
+          <span className="font-semibold text-green-600 dark:text-green-400">âm</span>{' '}
+          = đã xuống dưới ngưỡng bấy nhiêu %.
+          {' · '}<strong>% so đỉnh</strong>: đang thấp hơn đỉnh lịch sử bao nhiêu %.
+        </p>
+      </div>
     </div>
   );
 }

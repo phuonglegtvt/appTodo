@@ -43,7 +43,7 @@ export function PortfolioPage({ userId }: Props) {
   } = useGolds(userId);
   const {
     targets, settings, loading: loadingConfig, error: errConfig,
-    saveTargetRows, saveContribution, clearError: clearConfigError,
+    saveTargetRows, saveContribution, saveDca, clearError: clearConfigError,
   } = usePortfolioConfig(userId);
   const { rate, refreshRate, loadingRate, rateError, clearRateError } = useCurrency();
 
@@ -188,8 +188,28 @@ export function PortfolioPage({ userId }: Props) {
             />
           </section>
 
-          <section className="surface-card p-2 sm:p-4">
+          <section className="surface-card flex flex-col gap-2 p-2 sm:p-4">
             <AllocationTable view={view} />
+            {/* Cột "Góp tháng này" chia từ một con số ghép — nói ra nó gồm gì,
+                nếu không thì bật kế hoạch DCA lên là con số tự nhiên to ra mà
+                không có chỗ nào giải thích. */}
+            <p className="px-3 text-[12px] leading-relaxed text-text-muted dark:text-text-muted-dark">
+              Cột “Góp tháng này” chia từ{' '}
+              <strong className="text-text dark:text-text-dark">
+                {formatVnd(view.monthlyPool.totalVnd)}
+              </strong>
+              {' '}= {formatVnd(view.monthlyPool.contributionVnd)} góp hàng tháng
+              {' + '}{formatVnd(view.monthlyPool.dcaSliceVnd)} vốn bổ sung DCA.
+              {view.monthlyPool.lyDoKhongCoDca === 'chua-dat-thang' && (
+                <>
+                  {' '}
+                  <span className="font-semibold text-amber-700 dark:text-amber-400">
+                    Đã có vốn DCA nhưng chưa nhập số tháng nên phần bổ sung vẫn là 0 —
+                    vào tab Cấu hình điền số tháng.
+                  </span>
+                </>
+              )}
+            </p>
           </section>
 
           {view.topUp.status === 'OK' && view.topUp.totalNeededVnd > 0 && (
@@ -253,6 +273,7 @@ export function PortfolioPage({ userId }: Props) {
               settings={settings}
               onSaveTargets={saveTargetRows}
               onSaveContribution={saveContribution}
+              onSaveDca={saveDca}
             />
           </section>
           <section className="surface-card p-2 sm:p-4">

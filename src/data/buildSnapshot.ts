@@ -6,9 +6,10 @@
 // test file này thay vì cho fail đúng lý do). loadSnapshot (ghép I/O) nằm ở
 // portfolioRepo.ts, không nằm ở đây.
 
+import { monthlyPool } from '../domain/dcaPool';
 import { ASSET_CLASSES, DEFAULT_CONFIG } from '../domain/types';
 import type {
-  AssetClass, EngineConfig, PortfolioSnapshot, TargetBand,
+  AssetClass, EngineConfig, MonthlyPool, PortfolioSnapshot, TargetBand,
 } from '../domain/types';
 import type { SettingsRow, SnapshotSourceData } from '../types/portfolio';
 
@@ -17,6 +18,23 @@ import type { SettingsRow, SnapshotSourceData } from '../types/portfolio';
  * cột DB (core.sql: `monthly_contribution_vnd numeric not null default 3000000`).
  */
 const DEFAULT_MONTHLY_CONTRIBUTION_VND = 3_000_000;
+
+/**
+ * Số tiền chia tháng này, dựng từ đúng một dòng `portfolio.settings`.
+ *
+ * Export vì CẢ HAI nơi cần nó: mapToSnapshot lấy `totalVnd` cho engine, còn
+ * portfolioView lấy từng phần cho UI. Nếu mỗi nơi tự gọi monthlyPool với tham số
+ * riêng thì giá trị mặc định và cách đọc null sẽ trôi khỏi nhau, và con số UI
+ * hiện ra sẽ khác con số engine chia — đúng loại bug không ai phát hiện.
+ */
+export function poolFromSettings(settings: SettingsRow | null): MonthlyPool {
+  return monthlyPool({
+    contributionVnd:
+      settings?.monthly_contribution_vnd ?? DEFAULT_MONTHLY_CONTRIBUTION_VND,
+    capitalVnd: settings?.dca_capital_vnd ?? 0,
+    months: settings?.dca_months ?? null,
+  });
+}
 
 function isValidAllocationFormula(value: string): value is EngineConfig['formula'] {
   return value === 'PROPORTIONAL_GAP' || value === 'PRIORITY_WATERFALL';
@@ -214,13 +232,45 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
 
   const settings = input.settings;
 
+  // Gọi TRƯỚC khi dựng pool: buildEngineConfig là chỗ kiểm
+  // `monthly_contribution_vnd` và message của nó gọi đúng TÊN CỘT DB, thứ người
+  // dùng cần để biết sửa ở đâu. monthlyPool cũng chặn số âm/NaN nhưng nó ở tầng
+  // domain nên không được biết tên cột — để nó ném trước thì message mất thông
+  // tin đó.
+  const config = buildEngineConfig(settings);
+
+  // Hai cột DCA cũng là `numeric`/`integer` không có CHECK nào chặn số âm. Kiểm
+  // ở đây (biên đọc dữ liệu) để message gọi tên cột; monthlyPool chặn lần hai.
+  if (settings !== null) {
+    if (!Number.isFinite(settings.dca_capital_vnd) || settings.dca_capital_vnd < 0) {
+      throw new Error(
+        `Giá trị dca_capital_vnd trong portfolio.settings không hợp lệ: ` +
+        `${settings.dca_capital_vnd}. Vốn DCA phải là số không âm.`,
+      );
+    }
+    // `null` là hợp lệ (chưa đặt kế hoạch). Số 0/âm thì monthlyPool coi như chưa
+    // đặt — KHÔNG ném lỗi, vì đó là trạng thái bình thường của form điền dở.
+    if (settings.dca_months !== null && !Number.isFinite(settings.dca_months)) {
+      throw new Error(
+        `Giá trị dca_months trong portfolio.settings không phải số hợp lệ: ` +
+        `${settings.dca_months}. Kiểm tra lại số tháng DCA.`,
+      );
+    }
+  }
+
+  // Tiền chia tháng này = tiền góp đều + vốn DCA rải ra.
+  const pool = poolFromSettings(settings);
+
   return {
     asOf: input.asOf,
     classValues,
     earmarkedPots,
     cashReserveVnd,
     targets,
-    monthlyContributionVnd: settings?.monthly_contribution_vnd ?? DEFAULT_MONTHLY_CONTRIBUTION_VND,
+    // Engine chỉ cần TỔNG. Chi tiết "tổng gồm những gì" là việc của tầng hiển
+    // thị (portfolioView.ts) — nhồi vào snapshot thì mọi fixture domain phải
+    // khai một trường mà engine không bao giờ đọc.
+    monthlyContributionVnd: pool.totalVnd,
     incomeReceivedVnd: input.incomeReceivedVnd,
     drawdowns: input.drawdowns,
     portfolioDrawdownPct: input.portfolioDrawdownPct,
@@ -238,6 +288,6 @@ export function mapToSnapshot(input: SnapshotSourceData): PortfolioSnapshot {
     missingPriceSymbols,
     contributionRecordedThisPeriod: input.contributionRecordedThisPeriod,
     watchlist: input.watchlist,
-    config: buildEngineConfig(settings),
+    config,
   };
 }

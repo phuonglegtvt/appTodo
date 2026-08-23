@@ -34,7 +34,7 @@ select id, email, created_at from auth.users order by created_at;
 
 ---
 
-## Bước 1 — Chạy 5 migration, ĐÚNG thứ tự
+## Bước 1 — Chạy 6 migration, ĐÚNG thứ tự
 
 > Phải chạy migration TRƯỚC khi bật Exposed schemas. Dashboard Supabase mới chỉ
 > cho chọn schema **đã tồn tại trong DB**; schema `portfolio` chưa có thì ô chọn
@@ -59,6 +59,7 @@ SQL Editor → New query → dán **toàn bộ NỘI DUNG** file → **Run**. L�
 | 3 | `supabase/migrations/2026-08-22-portfolio-seed.sql` | settings, 4 target (**60/30/10/0**), 5 mức crash reserve, 4 túi tiền + vàng, 3 benchmark, instrument từ watchlist |
 | 4 | `supabase/migrations/2026-08-23-holdings-quantity.sql` | cột `public.stocks.quantity` + bảng mới `public.golds` |
 | 5 | `supabase/migrations/2026-08-23-peak-price.sql` | cột `peak_price` cho `public.stocks` (nghìn đồng) và `public.cryptos` (USD) + khai đơn vị vào comment của các cột tiền |
+| 6 | `supabase/migrations/2026-08-23-dca-plan.sql` | cột `dca_capital_vnd` + `dca_months` cho `portfolio.settings` — vốn có sẵn rải dần theo tháng |
 
 File số 4 là thứ làm tab Danh mục tính được **giá trị thị trường**: `public.stocks`
 trước đây chỉ có `invested_amount` (đã bỏ vào bao nhiêu tiền) nên không suy ra được
@@ -74,7 +75,14 @@ File này cũng ghi đơn vị vào `comment on column`, trong đó chốt rằn
 nên "Vốn đã bỏ" ở tab Danh mục nhỏ đi 1.000 lần). **Dữ liệu trong bảng không đổi** —
 chỉ cách đọc được sửa, không cần chạy UPDATE nào.
 
-Cả năm **idempotent** — chạy lại nhiều lần không hỏng gì (ba file đầu đã chứng minh
+File số 6 mở khối **Vốn có sẵn rải dần (DCA)** ở tab Cấu hình: nhập *Vốn* và *Số
+tháng DCA*, app tự tính *Vốn bổ sung = Vốn ÷ số tháng* và **cộng nó vào tiền góp
+hàng tháng** để ra số chia ở cột "Góp tháng này". Tab Tỷ trọng có một dòng ngay dưới
+bảng nói rõ tổng đó gồm những gì, để con số không tự nhiên to lên mà không ai giải
+thích. Nhập vốn mà bỏ trống số tháng ⇒ vốn bổ sung = 0 và app **nói ra** điều đó,
+không im lặng.
+
+Cả sáu **idempotent** — chạy lại nhiều lần không hỏng gì (ba file đầu đã chứng minh
 trên Postgres 16 thật: chạy 3 lần, diff output rỗng).
 
 **Nếu một file báo lỗi:** dừng lại, copy nguyên văn lỗi báo cho member. Đừng tự

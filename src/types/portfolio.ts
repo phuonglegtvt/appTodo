@@ -52,6 +52,10 @@ export interface SettingsRow {
   allocation_formula: string;
   cash_eligible_for_new_capital: boolean;
   sell_to: string;
+  /** Vốn có sẵn để rải dần (ĐỒNG). 0 = không có kế hoạch DCA. */
+  dca_capital_vnd: number;
+  /** Số tháng rải hết `dca_capital_vnd`. `null` = chưa đặt. */
+  dca_months: number | null;
 }
 
 /** Một dòng của `portfolio.crash_reserve_levels`. */

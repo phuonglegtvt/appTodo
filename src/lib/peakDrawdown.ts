@@ -43,3 +43,26 @@ export function nextPeak(...candidates: (number | null | undefined)[]): number |
   const hopLe = candidates.filter(laGiaHopLe);
   return hopLe.length === 0 ? null : Math.max(...hopLe);
 }
+
+/**
+ * Giá hiện tại còn cách một MỐC GIÁ bao nhiêu phần trăm.
+ *   (giá hiện tại − mốc) / mốc × 100
+ *
+ *   · dương → giá còn CAO hơn mốc bấy nhiêu %, tức phải giảm bấy nhiêu mới tới mốc
+ *   · 0     → đang đúng ở mốc
+ *   · âm    → đã xuống dưới mốc bấy nhiêu %
+ *
+ * Cùng công thức với `drawdownFromPeakPct` nhưng KHÔNG gộp thành một hàm: hai chỗ
+ * gọi mang ý nghĩa nghiệp vụ khác nhau (một cái so với đỉnh đã qua, một cái so với
+ * mốc mình tự đặt), và tên hàm chính là thứ nói ra ý nghĩa đó ở chỗ gọi.
+ *
+ * `null` khi thiếu giá, thiếu mốc, hoặc mốc ≤ 0.
+ */
+export function gapToPricePct(
+  current: number | null | undefined,
+  moc: number | null | undefined,
+): number | null {
+  if (!laGiaHopLe(moc)) return null;
+  if (typeof current !== 'number' || !Number.isFinite(current)) return null;
+  return ((current - moc) / moc) * 100;
+}

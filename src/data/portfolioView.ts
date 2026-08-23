@@ -12,10 +12,10 @@
 import { buildActionPlan } from '../domain/actionPlan';
 import { planTopUp } from '../domain/topUp';
 import { ASSET_CLASSES } from '../domain/types';
-import { mapToSnapshot } from './buildSnapshot';
+import { mapToSnapshot, poolFromSettings } from './buildSnapshot';
 import { toAllocationRows } from './holdingsMap';
 import type {
-  ActionPlan, Alert, AssetClass, PortfolioSnapshot, Weight,
+  ActionPlan, Alert, AssetClass, MonthlyPool, PortfolioSnapshot, Weight,
 } from '../domain/types';
 import type { TopUpPlan } from '../domain/topUp';
 import type { SettingsRow, TargetRow } from '../types/portfolio';
@@ -48,6 +48,13 @@ export interface PortfolioView {
   plan: ActionPlan;
   topUp: TopUpPlan;
   weights: Weight[];
+  /**
+   * `snapshot.monthlyContributionVnd` gồm những gì. Snapshot chỉ mang TỔNG (engine
+   * chỉ cần thế); phần chi tiết ở đây để UI nói được "13tr = 3tr góp + 10tr vốn
+   * DCA" — không có dòng đó thì cột "Góp tháng này" tự nhiên to lên mà không ai
+   * biết vì sao.
+   */
+  monthlyPool: MonthlyPool;
   byClass: Record<AssetClass, ClassView>;
   /** Nhóm đáng hiện lên bảng: có target > 0 hoặc đang giữ tiền. */
   visibleClasses: AssetClass[];
@@ -111,6 +118,10 @@ export function buildPortfolioView(input: PortfolioViewInput): PortfolioView {
     contributionRecordedThisPeriod: false,
   });
 
+  // CÙNG hàm mapToSnapshot đã dùng để ra `monthlyContributionVnd`, nên chi tiết
+  // ở đây cộng lại luôn đúng bằng tổng engine chia (có test kiểm bất biến đó).
+  const pool = poolFromSettings(input.settings);
+
   const plan = buildActionPlan(snapshot);
   const topUp = planTopUp(snapshot.classValues, snapshot.targets);
 
@@ -139,6 +150,7 @@ export function buildPortfolioView(input: PortfolioViewInput): PortfolioView {
     plan,
     topUp,
     weights: plan.weights,
+    monthlyPool: pool,
     byClass,
     visibleClasses,
     alerts: plan.alerts.filter((a) => !ALERT_CHUA_DUNG_DUOC.has(a.code)),
