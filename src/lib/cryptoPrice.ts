@@ -126,3 +126,77 @@ export async function fetchCryptoPrices(symbols: string[]): Promise<FetchCryptoP
 
   return { prices, failed };
 }
+
+
+// ---------------------------------------------------------------------------
+// ĐỈNH LỊCH SỬ (ATH)
+// ---------------------------------------------------------------------------
+// Binance ticker KHÔNG có ATH, nên phần này đi hẳn qua CoinGecko: `/coins/markets`
+// trả sẵn trường `ath` (USD) cho cả danh sách trong MỘT request — không cần tự
+// quét lịch sử nến. Đổi lại, coin CoinGecko không có sẽ vào `failed` để nhập tay.
+
+/**
+ * Trích map { SYMBOL(hoa) → ATH (USD) } từ response CoinGecko /coins/markets.
+ * Bỏ qua phần tử thiếu `ath` / `ath` không hữu hạn. Sai shape → NÉM lỗi.
+ */
+export function parseCoinGeckoAth(json: unknown): Record<string, number> {
+  if (!Array.isArray(json)) {
+    throw new Error('Dữ liệu đỉnh lịch sử không đúng định dạng (mong đợi một mảng).');
+  }
+  const out: Record<string, number> = {};
+  for (const item of json) {
+    if (!item || typeof item !== 'object') continue;
+    const rec = item as Record<string, unknown>;
+    const sym = typeof rec.symbol === 'string' ? rec.symbol.trim().toUpperCase() : '';
+    const ath = typeof rec.ath === 'number' ? rec.ath : NaN;
+    // Trùng symbol: giữ phần tử đầu (CoinGecko xếp theo market cap giảm dần).
+    if (sym && Number.isFinite(ath) && !(sym in out)) {
+      out[sym] = ath;
+    }
+  }
+  return out;
+}
+
+/** Kết quả lấy đỉnh: đỉnh lấy được + coin lỗi kèm lý do (không nuốt). */
+export interface FetchCryptoPeaksResult {
+  /** Map symbol (viết hoa) → ATH (USD). */
+  peaks: Record<string, number>;
+  failed: { symbol: string; message: string }[];
+}
+
+/**
+ * Lấy ATH (USD) cho danh sách coin — MỘT request tới CoinGecko.
+ * Cả request lỗi (mạng/CORS/HTTP 429) thì MỌI coin vào `failed` kèm lý do: đây là
+ * một lần cập nhật thất bại, không phải "các coin này không có đỉnh".
+ */
+export async function fetchCryptoPeaks(symbols: string[]): Promise<FetchCryptoPeaksResult> {
+  const syms = symbols.map((s) => s.trim().toUpperCase()).filter(Boolean);
+  if (syms.length === 0) return { peaks: {}, failed: [] };
+
+  const csv = syms.map((s) => s.toLowerCase()).join(',');
+  const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${csv}`;
+
+  let found: Record<string, number>;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const body: unknown = await res.json();
+    found = parseCoinGeckoAth(body);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { peaks: {}, failed: syms.map((s) => ({ symbol: s, message })) };
+  }
+
+  const peaks: Record<string, number> = {};
+  const failed: { symbol: string; message: string }[] = [];
+  for (const s of syms) {
+    if (Number.isFinite(found[s])) {
+      peaks[s] = found[s];
+    } else {
+      failed.push({ symbol: s, message: 'CoinGecko không có đỉnh lịch sử cho mã này' });
+    }
+  }
+  return { peaks, failed };
+}

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useStocks } from '../hooks/useStocks';
-import { fetchPrices } from '../lib/stockPrice';
+import { fetchPrices, fetchPeaks } from '../lib/stockPrice';
+import { nextPeak } from '../lib/peakDrawdown';
 import { filterStocks } from '../lib/stockFilters';
-import type { StockGroup } from '../types/stock';
+import type { StockGroup, StockUpdate } from '../types/stock';
 import { PortfolioSummary } from './PortfolioSummary';
 import { StockForm } from './StockForm';
 import { StockTable } from './StockTable';
@@ -26,17 +27,43 @@ export function StocksPage({ userId }: Props) {
     if (tickers.length === 0) return;
     setUpdating(true);
     try {
-      const { prices, failed } = await fetchPrices(tickers);
-      // Cập nhật current_price cho từng mã lấy được giá (mã lỗi để nguyên giá cũ).
+      // Giá hiện tại và đỉnh lịch sử đi song song: hai loại request khác nhau
+      // (nến ngày / nến tháng) nên không gộp được, nhưng chờ tuần tự thì nút bấm
+      // lâu gấp đôi mà chẳng để làm gì.
+      const [{ prices, failed }, { peaks, failed: peakFailed }] = await Promise.all([
+        fetchPrices(tickers),
+        fetchPeaks(tickers),
+      ]);
+
+      // MỘT lần ghi cho mỗi mã, gộp cả giá lẫn đỉnh: ghi hai lần liên tiếp lên
+      // cùng một dòng làm realtime bắn hai sự kiện và bảng nháy hai nhịp.
       await Promise.all(
-        stocks
-          .filter((s) => prices[s.ticker.toUpperCase()] != null)
-          .map((s) => updateStock(s.id, { current_price: prices[s.ticker.toUpperCase()] })),
+        stocks.map((s) => {
+          const key = s.ticker.toUpperCase();
+          const gia = prices[key];
+          // Đỉnh chỉ được TĂNG (xem nextPeak): API trả thiếu hoặc trả thấp hơn
+          // đỉnh đang lưu thì giữ đỉnh cũ, không đạp xuống.
+          const dinh = nextPeak(s.peak_price, peaks[key], gia ?? s.current_price);
+
+          const patch: StockUpdate = {};
+          if (gia != null) patch.current_price = gia;
+          if (dinh != null && dinh !== s.peak_price) patch.peak_price = dinh;
+          return Object.keys(patch).length > 0 ? updateStock(s.id, patch) : null;
+        }).filter((p): p is Promise<void> => p !== null),
       );
+
       // Có mã lỗi nhưng không hỏng cả lần: báo rõ mã nào lỗi, không nuốt.
       if (failed.length > 0) {
         const detail = failed.map((f) => `${f.ticker} (${f.message})`).join(', ');
         setPriceError(`Không lấy được giá ${failed.length} mã: ${detail}. Có thể nhập giá tay.`);
+      } else if (peakFailed.length > 0) {
+        // Đỉnh lỗi mà giá thì OK: vẫn phải nói ra, nhưng nhẹ hơn — cột "Đỉnh LS"
+        // sửa tay được nên đây không phải chuyện chặn đường.
+        const detail = peakFailed.map((f) => f.ticker).join(', ');
+        setPriceError(
+          `Giá đã cập nhật xong. Riêng đỉnh lịch sử không lấy được cho ${peakFailed.length} mã: `
+          + `${detail}. Nhập tay ở cột “Đỉnh LS” nếu cần.`,
+        );
       }
     } catch (err) {
       // KHÔNG nuốt lỗi: log + hiện banner; người dùng vẫn nhập tay được.
@@ -62,7 +89,7 @@ export function StocksPage({ userId }: Props) {
           <div className="mt-0.5 text-[13px] text-text-muted dark:text-text-muted-dark">
             {query.trim()
               ? `${visibleStocks.length}/${stocks.length} mã khớp "${query.trim()}"`
-              : `${stocks.length} mã · giá theo nghìn đồng, số tiền theo đồng`}
+              : `${stocks.length} mã · giá & số tiền đầu tư theo nghìn đồng, cổ tức theo đồng`}
           </div>
         </div>
         <button

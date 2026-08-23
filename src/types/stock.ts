@@ -18,6 +18,12 @@ export interface Stock {
    * bỏ vào bao nhiêu tiền, không nói đang giữ bao nhiêu cổ.
    */
   quantity: number | null;
+  /**
+   * Đỉnh lịch sử, NGHÌN ĐỒNG (cùng đơn vị `current_price`). `null` = CHƯA BIẾT —
+   * khác hẳn 0. Cột này được nút "Cập nhật giá" ghi tự động nhưng vẫn sửa tay
+   * được, và mọi đường ghi phải đi qua `nextPeak` để đỉnh chỉ tăng, không giảm.
+   */
+  peak_price: number | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -34,6 +40,7 @@ export interface NewStock {
   dividend?: number | null;
   invested_amount?: number | null;
   quantity?: number | null;
+  peak_price?: number | null;
 }
 
 /** Các trường được phép sửa. */
@@ -49,6 +56,7 @@ export type StockUpdate = Partial<
     | 'dividend'
     | 'invested_amount'
     | 'quantity'
+    | 'peak_price'
     | 'sort_order'
   >
 >;

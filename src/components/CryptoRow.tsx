@@ -1,12 +1,37 @@
 import { useState } from 'react';
 import type { Crypto, CryptoUpdate, Currency } from '../types/crypto';
 import { value, pnl, pnlPercent } from '../lib/cryptoCalc';
+import { drawdownFromPeakPct } from '../lib/peakDrawdown';
 import { formatMoney } from '../lib/money';
 import { parseVnNumber } from '../lib/parseNumber';
 
 /** '—' nếu null, ngược lại định dạng tiền theo currency. */
 function money(n: number | null, currency: Currency, rate: number | null): string {
   return n == null ? '—' : formatMoney(n, currency, rate);
+}
+
+/**
+ * Ô "% so đỉnh" — cùng luật với bảng Cổ phiếu (xem StockRow): `null` hiện '—' chứ
+ * không hiện 0%, và số DƯƠNG nghĩa là giá đã vượt đỉnh đang lưu (đỉnh đã cũ).
+ */
+function OSoDinh({ pct }: { pct: number | null }) {
+  if (pct == null) {
+    return <span className="text-text-muted dark:text-text-muted-dark">—</span>;
+  }
+  const mau =
+    pct > 0
+      ? 'font-semibold text-red-600 dark:text-red-400'
+      : pct <= -30
+        ? 'font-semibold text-green-600 dark:text-green-400'
+        : 'text-text dark:text-text-dark';
+  return (
+    <span
+      className={mau}
+      title={pct > 0 ? 'Giá đã vượt đỉnh đang lưu — số đỉnh này đã cũ' : undefined}
+    >
+      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+    </span>
+  );
 }
 
 interface Props {
@@ -22,10 +47,12 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
   const [editing, setEditing] = useState(false);
   const [quantity, setQuantity] = useState('');
   const [avgBuy, setAvgBuy] = useState('');
+  const [peak, setPeak] = useState('');
 
   function startEdit() {
     setQuantity(crypto.quantity?.toString() ?? '');
     setAvgBuy(crypto.avg_buy_price?.toString() ?? '');
+    setPeak(crypto.peak_price?.toString() ?? '');
     setEditing(true);
   }
 
@@ -33,9 +60,13 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
     onUpdate(crypto.id, {
       quantity: parseVnNumber(quantity),
       avg_buy_price: parseVnNumber(avgBuy),
+      peak_price: parseVnNumber(peak),
     });
     setEditing(false);
   }
+
+  // Cả hai đều là USD nên so trực tiếp, không cần tỷ giá.
+  const soDinhPct = drawdownFromPeakPct(crypto.current_price, crypto.peak_price);
 
   const cell = 'px-2 py-2 text-sm text-text dark:text-text-dark';
   const editInput =
@@ -53,6 +84,10 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
           <input value={avgBuy} onChange={(e) => setAvgBuy(e.target.value)} className={editInput} aria-label="Giá mua TB" />
         </td>
         <td className={cell}>{money(crypto.current_price, currency, rate)}</td>
+        <td className={cell}>
+          <input value={peak} onChange={(e) => setPeak(e.target.value)} className={editInput} aria-label="Đỉnh lịch sử (USD)" />
+        </td>
+        <td className={cell}><OSoDinh pct={soDinhPct} /></td>
         <td className={cell}>{money(value(crypto), currency, rate)}</td>
         <td className={cell}>—</td>
         <td className={cell}>
@@ -80,6 +115,8 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
       <td className={cell}>{crypto.quantity ?? '—'}</td>
       <td className={cell}>{money(crypto.avg_buy_price, currency, rate)}</td>
       <td className={cell}>{money(crypto.current_price, currency, rate)}</td>
+      <td className={cell}>{money(crypto.peak_price, currency, rate)}</td>
+      <td className={cell}><OSoDinh pct={soDinhPct} /></td>
       <td className={cell}>{money(value(crypto), currency, rate)}</td>
       <td className={`${cell} ${pnlColor}`}>{pnlText}</td>
       <td className={cell}>

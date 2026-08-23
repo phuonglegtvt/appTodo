@@ -11,12 +11,12 @@ interface Props {
 
 const th = 'px-2 py-2 text-left text-[11px] font-bold tracking-[0.06em] text-text-muted dark:text-text-muted-dark';
 
-/** Bảng coin: mã, tên, số lượng, giá mua TB, giá hiện tại, giá trị, lời/lỗ. */
+/** Bảng coin: mã, tên, số lượng, giá mua TB, giá hiện tại, đỉnh lịch sử, % so đỉnh, giá trị, lời/lỗ. */
 export function CryptoTable({ cryptos, currency, rate, onUpdate, onDelete }: Props) {
   return (
     <div className="flex flex-col gap-2">
       <div className="overflow-x-auto rounded-xl border border-border dark:border-border-dark">
-        <table className="w-full min-w-[760px] border-collapse">
+        <table className="w-full min-w-[900px] border-collapse">
           <thead>
             <tr className="bg-surface-2 dark:bg-surface-2dark">
               <th className={th}>Mã</th>
@@ -24,6 +24,8 @@ export function CryptoTable({ cryptos, currency, rate, onUpdate, onDelete }: Pro
               <th className={th}>Số lượng</th>
               <th className={th}>Giá mua TB</th>
               <th className={th}>Giá hiện tại</th>
+              <th className={th}>Đỉnh LS</th>
+              <th className={th}>% so đỉnh</th>
               <th className={th}>Giá trị</th>
               <th className={th}>Lời/Lỗ</th>
               <th className={th}></th>

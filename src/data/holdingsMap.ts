@@ -9,7 +9,7 @@
 //
 // ⚠️ ĐÂY LÀ CHỖ DUY NHẤT ĐƯỢC QUY ĐỔI ĐƠN VỊ (luật `src/domain/` trong CLAUDE.md):
 //   · stocks.current_price   NGHÌN ĐỒNG → × 1.000
-//   · stocks.invested_amount ĐỒNG       → dùng thẳng
+//   · stocks.invested_amount NGHÌN ĐỒNG → × 1.000
 //   · cryptos.*_price        USD        → × tỷ giá
 //   · golds.*_price          ĐỒNG/lượng → dùng thẳng
 //
@@ -113,8 +113,10 @@ export function toAllocationRows(input: HoldingsInput): HoldingsMapResult {
       asset_class: 'STOCKS',
       symbol: s.ticker,
       quantity: s.quantity,
-      // invested_amount đã là ĐỒNG — không nhân 1.000.
-      cost_basis_vnd: s.invested_amount,
+      // NGHÌN ĐỒNG → ĐỒNG, cùng đơn vị với giá. NewPL nhập số tiền đầu tư theo
+      // nghìn đồng (chốt 2026-08-23) — quên nhân ở đây thì "vốn đã bỏ" của cả
+      // nhóm cổ phiếu nhỏ đi 1.000 lần và lãi/lỗ trông như lãi khủng.
+      cost_basis_vnd: s.invested_amount === null ? null : s.invested_amount * 1_000,
       price_vnd: giaVnd,
       price_as_of: s.updated_at,
       market_value_vnd: nhan(s.quantity, giaVnd),

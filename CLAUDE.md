@@ -66,7 +66,11 @@ Module cân bằng danh mục đầu tư, sẽ nằm ở tab `portfolio` (đợt
 - **Cấm `Date.now()` và `new Date()` không tham số.** Thời điểm truyền vào qua tham số
   (`snapshot.asOf`) để test tái lập được và để tính lại kế hoạch tháng cũ.
 - **Đơn vị: VND (đồng) tuyệt đối.** Quy đổi nghìn đồng / USD chỉ được xảy ra ở tầng
-  biên đọc dữ liệu (`src/data/portfolioRepo.ts` hôm nay, `src/providers/` từ đợt 4).
+  biên đọc dữ liệu (`src/data/holdingsMap.ts` và `src/data/portfolioRepo.ts` hôm nay,
+  `src/providers/` từ đợt 4). Đơn vị của bảng cũ `public.*` (chốt 2026-08-23):
+  `stocks.current_price` / `stocks.invested_amount` / `stocks.peak_price` = **nghìn
+  đồng**; `stocks.dividend` = **đồng**; `cryptos.*_price` = **USD**;
+  `golds.*_price` = **đồng/lượng**.
 - Mỗi module một trách nhiệm, mỗi module một file test cạnh nó.
 
 ### Sổ giao dịch bất biến

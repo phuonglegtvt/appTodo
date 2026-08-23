@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useCryptos } from '../hooks/useCryptos';
 import { useCurrency } from '../hooks/useCurrency';
-import { fetchCryptoPrices } from '../lib/cryptoPrice';
+import { fetchCryptoPrices, fetchCryptoPeaks } from '../lib/cryptoPrice';
+import { nextPeak } from '../lib/peakDrawdown';
 import { filterCryptos } from '../lib/cryptoFilters';
-import type { Currency } from '../types/crypto';
+import type { Currency, CryptoUpdate } from '../types/crypto';
 import { CryptoSummary } from './CryptoSummary';
 import { CryptoForm } from './CryptoForm';
 import { CryptoTable } from './CryptoTable';
@@ -27,15 +28,36 @@ export function CryptoPage({ userId }: Props) {
     if (symbols.length === 0) return;
     setUpdating(true);
     try {
-      const { prices, failed } = await fetchCryptoPrices(symbols);
+      // Giá (Binance, mỗi coin một request) và ATH (CoinGecko, một request cho cả
+      // danh sách) đi song song — hai nguồn khác nhau, không gộp được.
+      const [{ prices, failed }, { peaks, failed: peakFailed }] = await Promise.all([
+        fetchCryptoPrices(symbols),
+        fetchCryptoPeaks(symbols),
+      ]);
+
+      // Một lần ghi cho mỗi coin, gộp giá + đỉnh (xem lý do ở StocksPage).
       await Promise.all(
-        cryptos
-          .filter((c) => prices[c.symbol.toUpperCase()] != null)
-          .map((c) => updateCrypto(c.id, { current_price: prices[c.symbol.toUpperCase()] })),
+        cryptos.map((c) => {
+          const key = c.symbol.toUpperCase();
+          const gia = prices[key];
+          const dinh = nextPeak(c.peak_price, peaks[key], gia ?? c.current_price);
+
+          const patch: CryptoUpdate = {};
+          if (gia != null) patch.current_price = gia;
+          if (dinh != null && dinh !== c.peak_price) patch.peak_price = dinh;
+          return Object.keys(patch).length > 0 ? updateCrypto(c.id, patch) : null;
+        }).filter((p): p is Promise<void> => p !== null),
       );
+
       if (failed.length > 0) {
         const detail = failed.map((f) => `${f.symbol} (${f.message})`).join(', ');
         setPriceError(`Không lấy được giá ${failed.length} coin: ${detail}. Có thể nhập giá tay.`);
+      } else if (peakFailed.length > 0) {
+        const detail = peakFailed.map((f) => f.symbol).join(', ');
+        setPriceError(
+          `Giá đã cập nhật xong. Riêng đỉnh lịch sử không lấy được cho ${peakFailed.length} coin: `
+          + `${detail}. Nhập tay ở cột “Đỉnh LS” nếu cần.`,
+        );
       }
     } catch (err) {
       console.error('Lỗi cập nhật giá crypto:', err);

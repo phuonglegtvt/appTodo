@@ -28,7 +28,7 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
           <section key={g} className="flex flex-col gap-1.5">
             <div className={`text-[12px] font-bold ${GROUP_META[g].head}`}>{GROUP_META[g].label}</div>
             <div className="overflow-x-auto rounded-xl border border-border dark:border-border-dark">
-              <table className="w-full min-w-[760px] border-collapse">
+              <table className="w-full min-w-[900px] border-collapse">
                 <thead>
                   <tr className="bg-surface-2 dark:bg-surface-2dark">
                     <th className={th}>Mã</th>
@@ -36,6 +36,8 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
                     <th className={th}>Giá ngưỡng</th>
                     <th className={th}>Giá bảo vệ</th>
                     <th className={th}>Giá hiện tại</th>
+                    <th className={th}>Đỉnh LS</th>
+                    <th className={th}>% so đỉnh</th>
                     <th className={th}>Cổ tức</th>
                     <th className={th}>Tỷ suất</th>
                     <th className={th}>Đã đầu tư</th>

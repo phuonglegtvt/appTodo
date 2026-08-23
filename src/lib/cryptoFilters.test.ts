@@ -5,7 +5,7 @@ import type { Crypto } from '../types/crypto';
 function mk(symbol: string, name: string): Crypto {
   return {
     id: symbol, user_id: 'u', symbol, name,
-    quantity: null, avg_buy_price: null, current_price: null,
+    quantity: null, avg_buy_price: null, current_price: null, peak_price: null,
     sort_order: 0, created_at: '', updated_at: '',
   };
 }

@@ -90,6 +90,7 @@ export function useCryptos(userId: string): UseCryptos {
         quantity: input.quantity ?? null,
         avg_buy_price: input.avg_buy_price ?? null,
         current_price: input.current_price ?? null,
+        peak_price: input.peak_price ?? null,
       });
       if (error) {
         console.error('Lỗi thêm crypto:', error);
