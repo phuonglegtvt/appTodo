@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseVnNumber } from './parseNumber';
+import { parseVnNumber, parseVndAmount } from './parseNumber';
 
 describe('parseVnNumber', () => {
   it('chuỗi rỗng → null', () => {
@@ -44,5 +44,44 @@ describe('parseVnNumber', () => {
 
   it('khoảng trắng bao quanh được trim trước khi parse', () => {
     expect(parseVnNumber('  30,1  ')).toBe(30.1);
+  });
+});
+
+describe('parseVndAmount — ô nhập số tiền VND', () => {
+  it('đọc được cách người Việt viết: 3.000.000', () => {
+    expect(parseVndAmount('3.000.000')).toBe(3_000_000);
+  });
+
+  it('đọc được cả dấu phẩy phân cách nghìn: 3,000,000', () => {
+    expect(parseVndAmount('3,000,000')).toBe(3_000_000);
+  });
+
+  it('bỏ khoảng trắng và hậu tố đ', () => {
+    expect(parseVndAmount(' 3 000 000 đ ')).toBe(3_000_000);
+  });
+
+  it('số trơn vẫn đọc được', () => {
+    expect(parseVndAmount('3000000')).toBe(3_000_000);
+  });
+
+  it('chuỗi rỗng → null', () => {
+    expect(parseVndAmount('')).toBeNull();
+    expect(parseVndAmount('   ')).toBeNull();
+  });
+
+  it('không có chữ số nào → null, KHÔNG trả 0', () => {
+    // "abc" thành 0 đồng thì người dùng tưởng đã lưu, thực ra lưu số sai.
+    expect(parseVndAmount('abc')).toBeNull();
+    expect(parseVndAmount('đ')).toBeNull();
+  });
+
+  it('số âm đọc ra số âm — để tầng trên từ chối với lý do đúng', () => {
+    // KHÔNG nuốt dấu trừ ở đây: nếu bỏ dấu thì -5.000.000 lặng lẽ thành
+    // 5.000.000 và được lưu. Trả số âm để guard tầng trên báo "không thể âm".
+    expect(parseVndAmount('-5.000.000')).toBe(-5_000_000);
+  });
+
+  it('phần thập phân bị bỏ — đồng không có số lẻ', () => {
+    expect(parseVndAmount('3.000.000,5')).toBe(3_000_000);
   });
 });

@@ -22,6 +22,7 @@ function makeStock(over: Partial<Stock> = {}): Stock {
     current_price: null,
     dividend: null,
     invested_amount: null,
+    quantity: null,
     sort_order: 0,
     created_at: '2026-07-11T00:00:00Z',
     updated_at: '2026-07-11T00:00:00Z',

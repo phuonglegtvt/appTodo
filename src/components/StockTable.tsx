@@ -39,6 +39,7 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
                     <th className={th}>Cổ tức</th>
                     <th className={th}>Tỷ suất</th>
                     <th className={th}>Đã đầu tư</th>
+                    <th className={th}>Số lượng</th>
                     <th className={th}></th>
                   </tr>
                 </thead>

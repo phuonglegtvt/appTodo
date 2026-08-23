@@ -1,10 +1,11 @@
 import type { SmartView } from '../types/todo';
+import type { Page } from '../types/page';
 import { tagColor } from '../lib/tagColor';
 import { useSidebarCollapsed } from '../hooks/useSidebarCollapsed';
 
 interface Props {
-  page: 'todos' | 'plan' | 'stocks' | 'crypto';
-  onPage: (p: 'todos' | 'plan' | 'stocks' | 'crypto') => void;
+  page: Page;
+  onPage: (p: Page) => void;
   view: SmartView;
   onView: (v: SmartView) => void;
   counts: Record<SmartView, number>;
@@ -27,6 +28,7 @@ const PAGES: { key: Props['page']; label: string; icon: string }[] = [
   { key: 'plan', label: 'Kế hoạch', icon: '◎' },
   { key: 'stocks', label: 'Cổ phiếu', icon: '▤' },
   { key: 'crypto', label: 'Crypto', icon: '₿' },
+  { key: 'portfolio', label: 'Danh mục', icon: '◍' },
 ];
 
 /** Sidebar dashboard (desktop): smart views + nhãn + tài khoản. Chỉ nhận props, không gọi mạng. */
