@@ -14,10 +14,17 @@ function clampPercent(value: number): number {
   return Math.max(0, Math.min(value, 100));
 }
 
-/** Định dạng tiền VND (đơn vị đồng). */
+/** Định dạng tiền VND (nhận số theo ĐỒNG). */
 function formatVnd(amount: number): string {
   return amount.toLocaleString('vi-VN') + ' đ';
 }
+
+/**
+ * `stocks.invested_amount` lưu theo NGHÌN ĐỒNG (NewPL nhập vậy, chốt 2026-08-23)
+ * nên tổng của `groupWeights` cũng là nghìn đồng. Nhân 1.000 ở ĐÚNG chỗ hiển thị,
+ * không sửa số trong DB.
+ */
+const NGHIN_DONG = 1_000;
 
 interface Props {
   stocks: Stock[];
@@ -39,7 +46,7 @@ export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
             TỔNG VỐN ĐÃ ĐẦU TƯ
           </div>
           <div className="text-[22px] font-bold tracking-tight text-text dark:text-text-dark">
-            {formatVnd(weights.total)}
+            {formatVnd(weights.totalThousandVnd * NGHIN_DONG)}
           </div>
         </div>
 

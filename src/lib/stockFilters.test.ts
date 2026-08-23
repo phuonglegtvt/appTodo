@@ -7,6 +7,7 @@ function stock(over: Partial<Stock>): Stock {
     id: '1', user_id: 'u', ticker: 'ACB', company_name: 'Ngân hàng Á Châu',
     group: 'attack', price_threshold: null, price_protect: null,
     current_price: null, dividend: null, invested_amount: null, quantity: null,
+    peak_price: null,
     sort_order: 0, created_at: '', updated_at: '', ...over,
   };
 }

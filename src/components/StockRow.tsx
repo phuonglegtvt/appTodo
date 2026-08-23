@@ -1,10 +1,37 @@
 import { useState } from 'react';
 import type { Stock, StockUpdate } from '../types/stock';
 import { computeYield, isBelowThreshold, isAboveProtect } from '../lib/stockCalc';
+import { drawdownFromPeakPct } from '../lib/peakDrawdown';
 import { parseVnNumber } from '../lib/parseNumber';
 
 function fmt(n: number | null): string {
   return n == null ? '—' : n.toLocaleString('vi-VN');
+}
+
+/**
+ * Ô "% so đỉnh". `null` (chưa biết đỉnh, hoặc chưa có giá) hiện '—' — KHÔNG hiện
+ * 0%, vì 0% có nghĩa hẳn hoi là "đang đúng ở đỉnh".
+ * Càng xa đỉnh càng đáng chú ý nên tô: ≤ −30% xanh (vùng tích sản), > 0 đỏ (giá
+ * đã vượt đỉnh đang lưu ⇒ số đỉnh đã cũ, cần cập nhật).
+ */
+function OSoDinh({ pct }: { pct: number | null }) {
+  if (pct == null) {
+    return <span className="text-text-muted dark:text-text-muted-dark">—</span>;
+  }
+  const mau =
+    pct > 0
+      ? 'font-semibold text-red-600 dark:text-red-400'
+      : pct <= -30
+        ? 'font-semibold text-green-600 dark:text-green-400'
+        : 'text-text dark:text-text-dark';
+  return (
+    <span
+      className={mau}
+      title={pct > 0 ? 'Giá đã vượt đỉnh đang lưu — số đỉnh này đã cũ' : undefined}
+    >
+      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+    </span>
+  );
 }
 
 interface Props {
@@ -22,6 +49,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   const [dividend, setDividend] = useState('');
   const [invested, setInvested] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [peak, setPeak] = useState('');
 
   function startEdit() {
     setPriceThreshold(stock.price_threshold?.toString() ?? '');
@@ -29,6 +57,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
     setDividend(stock.dividend?.toString() ?? '');
     setInvested(stock.invested_amount?.toString() ?? '');
     setQuantity(stock.quantity?.toString() ?? '');
+    setPeak(stock.peak_price?.toString() ?? '');
     setEditing(true);
   }
 
@@ -39,11 +68,14 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
       dividend: parseVnNumber(dividend),
       invested_amount: parseVnNumber(invested),
       quantity: parseVnNumber(quantity),
+      peak_price: parseVnNumber(peak),
     });
     setEditing(false);
   }
 
   const yieldPct = computeYield(stock);
+  // Cùng đơn vị NGHÌN ĐỒNG nên so trực tiếp, không quy đổi.
+  const soDinhPct = drawdownFromPeakPct(stock.current_price, stock.peak_price);
   const above = isAboveProtect(stock);
   // "đáng mua" chỉ khi không đồng thời "đắt" (đỏ ưu tiên nếu dữ liệu bất thường).
   const cheap = !above && isBelowThreshold(stock);
@@ -63,6 +95,10 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
           <input value={priceProtect} onChange={(e) => setPriceProtect(e.target.value)} className={editInput} aria-label="Giá bảo vệ" />
         </td>
         <td className={cell}>{fmt(stock.current_price)}</td>
+        <td className={cell}>
+          <input value={peak} onChange={(e) => setPeak(e.target.value)} className={editInput} aria-label="Đỉnh lịch sử (nghìn đồng)" />
+        </td>
+        <td className={cell}><OSoDinh pct={soDinhPct} /></td>
         <td className={cell}>
           <input value={dividend} onChange={(e) => setDividend(e.target.value)} className={editInput} aria-label="Cổ tức" />
         </td>
@@ -99,6 +135,8 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
       <td className={cell}>{fmt(stock.price_threshold)}</td>
       <td className={cell}>{fmt(stock.price_protect)}</td>
       <td className={`${cell} ${emphasize}`}>{fmt(stock.current_price)}</td>
+      <td className={cell}>{fmt(stock.peak_price)}</td>
+      <td className={cell}><OSoDinh pct={soDinhPct} /></td>
       <td className={cell}>{fmt(stock.dividend)}</td>
       <td className={cell}>{yieldPct == null ? '—' : yieldPct.toFixed(1) + '%'}</td>
       <td className={cell}>{fmt(stock.invested_amount)}</td>

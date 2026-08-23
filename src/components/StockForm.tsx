@@ -96,8 +96,8 @@ export function StockForm({ onAdd }: { onAdd: (s: NewStock) => void }) {
       <input
         value={invested}
         onChange={(e) => setInvested(e.target.value)}
-        placeholder="Số tiền đầu tư (đồng)"
-        aria-label="Số tiền đã đầu tư (đồng)"
+        placeholder="Số tiền đầu tư (nghìn)"
+        aria-label="Số tiền đã đầu tư (nghìn đồng)"
         inputMode="numeric"
         className={`w-40 ${inputClass}`}
       />

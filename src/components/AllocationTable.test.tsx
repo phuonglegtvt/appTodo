@@ -25,15 +25,15 @@ const SETTINGS: SettingsRow = {
 const stock = (over: Partial<Stock>): Stock => ({
   id: 's1', user_id: 'u1', ticker: 'FPT', company_name: 'FPT Corp',
   group: 'balance', price_threshold: null, price_protect: null,
-  current_price: null, dividend: null, invested_amount: null, quantity: null,
+  current_price: null, dividend: null, invested_amount: null, quantity: null, peak_price: null,
   sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-20', ...over,
 });
 
 describe('AllocationTable', () => {
   const view = buildPortfolioView({
     asOf: '2026-08-23',
-    // 350tr hiện tại, 300tr vốn ⇒ lãi 50tr.
-    stocks: [stock({ quantity: 100_000, current_price: 3.5, invested_amount: 300_000_000 })],
+    // 350tr hiện tại, 300tr vốn ⇒ lãi 50tr. `invested_amount` theo NGHÌN ĐỒNG.
+    stocks: [stock({ quantity: 100_000, current_price: 3.5, invested_amount: 300_000 })],
     cryptos: [], golds: [], targets: TARGETS, settings: SETTINGS, usdVnd: 26_000,
   });
 

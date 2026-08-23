@@ -15,7 +15,7 @@ function stock(over: Partial<Stock> = {}): Stock {
   return {
     id: 's1', user_id: 'u1', ticker: 'FPT', company_name: 'FPT Corp',
     group: 'balance', price_threshold: null, price_protect: null,
-    current_price: null, dividend: null, invested_amount: null, quantity: null,
+    current_price: null, dividend: null, invested_amount: null, quantity: null, peak_price: null,
     sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-20',
     ...over,
   };
@@ -24,7 +24,7 @@ function stock(over: Partial<Stock> = {}): Stock {
 function crypto(over: Partial<Crypto> = {}): Crypto {
   return {
     id: 'c1', user_id: 'u1', symbol: 'BTC', name: 'Bitcoin',
-    quantity: null, avg_buy_price: null, current_price: null,
+    quantity: null, avg_buy_price: null, current_price: null, peak_price: null,
     sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-21',
     ...over,
   };
@@ -45,7 +45,7 @@ describe('toAllocationRows — đơn vị cổ phiếu (giá là NGHÌN ĐỒNG)
   it('quy giá nghìn đồng ra đồng: 100 cổ × 98 nghìn = 9.800.000đ', () => {
     const { rows } = toAllocationRows({
       ...empty,
-      stocks: [stock({ quantity: 100, current_price: 98, invested_amount: 9_000_000 })],
+      stocks: [stock({ quantity: 100, current_price: 98, invested_amount: 9_000 })],
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].asset_class).toBe('STOCKS');
@@ -53,10 +53,10 @@ describe('toAllocationRows — đơn vị cổ phiếu (giá là NGHÌN ĐỒNG)
     expect(rows[0].market_value_vnd).toBe(9_800_000);
   });
 
-  it('vốn đã bỏ lấy thẳng invested_amount (đã là đồng, không nhân 1000)', () => {
+  it('vốn đã bỏ: invested_amount là NGHÌN ĐỒNG ⇒ nhân 1.000 để ra đồng', () => {
     const { rows } = toAllocationRows({
       ...empty,
-      stocks: [stock({ quantity: 100, current_price: 98, invested_amount: 9_000_000 })],
+      stocks: [stock({ quantity: 100, current_price: 98, invested_amount: 9_000 })],
     });
     expect(rows[0].cost_basis_vnd).toBe(9_000_000);
   });
@@ -101,7 +101,7 @@ describe('toAllocationRows — "chưa nhập" KHÁC "đã bán hết"', () => {
     // mà không một dấu hiệu nào.
     const r = toAllocationRows({
       ...empty,
-      stocks: [stock({ invested_amount: 9_000_000, quantity: null, current_price: 98 })],
+      stocks: [stock({ invested_amount: 9_000, quantity: null, current_price: 98 })],
     });
     expect(r.missingQuantitySymbols).toEqual(['FPT']);
     expect(r.rows).toEqual([]);
@@ -110,7 +110,7 @@ describe('toAllocationRows — "chưa nhập" KHÁC "đã bán hết"', () => {
   it('quantity = 0 nghĩa là đã bán hết → bỏ qua, KHÔNG báo thiếu số lượng', () => {
     const r = toAllocationRows({
       ...empty,
-      stocks: [stock({ invested_amount: 9_000_000, quantity: 0, current_price: 98 })],
+      stocks: [stock({ invested_amount: 9_000, quantity: 0, current_price: 98 })],
     });
     expect(r.missingQuantitySymbols).toEqual([]);
     expect(r.rows).toEqual([]);
@@ -121,7 +121,7 @@ describe('toAllocationRows — thiếu giá thì để NULL cho engine chặn k�
   it('đang giữ mà chưa có giá → market_value_vnd = null, KHÔNG phải 0', () => {
     const { rows } = toAllocationRows({
       ...empty,
-      stocks: [stock({ quantity: 100, current_price: null, invested_amount: 9_000_000 })],
+      stocks: [stock({ quantity: 100, current_price: null, invested_amount: 9_000 })],
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].market_value_vnd).toBeNull();

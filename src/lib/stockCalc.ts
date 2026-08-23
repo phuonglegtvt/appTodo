@@ -3,7 +3,13 @@ import type { Stock, StockGroup } from '../types/stock';
 const GROUPS: StockGroup[] = ['attack', 'balance', 'defense'];
 
 export interface GroupWeights {
-  total: number;
+  /**
+   * Tổng vốn đã đầu tư, đơn vị NGHÌN ĐỒNG (đúng đơn vị `stocks.invested_amount`).
+   * Tên có đơn vị trong nó là cố ý: `total` trần đã một lần bị đọc là "đồng" rồi
+   * hiển thị nhỏ đi 1.000 lần.
+   */
+  totalThousandVnd: number;
+  /** `amount` cũng theo NGHÌN ĐỒNG; `percent` không phụ thuộc đơn vị. */
   byGroup: Record<StockGroup, { amount: number; percent: number }>;
 }
 
@@ -19,21 +25,21 @@ export function computeYield(
   return (dividend / (price_threshold * 1000)) * 100;
 }
 
-/** Tổng vốn đã đầu tư và % mỗi nhóm theo invested_amount (bỏ qua mã chưa nhập). */
+/** Tổng vốn đã đầu tư (NGHÌN ĐỒNG) và % mỗi nhóm theo invested_amount (bỏ qua mã chưa nhập). */
 export function groupWeights(stocks: Stock[]): GroupWeights {
   const amounts: Record<StockGroup, number> = { attack: 0, balance: 0, defense: 0 };
   for (const s of stocks) {
     if (s.invested_amount != null) amounts[s.group] += s.invested_amount;
   }
-  const total = amounts.attack + amounts.balance + amounts.defense;
+  const totalThousandVnd = amounts.attack + amounts.balance + amounts.defense;
   const byGroup = {} as GroupWeights['byGroup'];
   for (const g of GROUPS) {
     byGroup[g] = {
       amount: amounts[g],
-      percent: total === 0 ? 0 : (amounts[g] / total) * 100,
+      percent: totalThousandVnd === 0 ? 0 : (amounts[g] / totalThousandVnd) * 100,
     };
   }
-  return { total, byGroup };
+  return { totalThousandVnd, byGroup };
 }
 
 /** 3 khẩu vị rủi ro đã chốt (theo hàng trên ảnh AzFin), % cho TC/CB/PT. */

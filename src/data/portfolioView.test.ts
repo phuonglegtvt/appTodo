@@ -28,14 +28,14 @@ function stock(over: Partial<Stock> = {}): Stock {
   return {
     id: 's1', user_id: 'u1', ticker: 'FPT', company_name: 'FPT Corp',
     group: 'balance', price_threshold: null, price_protect: null,
-    current_price: null, dividend: null, invested_amount: null, quantity: null,
+    current_price: null, dividend: null, invested_amount: null, quantity: null, peak_price: null,
     sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-20', ...over,
   };
 }
 function crypto(over: Partial<Crypto> = {}): Crypto {
   return {
     id: 'c1', user_id: 'u1', symbol: 'BTC', name: 'Bitcoin',
-    quantity: null, avg_buy_price: null, current_price: null,
+    quantity: null, avg_buy_price: null, current_price: null, peak_price: null,
     sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-21', ...over,
   };
 }
@@ -61,7 +61,7 @@ describe('buildPortfolioView — danh mục 35:20:0 mà NewPL nêu', () => {
   // 350tr cổ phiếu (100.000 cổ × 3,5 nghìn), 200tr crypto, 0 vàng.
   const view = buildPortfolioView({
     ...base,
-    stocks: [stock({ quantity: 100_000, current_price: 3.5, invested_amount: 300_000_000 })],
+    stocks: [stock({ quantity: 100_000, current_price: 3.5, invested_amount: 300_000 })],
     cryptos: [crypto({ quantity: 1, current_price: 200_000_000 / 26_000,
                        avg_buy_price: 150_000_000 / 26_000 })],
   });
@@ -102,9 +102,9 @@ describe('buildPortfolioView — cổ phiếu đã bỏ tiền mà chưa nhập 
     ...base,
     stocks: [
       stock({ id: 's1', ticker: 'FPT', quantity: 100_000, current_price: 3.5,
-              invested_amount: 300_000_000 }),
+              invested_amount: 300_000 }),
       stock({ id: 's2', ticker: 'VNM', quantity: null, current_price: 60,
-              invested_amount: 50_000_000 }),
+              invested_amount: 50_000 }),
     ],
   });
 
@@ -123,7 +123,7 @@ describe('buildPortfolioView — vàng vào đúng nhóm, đúng đơn vị', ()
   // Đủ ba nhóm, đúng tỷ lệ 60:30:10 để kiểm cả đường vàng lẫn ca "đã ở target".
   const view = buildPortfolioView({
     ...base,
-    stocks: [stock({ quantity: 100_000, current_price: 6, invested_amount: 500_000_000 })],
+    stocks: [stock({ quantity: 100_000, current_price: 6, invested_amount: 500_000 })],
     cryptos: [crypto({ quantity: 1, current_price: 300_000_000 / 26_000,
                        avg_buy_price: 200_000_000 / 26_000 })],
     // 100tr vàng = 2 lượng × 50tr/lượng. ĐỒNG/lượng, KHÔNG nhân 1.000.
@@ -164,7 +164,7 @@ describe('buildPortfolioView — thiếu giá thì chặn kế hoạch, không �
   it('đang giữ mà chưa có giá → kế hoạch bị chặn, nêu tên mã', () => {
     const view = buildPortfolioView({
       ...base,
-      stocks: [stock({ quantity: 100, current_price: null, invested_amount: 9_000_000 })],
+      stocks: [stock({ quantity: 100, current_price: null, invested_amount: 9_000 })],
     });
     expect(view.plan.status).not.toBe('READY');
     expect(view.plan.blockedReason).toMatch(/FPT/);

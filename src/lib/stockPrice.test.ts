@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { parseLatestClose, fetchPrices } from './stockPrice';
+import { parseLatestClose, parseMaxHigh, fetchPrices, fetchPeaks } from './stockPrice';
 
 /** Giả lập một response fetch thành công với JSON cho trước. */
 function okJson(json: unknown): Response {
@@ -69,5 +69,74 @@ describe('fetchPrices (Promise.allSettled)', () => {
     const result = await fetchPrices(['xyz']);
     expect(result.prices).toEqual({});
     expect(result.failed).toEqual([]);
+  });
+});
+
+describe('parseMaxHigh', () => {
+  it('s=ok: lấy giá cao nhất trong mảng h (nghìn đồng)', () => {
+    expect(parseMaxHigh({ s: 'ok', h: [30.1, 44.5, 22.7] })).toBe(44.5);
+  });
+
+  it('s=no_data: mã hợp lệ nhưng không có nến → null (không phải lỗi)', () => {
+    expect(parseMaxHigh({ s: 'no_data' })).toBeNull();
+  });
+
+  it('s=ok nhưng mảng h rỗng → null', () => {
+    expect(parseMaxHigh({ s: 'ok', h: [] })).toBeNull();
+  });
+
+  it('bỏ qua phần tử không phải số hữu hạn, vẫn lấy được max của phần còn lại', () => {
+    expect(parseMaxHigh({ s: 'ok', h: [30.1, null, 'x', 44.5] })).toBe(44.5);
+  });
+
+  it('mọi phần tử đều rác → null, KHÔNG trả 0 hay -Infinity', () => {
+    expect(parseMaxHigh({ s: 'ok', h: [null, 'x'] })).toBeNull();
+  });
+
+  it('thiếu mảng h → null', () => {
+    expect(parseMaxHigh({ s: 'ok' })).toBeNull();
+  });
+
+  it('ném lỗi khi s không hợp lệ (nguồn đổi shape)', () => {
+    expect(() => parseMaxHigh({ s: 'error' })).toThrow(/không hợp lệ/i);
+  });
+
+  it('ném lỗi khi không phải object', () => {
+    expect(() => parseMaxHigh('oops')).toThrow(/không đúng định dạng/i);
+  });
+});
+
+describe('fetchPeaks', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('danh sách rỗng → không gọi mạng', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    expect(await fetchPeaks([])).toEqual({ peaks: {}, failed: [] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('gọi nến THÁNG từ mốc 0 để lấy đủ lịch sử mà payload vẫn nhẹ', async () => {
+    const fetchMock = vi.fn(async (url: string) => { void url; return okJson({ s: 'ok', h: [30.1, 44.5] }); });
+    vi.stubGlobal('fetch', fetchMock);
+    await fetchPeaks(['acb']);
+    const url = String(fetchMock.mock.calls[0][0]);
+    expect(url).toContain('symbol=ACB');
+    expect(url).toContain('resolution=M');
+    expect(url).toContain('from=0');
+  });
+
+  it('một mã lỗi KHÔNG làm hỏng cả lần', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes('symbol=ACB')) return okJson({ s: 'ok', h: [30.1, 44.5] });
+      return { ok: false, status: 500 } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await fetchPeaks(['acb', 'fpt']);
+    expect(result.peaks).toEqual({ ACB: 44.5 });
+    expect(result.failed).toHaveLength(1);
+    expect(result.failed[0].ticker).toBe('FPT');
   });
 });

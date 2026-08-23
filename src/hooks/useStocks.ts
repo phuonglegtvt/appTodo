@@ -99,6 +99,10 @@ export function useStocks(userId: string): UseStocks {
         current_price: input.current_price ?? null,
         dividend: input.dividend ?? null,
         invested_amount: input.invested_amount ?? null,
+        // `quantity` từng bị bỏ sót ở đây: form có ô "Số lượng (cổ)" nhưng insert
+        // không gửi ⇒ mã mới thêm luôn hiện "⚠ chưa nhập" dù đã điền.
+        quantity: input.quantity ?? null,
+        peak_price: input.peak_price ?? null,
       });
       if (error) {
         console.error('Lỗi thêm cổ phiếu:', error);

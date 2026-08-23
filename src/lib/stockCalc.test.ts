@@ -23,6 +23,7 @@ function makeStock(over: Partial<Stock> = {}): Stock {
     dividend: null,
     invested_amount: null,
     quantity: null,
+    peak_price: null,
     sort_order: 0,
     created_at: '2026-07-11T00:00:00Z',
     updated_at: '2026-07-11T00:00:00Z',
@@ -58,7 +59,7 @@ describe('groupWeights', () => {
       makeStock({ ticker: 'C', group: 'defense', invested_amount: 40 }),
     ];
     const w = groupWeights(stocks);
-    expect(w.total).toBe(100);
+    expect(w.totalThousandVnd).toBe(100);
     expect(w.byGroup.attack.percent).toBeCloseTo(30, 5);
     expect(w.byGroup.balance.percent).toBeCloseTo(30, 5);
     expect(w.byGroup.defense.percent).toBeCloseTo(40, 5);
@@ -70,22 +71,22 @@ describe('groupWeights', () => {
       makeStock({ ticker: 'B', group: 'balance', invested_amount: null }),
     ];
     const w = groupWeights(stocks);
-    expect(w.total).toBe(50);
+    expect(w.totalThousandVnd).toBe(50);
     expect(w.byGroup.attack.percent).toBeCloseTo(100, 5);
     expect(w.byGroup.balance.amount).toBe(0);
   });
 
-  it('total = 0 thì mọi percent = 0, không chia cho 0', () => {
+  it('tổng = 0 thì mọi percent = 0, không chia cho 0', () => {
     const w = groupWeights([makeStock({ invested_amount: null })]);
-    expect(w.total).toBe(0);
+    expect(w.totalThousandVnd).toBe(0);
     expect(w.byGroup.attack.percent).toBe(0);
     expect(w.byGroup.balance.percent).toBe(0);
     expect(w.byGroup.defense.percent).toBe(0);
   });
 
-  it('danh sách rỗng: total = 0', () => {
+  it('danh sách rỗng: tổng = 0', () => {
     const w = groupWeights([]);
-    expect(w.total).toBe(0);
+    expect(w.totalThousandVnd).toBe(0);
     expect(w.byGroup.defense.amount).toBe(0);
   });
 });
