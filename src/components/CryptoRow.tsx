@@ -5,6 +5,7 @@ import { drawdownFromPeakPct } from '../lib/peakDrawdown';
 import { formatMoney } from '../lib/money';
 import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
 import { formatVnd } from '../lib/portfolioClassMeta';
+import { formatPctBoDauTru } from '../lib/formatPercent';
 
 /** '—' nếu null, ngược lại định dạng tiền theo currency. */
 function money(n: number | null, currency: Currency, rate: number | null): string {
@@ -30,7 +31,7 @@ function OSoDinh({ pct }: { pct: number | null }) {
       className={mau}
       title={pct > 0 ? 'Giá đã vượt đỉnh đang lưu — số đỉnh này đã cũ' : undefined}
     >
-      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+      {formatPctBoDauTru(pct)}
     </span>
   );
 }

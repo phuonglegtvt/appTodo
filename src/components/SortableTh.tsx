@@ -42,9 +42,16 @@ export function SortableTh<K extends string>({ colKey, label, sort, onSort, clas
         }`}
       >
         <span>{label}</span>
-        {/* Luôn chiếm chỗ để bấm sort không làm cả bảng nhích ngang. */}
-        <span aria-hidden="true" className="w-2 text-[10px] leading-none">
-          {chieu === 'asc' ? '↑' : chieu === 'desc' ? '↓' : ''}
+        {/* Icon hiện ở MỌI cột, kể cả cột chưa sort: chỉ hiện ở cột đang sort
+            thì không có cách nào biết những cột kia cũng bấm được. Cột chưa
+            sort dùng ↕ mờ; cột đang sort dùng ↑/↓ đậm theo màu primary. */}
+        <span
+          aria-hidden="true"
+          className={`inline-block w-3.5 text-center text-[14px] leading-none ${
+            dangSort ? '' : 'text-text-muted opacity-50 dark:text-text-muted-dark'
+          }`}
+        >
+          {chieu === 'asc' ? '↑' : chieu === 'desc' ? '↓' : '↕'}
         </span>
       </button>
     </th>
