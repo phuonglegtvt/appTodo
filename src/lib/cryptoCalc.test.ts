@@ -10,6 +10,7 @@ function mk(partial: Partial<Crypto>): Crypto {
     symbol: 'BTC',
     name: '',
     quantity: null,
+    invested_amount: null,
     peak_price: null,
     avg_buy_price: null,
     current_price: null,

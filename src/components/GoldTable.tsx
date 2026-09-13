@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
+import { SortableTh } from './SortableTh';
+import { nextSort, sortRows, type SortState } from '../lib/tableSort';
+import { GOLD_COLUMNS, goldSortValue, type GoldSortKey } from '../lib/goldSort';
 import { formatVnd } from '../lib/portfolioClassMeta';
 import type { Gold, NewGold, GoldUpdate } from '../types/gold';
 
@@ -25,7 +28,14 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
   const [soLuong, setSoLuong] = useState('');
   const [giaMua, setGiaMua] = useState('');
   const [giaNay, setGiaNay] = useState('');
+  const [daDauTu, setDaDauTu] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
+  // Sort chỉ trong bộ nhớ trang, không ghi xuống `sort_order`.
+  // Dòng "Thêm" ở cuối bảng nằm NGOÀI danh sách này nên luôn ở cuối, không bị
+  // sắp lẫn vào giữa các dòng vàng.
+  const [sort, setSort] = useState<SortState<GoldSortKey> | null>(null);
+  const doiSort = (key: GoldSortKey) => setSort((cu) => nextSort(cu, key));
+  const rows = sortRows(golds, sort, goldSortValue);
 
   async function them() {
     setLoi(null);
@@ -39,8 +49,9 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
         quantity: parseVnNumber(soLuong),
         avg_buy_price: parseVndAmount(giaMua),
         current_price: parseVndAmount(giaNay),
+        invested_amount: parseVndAmount(daDauTu),
       });
-      setLabel(''); setSoLuong(''); setGiaMua(''); setGiaNay('');
+      setLabel(''); setSoLuong(''); setGiaMua(''); setGiaNay(''); setDaDauTu('');
     } catch (err) {
       console.error('Lỗi thêm vàng:', err);
       setLoi(err instanceof Error ? err.message : String(err));
@@ -48,7 +59,9 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
   }
 
   /** Sửa inline: ô trống → null (CHƯA NHẬP), không phải 0. */
-  function suaSo(g: Gold, khoa: 'quantity' | 'avg_buy_price' | 'current_price', v: string) {
+  function suaSo(
+    g: Gold, khoa: 'quantity' | 'avg_buy_price' | 'current_price' | 'invested_amount', v: string,
+  ) {
     const n = khoa === 'quantity' ? parseVnNumber(v) : parseVndAmount(v);
     void onUpdate(g.id, { [khoa]: n } as GoldUpdate);
   }
@@ -62,6 +75,9 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
         <p className="mt-1 text-[13px] leading-relaxed text-text-muted dark:text-text-muted-dark">
           Giá nhập bằng <strong>đồng trên một lượng</strong> (ví dụ 90.000.000), không
           phải nghìn đồng. Ô để trống nghĩa là <em>chưa nhập</em> — khác với 0.
+          Cột <strong>Đã đầu tư</strong> là tổng tiền đã bỏ ra (đồng) — nhập cột này
+          thì tab Thu–Chi tính được cả dòng chưa nhập số lượng.
+          Bấm tiêu đề cột để sắp xếp (tăng → giảm → bỏ).
         </p>
       </div>
 
@@ -69,16 +85,23 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
         <table className="w-full min-w-[620px] border-collapse text-left">
           <thead>
             <tr className="border-b border-border dark:border-border-dark">
-              <th className={TH}>Loại</th>
-              <th className={`${TH} text-right`}>Số lượng</th>
-              <th className={`${TH} text-right`}>Giá mua TB (đ/lượng)</th>
-              <th className={`${TH} text-right`}>Giá hiện tại (đ/lượng)</th>
-              <th className={`${TH} text-right`}>Giá trị</th>
+              {GOLD_COLUMNS.map((c, i) => (
+                <SortableTh
+                  key={c.key}
+                  colKey={c.key}
+                  label={c.label}
+                  sort={sort}
+                  onSort={doiSort}
+                  /* Cột đầu (Loại) canh trái, các cột số canh phải — giữ đúng
+                     canh lề cũ của bảng. */
+                  className={i === 0 ? TH : `${TH} text-right`}
+                />
+              ))}
               <th className={TH} />
             </tr>
           </thead>
           <tbody>
-            {golds.map((g) => {
+            {rows.map((g) => {
               const giaTri = g.quantity !== null && g.current_price !== null
                 ? g.quantity * g.current_price
                 : null;
@@ -104,6 +127,13 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
                       defaultValue={hienSo(g.current_price)}
                       onBlur={(e) => suaSo(g, 'current_price', e.target.value)}
                       inputMode="numeric" aria-label={`${g.label} — giá hiện tại`} className={O_SO}
+                    />
+                  </td>
+                  <td className="w-40 px-2 py-2">
+                    <input
+                      defaultValue={hienSo(g.invested_amount)}
+                      onBlur={(e) => suaSo(g, 'invested_amount', e.target.value)}
+                      inputMode="numeric" aria-label={`${g.label} — đã đầu tư`} className={O_SO}
                     />
                   </td>
                   <td className="px-2 py-2 text-right font-mono text-[13px] tabular-nums text-text dark:text-text-dark">
@@ -145,6 +175,12 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
                 <input
                   value={giaNay} onChange={(e) => setGiaNay(e.target.value)}
                   placeholder="90.000.000" inputMode="numeric" aria-label="Giá hiện tại" className={O_SO}
+                />
+              </td>
+              <td className="px-2 py-2">
+                <input
+                  value={daDauTu} onChange={(e) => setDaDauTu(e.target.value)}
+                  placeholder="150.000.000" inputMode="numeric" aria-label="Đã đầu tư" className={O_SO}
                 />
               </td>
               <td colSpan={2} className="px-2 py-2">

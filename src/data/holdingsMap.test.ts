@@ -25,7 +25,7 @@ function crypto(over: Partial<Crypto> = {}): Crypto {
   return {
     id: 'c1', user_id: 'u1', symbol: 'BTC', name: 'Bitcoin',
     quantity: null, avg_buy_price: null, current_price: null, peak_price: null,
-    sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-21',
+    invested_amount: null, sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-21',
     ...over,
   };
 }
@@ -34,7 +34,7 @@ function gold(over: Partial<Gold> = {}): Gold {
   return {
     id: 'g1', user_id: 'u1', label: 'SJC 1 lượng',
     quantity: null, avg_buy_price: null, current_price: null,
-    sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-22',
+    invested_amount: null, sort_order: 0, created_at: '2026-01-01', updated_at: '2026-08-22',
     ...over,
   };
 }

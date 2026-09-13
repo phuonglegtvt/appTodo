@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import type { Stock, StockUpdate, StockGroup } from '../types/stock';
 import { StockRow } from './StockRow';
+import { SortableTh } from './SortableTh';
+import { nextSort, sortRows, type SortState } from '../lib/tableSort';
+import { STOCK_COLUMNS, stockSortValue, type StockSortKey } from '../lib/stockSort';
 
 const GROUP_META: Record<StockGroup, { label: string; head: string }> = {
   attack: { label: 'Tấn công (rủi ro cao)', head: 'text-red-600 dark:text-red-400' },
@@ -19,10 +23,19 @@ const th = 'px-2 py-2 text-left text-[11px] font-bold tracking-[0.06em] text-tex
 
 /** Bảng cổ phiếu gom theo 3 nhóm rủi ro, mỗi nhóm một khối có tiêu đề màu. */
 export function StockTable({ stocks, onUpdate, onDelete }: Props) {
+  // MỘT state sort dùng chung cho cả 3 nhóm: bấm "% so đỉnh" thì cả ba khối
+  // cùng sắp theo cột đó. Mỗi nhóm một state riêng sẽ cho ra ba bảng sắp khác
+  // nhau mà nhìn tiêu đề không phân biệt được.
+  //
+  // Sort chỉ nằm trong bộ nhớ trang, KHÔNG ghi xuống `sort_order` — đây là cách
+  // đang nhìn, không phải thứ tự muốn lưu.
+  const [sort, setSort] = useState<SortState<StockSortKey> | null>(null);
+  const doiSort = (key: StockSortKey) => setSort((cu) => nextSort(cu, key));
+
   return (
     <div className="flex flex-col gap-5">
       {GROUPS.map((g) => {
-        const rows = stocks.filter((s) => s.group === g);
+        const rows = sortRows(stocks.filter((s) => s.group === g), sort, stockSortValue);
         if (rows.length === 0) return null;
         return (
           <section key={g} className="flex flex-col gap-1.5">
@@ -31,18 +44,16 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
               <table className="w-full min-w-[1000px] border-collapse">
                 <thead>
                   <tr className="bg-surface-2 dark:bg-surface-2dark">
-                    <th className={th}>Mã</th>
-                    <th className={th}>Tên công ty</th>
-                    <th className={th}>Giá ngưỡng</th>
-                    <th className={th}>% so ngưỡng</th>
-                    <th className={th}>Giá bảo vệ</th>
-                    <th className={th}>Giá hiện tại</th>
-                    <th className={th}>Đỉnh LS</th>
-                    <th className={th}>% so đỉnh</th>
-                    <th className={th}>Cổ tức</th>
-                    <th className={th}>Tỷ suất</th>
-                    <th className={th}>Đã đầu tư</th>
-                    <th className={th}>Số lượng</th>
+                    {STOCK_COLUMNS.map((c) => (
+                      <SortableTh
+                        key={c.key}
+                        colKey={c.key}
+                        label={c.label}
+                        sort={sort}
+                        onSort={doiSort}
+                        className={th}
+                      />
+                    ))}
                     <th className={th}></th>
                   </tr>
                 </thead>
@@ -68,6 +79,10 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
           <span className="font-semibold text-green-600 dark:text-green-400">âm</span>{' '}
           = đã xuống dưới ngưỡng bấy nhiêu %.
           {' · '}<strong>% so đỉnh</strong>: đang thấp hơn đỉnh lịch sử bao nhiêu %.
+        </p>
+        <p>
+          <strong>Sắp xếp</strong>: bấm tiêu đề cột — tăng dần → giảm dần → bỏ sắp xếp.
+          Cả 3 nhóm cùng sắp theo cột đó; ô chưa nhập (—) luôn nằm cuối.
         </p>
       </div>
     </div>
