@@ -3,7 +3,8 @@ import type { Crypto, CryptoUpdate, Currency } from '../types/crypto';
 import { value, pnl, pnlPercent } from '../lib/cryptoCalc';
 import { drawdownFromPeakPct } from '../lib/peakDrawdown';
 import { formatMoney } from '../lib/money';
-import { parseVnNumber } from '../lib/parseNumber';
+import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
+import { formatVnd } from '../lib/portfolioClassMeta';
 
 /** '—' nếu null, ngược lại định dạng tiền theo currency. */
 function money(n: number | null, currency: Currency, rate: number | null): string {
@@ -48,11 +49,13 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
   const [quantity, setQuantity] = useState('');
   const [avgBuy, setAvgBuy] = useState('');
   const [peak, setPeak] = useState('');
+  const [invested, setInvested] = useState('');
 
   function startEdit() {
     setQuantity(crypto.quantity?.toString() ?? '');
     setAvgBuy(crypto.avg_buy_price?.toString() ?? '');
     setPeak(crypto.peak_price?.toString() ?? '');
+    setInvested(crypto.invested_amount?.toString() ?? '');
     setEditing(true);
   }
 
@@ -61,6 +64,10 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
       quantity: parseVnNumber(quantity),
       avg_buy_price: parseVnNumber(avgBuy),
       peak_price: parseVnNumber(peak),
+      // parseVndAmount (không phải parseVnNumber): ô này là số tiền VND nên
+      // phải đọc được '42.000.000'. parseVnNumber chỉ thay dấu phẩy ĐẦU TIÊN
+      // nên chuỗi đó ra NaN.
+      invested_amount: parseVndAmount(invested),
     });
     setEditing(false);
   }
@@ -88,6 +95,16 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
           <input value={peak} onChange={(e) => setPeak(e.target.value)} className={editInput} aria-label="Đỉnh lịch sử (USD)" />
         </td>
         <td className={cell}><OSoDinh pct={soDinhPct} /></td>
+        <td className={cell}>
+          <input
+            value={invested}
+            onChange={(e) => setInvested(e.target.value)}
+            placeholder="42.000.000"
+            inputMode="numeric"
+            className={editInput}
+            aria-label="Đã đầu tư (đồng)"
+          />
+        </td>
         <td className={cell}>{money(value(crypto), currency, rate)}</td>
         <td className={cell}>—</td>
         <td className={cell}>
@@ -117,6 +134,10 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
       <td className={cell}>{money(crypto.current_price, currency, rate)}</td>
       <td className={cell}>{money(crypto.peak_price, currency, rate)}</td>
       <td className={cell}><OSoDinh pct={soDinhPct} /></td>
+      {/* Luôn VND, KHÔNG theo `currency` như các ô khác — cột này lưu đồng. */}
+      <td className={cell}>
+        {crypto.invested_amount === null ? '—' : formatVnd(crypto.invested_amount)}
+      </td>
       <td className={cell}>{money(value(crypto), currency, rate)}</td>
       <td className={`${cell} ${pnlColor}`}>{pnlText}</td>
       <td className={cell}>

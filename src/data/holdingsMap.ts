@@ -160,3 +160,89 @@ export function toAllocationRows(input: HoldingsInput): HoldingsMapResult {
 
   return { rows, missingQuantitySymbols };
 }
+
+// ---------------------------------------------------------------------------
+// LŨY KẾ ĐÃ ĐẦU TƯ (tab Thu–Chi)
+// ---------------------------------------------------------------------------
+
+/**
+ * Tổng vốn đã bỏ vào từ trước tới nay, theo VND. KHÔNG phải giá trị thị trường
+ * hôm nay, và KHÔNG theo tháng — ba bảng nguồn không có cột ngày nào cả.
+ */
+export interface VonDaBo {
+  stocksVnd: number;
+  /** `null` = có crypto nhưng chưa quy đổi được vì thiếu tỷ giá. Khác hẳn 0đ. */
+  cryptoVnd: number | null;
+  goldVnd: number;
+  /** `null` khi `cryptoVnd` là null — tổng thiếu một phần thì không phải tổng. */
+  tongVnd: number | null;
+  /**
+   * Mã/dòng ĐÃ bỏ tiền mà CHƯA nhập số lượng ⇒ không tính được, bị thiếu khỏi
+   * tổng. Phải hiện lên UI: im lặng thì con số lũy kế nhỏ hơn thực tế mà không
+   * một dấu hiệu nào.
+   */
+  boSotSymbols: string[];
+}
+
+export function tongVonDaBo(input: HoldingsInput): VonDaBo {
+  const { stocks, cryptos, golds, usdVnd } = input;
+  const boSotSymbols: string[] = [];
+
+  // Cổ phiếu: `invested_amount` nói thẳng đã bỏ vào bao nhiêu tiền nên KHÔNG
+  // cần `quantity`. Đây là chỗ khác `toAllocationRows` — hàm kia bỏ qua mã
+  // thiếu quantity vì nó đi tính giá trị thị trường, còn ở đây chỉ hỏi tiền đã
+  // bỏ ra. NGHÌN ĐỒNG → ĐỒNG.
+  let stocksVnd = 0;
+  for (const s of stocks) {
+    if (s.invested_amount !== null) stocksVnd += s.invested_amount * 1_000;
+  }
+
+  // Crypto và Vàng có HAI đường ra con số vốn, xét theo đúng thứ tự này:
+  //   1. `invested_amount` — VND đồng tuyệt đối, người dùng nhập thẳng. Ưu tiên
+  //      tuyệt đối vì đó là số tiền THẬT đã chuyển đi, không phụ thuộc tỷ giá.
+  //   2. `quantity × avg_buy_price` — đường cũ, suy ra. Thiếu quantity là thiếu
+  //      hẳn khoản đó ⇒ phải báo tên.
+  // Có (1) thì KHÔNG xét (2): hai nguồn nói về cùng một khoản tiền, cộng cả hai
+  // là tính đôi.
+  let cryptoVndTrucTiep = 0;   // phần nhập thẳng VND — không cần tỷ giá
+  let cryptoUsd = 0;           // phần phải suy ra rồi quy đổi
+  let canTyGia = false;
+  for (const c of cryptos) {
+    if (c.invested_amount !== null) { cryptoVndTrucTiep += c.invested_amount; continue; }
+    if (c.avg_buy_price === null || c.avg_buy_price <= 0) continue;  // chưa bỏ tiền
+    if (c.quantity === null) { boSotSymbols.push(c.symbol); continue; }
+    cryptoUsd += c.quantity * c.avg_buy_price;
+    canTyGia = true;
+  }
+
+  let goldVnd = 0;
+  for (const g of golds) {
+    if (g.invested_amount !== null) { goldVnd += g.invested_amount; continue; }
+    if (g.avg_buy_price === null || g.avg_buy_price <= 0) continue;
+    if (g.quantity === null) { boSotSymbols.push(g.label); continue; }
+    // ĐỒNG/lượng — KHÔNG quy đổi gì.
+    goldVnd += g.quantity * g.avg_buy_price;
+  }
+
+  // Tỷ giá hỏng chỉ được làm hỏng phần crypto PHẢI QUY ĐỔI. Cổ phiếu, vàng, và
+  // cả phần crypto đã nhập thẳng VND đều không phụ thuộc tỷ giá nên vẫn phải ra
+  // số — kéo tất cả về null sẽ làm trắng cả khối chỉ vì một request tỷ giá chưa
+  // về. Nhập `invested_amount` cho mọi coin là hết phụ thuộc tỷ giá hẳn.
+  //
+  // Không ném lỗi như `toAllocationRows`: khối này chỉ để xem, chặn cả trang vì
+  // thiếu tỷ giá thì nặng tay. Trả `null` để UI nói rõ "chưa quy đổi được".
+  const tyGiaHong = !Number.isFinite(usdVnd) || usdVnd <= 0;
+  const cryptoVnd = !canTyGia
+    ? cryptoVndTrucTiep
+    : tyGiaHong
+      ? null
+      : cryptoVndTrucTiep + cryptoUsd * usdVnd;
+
+  return {
+    stocksVnd,
+    cryptoVnd,
+    goldVnd,
+    tongVnd: cryptoVnd === null ? null : stocksVnd + cryptoVnd + goldVnd,
+    boSotSymbols,
+  };
+}

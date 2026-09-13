@@ -14,6 +14,12 @@ export interface Gold {
   quantity: number | null;
   avg_buy_price: number | null;
   current_price: number | null;
+  /**
+   * Tổng tiền ĐÃ BỎ VÀO, **VND (đồng) tuyệt đối** (cùng đơn vị hai cột giá ở
+   * trên, khác `stocks.invested_amount` lưu nghìn đồng).
+   * `null` = CHƯA NHẬP, khác hẳn 0.
+   */
+  invested_amount: number | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -25,9 +31,10 @@ export interface NewGold {
   quantity?: number | null;
   avg_buy_price?: number | null;
   current_price?: number | null;
+  invested_amount?: number | null;
 }
 
 /** Các trường được phép sửa. */
 export type GoldUpdate = Partial<
-  Pick<Gold, 'label' | 'quantity' | 'avg_buy_price' | 'current_price' | 'sort_order'>
+  Pick<Gold, 'label' | 'quantity' | 'avg_buy_price' | 'current_price' | 'invested_amount' | 'sort_order'>
 >;

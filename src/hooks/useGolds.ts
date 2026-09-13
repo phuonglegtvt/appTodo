@@ -90,6 +90,7 @@ export function useGolds(userId: string): UseGolds {
         quantity: input.quantity ?? null,
         avg_buy_price: input.avg_buy_price ?? null,
         current_price: input.current_price ?? null,
+        invested_amount: input.invested_amount ?? null,
       });
       if (error) {
         console.error('Lỗi thêm vàng:', error);
