@@ -54,6 +54,19 @@ Nếu chưa có thiết kế từ Claude Design, dựng UI Tailwind tối giản
 ## Ngôn ngữ
 Giao diện và trao đổi bằng **tiếng Việt** (thuật ngữ kỹ thuật giữ tiếng Anh).
 
+## Module Thu – Chi
+
+Tab `cashflow` trong sidebar (dưới "Danh mục"): sổ thu–chi cá nhân theo tháng.
+- Dữ liệu: `public.cash_entries` (VND đồng tuyệt đối). **Sửa/xoá được** — cố ý
+  khác `portfolio.transactions` (sổ bất biến).
+- Danh mục thu/chi **cố định trong code** (`src/lib/cashCategories.ts`), không có
+  bảng riêng. Cờ `laVongTien` ở đó quyết định khoản nào là "vòng tiền".
+- **Đáo hạn thẻ = vòng tiền**: tiền ra rồi quay về ví ⇒ KHÔNG cộng vào tổng chi,
+  KHÔNG trừ khỏi "còn lại". Riêng *phí* đáo hạn là danh mục khác và LÀ chi thật.
+- Khối "Lũy kế đã đầu tư" **chỉ đọc**, tự động từ `stocks`/`cryptos`/`golds` qua
+  `tongVonDaBo` (`src/data/holdingsMap.ts`). Là số lũy kế, KHÔNG theo tháng, nên
+  không trừ vào cân đối tháng.
+
 ## Module Portfolio (Phase 3)
 
 Module cân bằng danh mục đầu tư, sẽ nằm ở tab `portfolio` (đợt 4).
@@ -71,6 +84,11 @@ Module cân bằng danh mục đầu tư, sẽ nằm ở tab `portfolio` (đợt
   `stocks.current_price` / `stocks.invested_amount` / `stocks.peak_price` = **nghìn
   đồng**; `stocks.dividend` = **đồng**; `cryptos.*_price` = **USD**;
   `golds.*_price` = **đồng/lượng**.
+  ⚠️ Bổ sung 2026-09-13: `cryptos.invested_amount` và `golds.invested_amount` =
+  **VND (đồng) tuyệt đối** — KHÁC `stocks.invested_amount` (nghìn đồng) và KHÁC
+  các cột giá của chính bảng `cryptos` (USD). Hai cột này nhập thẳng số tiền đã
+  bỏ ra nên không phụ thuộc tỷ giá; `public.cash_entries.amount_vnd` cũng là
+  **đồng tuyệt đối**.
 - Mỗi module một trách nhiệm, mỗi module một file test cạnh nó.
 
 ### Sổ giao dịch bất biến
