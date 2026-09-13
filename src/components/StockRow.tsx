@@ -3,6 +3,7 @@ import type { Stock, StockUpdate } from '../types/stock';
 import { computeYield, isBelowThreshold, isAboveProtect } from '../lib/stockCalc';
 import { drawdownFromPeakPct, gapToPricePct } from '../lib/peakDrawdown';
 import { parseVnNumber } from '../lib/parseNumber';
+import { formatPctBoDauTru } from '../lib/formatPercent';
 
 function fmt(n: number | null): string {
   return n == null ? '—' : n.toLocaleString('vi-VN');
@@ -12,6 +13,9 @@ function fmt(n: number | null): string {
  * Ô "% so ngưỡng" — còn cách giá ngưỡng tích sản bao nhiêu %.
  * Màu ngược với ô "% so đỉnh" vì ý nghĩa ngược: ở ĐÂY số ÂM là tin tốt (đã xuống
  * dưới ngưỡng ⇒ đáng mua), số dương là còn đắt hơn ngưỡng.
+ *
+ * HIỂN THỊ bỏ dấu trừ (`formatPctBoDauTru`) nhưng GIÁ TRỊ vẫn có dấu — màu sắc
+ * và dấu '+' là hai thứ phân biệt hai chiều. Sort vẫn dùng số CÓ dấu.
  */
 function OSoNguong({ pct }: { pct: number | null }) {
   if (pct == null) {
@@ -30,7 +34,7 @@ function OSoNguong({ pct }: { pct: number | null }) {
           : `Còn phải giảm ${pct.toFixed(1)}% mới về giá ngưỡng`
       }
     >
-      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+      {formatPctBoDauTru(pct)}
     </span>
   );
 }
@@ -38,8 +42,10 @@ function OSoNguong({ pct }: { pct: number | null }) {
 /**
  * Ô "% so đỉnh". `null` (chưa biết đỉnh, hoặc chưa có giá) hiện '—' — KHÔNG hiện
  * 0%, vì 0% có nghĩa hẳn hoi là "đang đúng ở đỉnh".
- * Càng xa đỉnh càng đáng chú ý nên tô: ≤ −30% xanh (vùng tích sản), > 0 đỏ (giá
- * đã vượt đỉnh đang lưu ⇒ số đỉnh đã cũ, cần cập nhật).
+ * Càng xa đỉnh càng đáng chú ý nên tô: ≤ −30% xanh (vùng tích sản), > 0 đỉnh đỏ
+ * (giá đã vượt đỉnh đang lưu ⇒ số đỉnh đã cũ, cần cập nhật).
+ *
+ * HIỂN THỊ bỏ dấu trừ; số mang dấu '+' nghĩa là đã VƯỢT đỉnh.
  */
 function OSoDinh({ pct }: { pct: number | null }) {
   if (pct == null) {
@@ -56,7 +62,7 @@ function OSoDinh({ pct }: { pct: number | null }) {
       className={mau}
       title={pct > 0 ? 'Giá đã vượt đỉnh đang lưu — số đỉnh này đã cũ' : undefined}
     >
-      {pct > 0 ? '+' : ''}{pct.toFixed(1)}%
+      {formatPctBoDauTru(pct)}
     </span>
   );
 }

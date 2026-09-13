@@ -29,7 +29,12 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
   //
   // Sort chỉ nằm trong bộ nhớ trang, KHÔNG ghi xuống `sort_order` — đây là cách
   // đang nhìn, không phải thứ tự muốn lưu.
-  const [sort, setSort] = useState<SortState<StockSortKey> | null>(null);
+  // MẶC ĐỊNH sắp theo "% so ngưỡng" tăng dần: số càng ÂM nghĩa là giá càng ở
+  // sâu dưới giá ngưỡng tích sản, tức càng đáng mua — mã đáng mua nhất nằm ngay
+  // dòng đầu, không phải dò. Bấm 3 nhịp vẫn về được thứ tự gốc `sort_order`.
+  const [sort, setSort] = useState<SortState<StockSortKey> | null>(
+    { key: 'gap_threshold', dir: 'asc' },
+  );
   const doiSort = (key: StockSortKey) => setSort((cu) => nextSort(cu, key));
 
   return (
@@ -83,6 +88,9 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
         <p>
           <strong>Sắp xếp</strong>: bấm tiêu đề cột — tăng dần → giảm dần → bỏ sắp xếp.
           Cả 3 nhóm cùng sắp theo cột đó; ô chưa nhập (—) luôn nằm cuối.
+          Mặc định sắp theo <strong>% so ngưỡng</strong>, mã rẻ hơn ngưỡng nhiều nhất
+          lên đầu. Hai cột phần trăm <strong>bỏ dấu trừ</strong> cho gọn — số có
+          dấu <strong>+</strong> nghĩa là đang CAO hơn mốc.
         </p>
       </div>
     </div>

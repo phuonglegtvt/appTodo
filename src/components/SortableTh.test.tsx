@@ -49,20 +49,29 @@ describe('SortableTh', () => {
     expect(onSort).toHaveBeenCalledWith('gia');
   });
 
-  test('mũi tên chỉ hiện ở cột đang sort', () => {
-    const { unmount } = render(
-      <table><thead><tr>
-        <SortableTh colKey={'gia' as K} label="Giá" sort={null} onSort={vi.fn()} />
-      </tr></thead></table>,
-    );
-    expect(screen.getByRole('button').textContent).not.toMatch(/[↑↓]/);
-    unmount();
+  test('cột CHƯA sort vẫn hiện icon, để biết cột này bấm được', () => {
+    // Chỉ hiện mũi tên ở cột đang sort thì người dùng không biết những cột kia
+    // cũng bấm được — phải dò từng cột mới biết.
+    ve(null);
+    expect(screen.getByRole('button').textContent).toMatch(/↕/);
+  });
 
-    render(
-      <table><thead><tr>
-        <SortableTh colKey={'gia' as K} label="Giá" sort={{ key: 'gia', dir: 'asc' }} onSort={vi.fn()} />
-      </tr></thead></table>,
-    );
-    expect(screen.getByRole('button').textContent).toMatch(/↑/);
+  test('cột đang tăng dần hiện ↑', () => {
+    ve({ key: 'gia', dir: 'asc' });
+    const chu = screen.getByRole('button').textContent ?? '';
+    expect(chu).toMatch(/↑/);
+    expect(chu).not.toMatch(/↕/);
+  });
+
+  test('cột đang giảm dần hiện ↓', () => {
+    ve({ key: 'gia', dir: 'desc' });
+    const chu = screen.getByRole('button').textContent ?? '';
+    expect(chu).toMatch(/↓/);
+    expect(chu).not.toMatch(/↕/);
+  });
+
+  test('cột KHÁC đang sort thì cột này quay về icon trung tính', () => {
+    ve({ key: 'ten', dir: 'asc' });
+    expect(screen.getByRole('button').textContent).toMatch(/↕/);
   });
 });
