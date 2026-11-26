@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import type { Stock, StockUpdate } from '../types/stock';
+import type { Stock, StockGroup, StockUpdate } from '../types/stock';
 import { computeYield, isBelowThreshold, isAboveProtect } from '../lib/stockCalc';
 import { drawdownFromPeakPct, gapToPricePct } from '../lib/peakDrawdown';
 import { parseVnNumber } from '../lib/parseNumber';
 import { formatPctBoDauTru } from '../lib/formatPercent';
+import { avgCostThousand } from '../lib/stockTransaction';
 
 function fmt(n: number | null): string {
   return n == null ? '—' : n.toLocaleString('vi-VN');
+}
+
+/** Giá vốn TB là số chia ra nên thường lẻ — giữ 2 chữ số thập phân là đủ đọc. */
+function fmtGiaVon(n: number | null): string {
+  return n == null ? '—' : n.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
 }
 
 /**
@@ -77,6 +83,10 @@ interface Props {
 export function StockRow({ stock, onUpdate, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
   // Bản nháp khi sửa (giữ dạng chuỗi để nhập được thoải mái).
+  const [ticker, setTicker] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [group, setGroup] = useState<StockGroup>('balance');
+  const [loiSua, setLoiSua] = useState<string | null>(null);
   const [priceThreshold, setPriceThreshold] = useState('');
   const [priceProtect, setPriceProtect] = useState('');
   const [dividend, setDividend] = useState('');
@@ -85,6 +95,10 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   const [peak, setPeak] = useState('');
 
   function startEdit() {
+    setTicker(stock.ticker);
+    setCompanyName(stock.company_name);
+    setGroup(stock.group);
+    setLoiSua(null);
     setPriceThreshold(stock.price_threshold?.toString() ?? '');
     setPriceProtect(stock.price_protect?.toString() ?? '');
     setDividend(stock.dividend?.toString() ?? '');
@@ -95,7 +109,17 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   }
 
   function save() {
+    // Mã là khoá để lấy giá tự động — để trống thì "Cập nhật giá" gọi nguồn với
+    // mã rỗng. Chặn ngay tại dòng, không lưu.
+    const ma = ticker.trim().toUpperCase();
+    if (!ma) {
+      setLoiSua('Mã không được để trống.');
+      return;
+    }
     onUpdate(stock.id, {
+      ticker: ma,
+      company_name: companyName.trim(),
+      group,
       price_threshold: parseVnNumber(priceThreshold),
       price_protect: parseVnNumber(priceProtect),
       dividend: parseVnNumber(dividend),
@@ -120,8 +144,36 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
   if (editing) {
     return (
       <tr className="border-t border-border dark:border-border-dark">
-        <td className={`${cell} font-semibold`}>{stock.ticker}</td>
-        <td className={cell}>{stock.company_name}</td>
+        <td className={`${cell} font-semibold`}>
+          <input
+            value={ticker}
+            onChange={(e) => { setTicker(e.target.value); setLoiSua(null); }}
+            className={`${editInput} w-20 uppercase`}
+            aria-label="Mã cổ phiếu"
+          />
+          {loiSua && <div role="alert" className="mt-1 text-[11px] font-normal text-red-600 dark:text-red-400">{loiSua}</div>}
+        </td>
+        <td className={cell}>
+          <input
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+            className={`${editInput} w-40`}
+            aria-label="Tên công ty"
+          />
+          {/* Đổi nhóm ngay tại đây — cách duy nhất để chuyển một mã đang có sang
+              bảng khác (VD sang Đầu tư dài hạn) mà không phải xoá rồi thêm lại. */}
+          <select
+            value={group}
+            onChange={(e) => setGroup(e.target.value as StockGroup)}
+            className={`${editInput} mt-1 w-40`}
+            aria-label="Nhóm"
+          >
+            <option value="attack">Tấn công</option>
+            <option value="balance">Cân bằng</option>
+            <option value="defense">Phòng thủ</option>
+            <option value="longterm">Dài hạn</option>
+          </select>
+        </td>
         <td className={cell}>
           <input value={priceThreshold} onChange={(e) => setPriceThreshold(e.target.value)} className={editInput} aria-label="Giá ngưỡng" />
         </td>
@@ -144,6 +196,7 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
         <td className={cell}>
           <input value={quantity} onChange={(e) => setQuantity(e.target.value)} className={editInput} aria-label="Số lượng cổ phiếu" />
         </td>
+        <td className={cell}>{fmtGiaVon(avgCostThousand(stock))}</td>
         <td className={cell}>
           <button onClick={save} className="mr-2 font-semibold text-primary dark:text-primary-dark">Lưu</button>
           <button onClick={() => setEditing(false)} className="text-text-muted dark:text-text-muted-dark">Hủy</button>
@@ -191,6 +244,9 @@ export function StockRow({ stock, onUpdate, onDelete }: Props) {
         ) : (
           '—'
         )}
+      </td>
+      <td className={cell} title="Giá vốn TB = Đã đầu tư ÷ Số lượng (nghìn đồng/cổ)">
+        {fmtGiaVon(avgCostThousand(stock))}
       </td>
       <td className={cell}>
         <button onClick={startEdit} className="mr-2 text-text-muted hover:text-primary dark:text-text-muted-dark dark:hover:text-primary-dark" aria-label="Sửa">✎</button>

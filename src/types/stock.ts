@@ -1,4 +1,11 @@
-export type StockGroup = 'attack' | 'balance' | 'defense';
+/** Nhóm của một mã. `longterm` = Đầu tư dài hạn (thêm 2026-11-26). */
+export type StockGroup = 'attack' | 'balance' | 'defense' | 'longterm';
+
+/**
+ * Khẩu vị rủi ro người dùng chọn ở phần tổng quan. KHÁC `StockGroup`: không có
+ * khẩu vị "dài hạn" — dài hạn chỉ là một nhóm nằm trong mỗi khẩu vị.
+ */
+export type RiskProfile = 'attack' | 'balance' | 'defense';
 
 export interface Stock {
   id: string;

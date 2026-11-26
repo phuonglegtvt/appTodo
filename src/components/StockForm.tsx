@@ -68,6 +68,7 @@ export function StockForm({ onAdd }: { onAdd: (s: NewStock) => void }) {
         <option value="attack">Tấn công</option>
         <option value="balance">Cân bằng</option>
         <option value="defense">Phòng thủ</option>
+        <option value="longterm">Dài hạn</option>
       </select>
       <input
         value={priceThreshold}

@@ -1,6 +1,9 @@
-import type { Stock, StockGroup } from '../types/stock';
+import type { RiskProfile, Stock, StockGroup } from '../types/stock';
 
-const GROUPS: StockGroup[] = ['attack', 'balance', 'defense'];
+/** Thứ tự hiển thị các nhóm, dùng chung cho bảng, tổng quan và form. */
+export const STOCK_GROUPS: StockGroup[] = ['attack', 'balance', 'defense', 'longterm'];
+
+export const RISK_PROFILES: RiskProfile[] = ['attack', 'balance', 'defense'];
 
 export interface GroupWeights {
   /**
@@ -27,13 +30,13 @@ export function computeYield(
 
 /** Tổng vốn đã đầu tư (NGHÌN ĐỒNG) và % mỗi nhóm theo invested_amount (bỏ qua mã chưa nhập). */
 export function groupWeights(stocks: Stock[]): GroupWeights {
-  const amounts: Record<StockGroup, number> = { attack: 0, balance: 0, defense: 0 };
+  const amounts: Record<StockGroup, number> = { attack: 0, balance: 0, defense: 0, longterm: 0 };
   for (const s of stocks) {
     if (s.invested_amount != null) amounts[s.group] += s.invested_amount;
   }
-  const totalThousandVnd = amounts.attack + amounts.balance + amounts.defense;
+  const totalThousandVnd = STOCK_GROUPS.reduce((s, g) => s + amounts[g], 0);
   const byGroup = {} as GroupWeights['byGroup'];
-  for (const g of GROUPS) {
+  for (const g of STOCK_GROUPS) {
     byGroup[g] = {
       amount: amounts[g],
       percent: totalThousandVnd === 0 ? 0 : (amounts[g] / totalThousandVnd) * 100,
@@ -42,21 +45,25 @@ export function groupWeights(stocks: Stock[]): GroupWeights {
   return { totalThousandVnd, byGroup };
 }
 
-/** 3 khẩu vị rủi ro đã chốt (theo hàng trên ảnh AzFin), % cho TC/CB/PT. */
-export const TARGET_PROFILES: Record<StockGroup, Record<StockGroup, number>> = {
-  attack: { attack: 30, balance: 30, defense: 40 },
-  balance: { attack: 20, balance: 40, defense: 40 },
-  defense: { attack: 10, balance: 40, defense: 50 },
+/**
+ * 3 khẩu vị rủi ro, % cho Tấn công / Cân bằng / Phòng thủ / Dài hạn.
+ * Chốt 2026-11-26 khi thêm nhóm Dài hạn: mọi khẩu vị dành 20% cho dài hạn, 80%
+ * còn lại giữ đúng thứ tự rủi ro cũ (trước đó 30/30/40 · 20/40/40 · 10/40/50).
+ */
+export const TARGET_PROFILES: Record<RiskProfile, Record<StockGroup, number>> = {
+  attack: { attack: 25, balance: 25, defense: 30, longterm: 20 },
+  balance: { attack: 15, balance: 35, defense: 30, longterm: 20 },
+  defense: { attack: 5, balance: 35, defense: 40, longterm: 20 },
 };
 
 /** Chênh lệch (thực tế − mục tiêu) theo % cho từng nhóm. */
 export function compareToTarget(
   weights: GroupWeights,
-  profile: StockGroup,
+  profile: RiskProfile,
 ): Record<StockGroup, number> {
   const target = TARGET_PROFILES[profile];
   const diff = {} as Record<StockGroup, number>;
-  for (const g of GROUPS) {
+  for (const g of STOCK_GROUPS) {
     diff[g] = weights.byGroup[g].percent - target[g];
   }
   return diff;

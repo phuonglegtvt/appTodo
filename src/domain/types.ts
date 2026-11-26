@@ -99,7 +99,7 @@ export interface AllocationResult {
   unallocatedVnd: number;
 }
 
-export type StockGroupVi = 'attack' | 'balance' | 'defense';
+export type StockGroupVi = 'attack' | 'balance' | 'defense' | 'longterm';
 
 export interface WatchlistItem {
   symbol: string;

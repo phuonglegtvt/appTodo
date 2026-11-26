@@ -1,25 +1,31 @@
 import { useState } from 'react';
 import { useStocks } from '../hooks/useStocks';
+import { useStockTransactions } from '../hooks/useStockTransactions';
 import { fetchQuotes } from '../lib/stockPrice';
 import { nextPeak } from '../lib/peakDrawdown';
 import { filterStocks } from '../lib/stockFilters';
-import type { StockGroup, StockUpdate } from '../types/stock';
+import type { RiskProfile, StockUpdate } from '../types/stock';
 import { PortfolioSummary } from './PortfolioSummary';
 import { StockForm } from './StockForm';
 import { StockTable } from './StockTable';
 import { ErrorBanner } from './ErrorBanner';
+import { StockTransactionForm } from './StockTransactionForm';
+import { StockTransactionList } from './StockTransactionList';
 
 interface Props {
   userId: string;
 }
 
-/** Trang Cổ phiếu: summary tỷ trọng + nút cập nhật giá + form thêm mã + bảng gom nhóm. */
+/** Trang Cổ phiếu: summary tỷ trọng + nút cập nhật giá + form thêm mã + bảng gom nhóm + lịch sử giao dịch. */
 export function StocksPage({ userId }: Props) {
   const { stocks, loading, error, addStock, updateStock, deleteStock, clearError } = useStocks(userId);
-  const [profile, setProfile] = useState<StockGroup>('balance');
+  const [profile, setProfile] = useState<RiskProfile>('balance');
   const [priceError, setPriceError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [query, setQuery] = useState('');
+  const {
+    transactions, loading: loadingTx, error: txError, record, undo, clearError: clearTxError,
+  } = useStockTransactions(userId);
 
   async function handleUpdatePrices() {
     setPriceError(null);
@@ -94,6 +100,7 @@ export function StocksPage({ userId }: Props) {
 
       {error && <ErrorBanner message={error} onClose={clearError} />}
       {priceError && <ErrorBanner message={priceError} onClose={() => setPriceError(null)} />}
+      {txError && <ErrorBanner message={txError} onClose={clearTxError} />}
 
       <input
         type="search"
@@ -121,6 +128,21 @@ export function StocksPage({ userId }: Props) {
       ) : (
         <StockTable stocks={visibleStocks} onUpdate={updateStock} onDelete={removeStock} />
       )}
+
+      <section className="flex flex-col gap-3">
+        <div>
+          <div className="text-[17px] font-bold tracking-tight text-text dark:text-text-dark">Lịch sử đầu tư</div>
+          <div className="mt-0.5 text-[13px] text-text-muted dark:text-text-muted-dark">
+            Mỗi lần mua/bán tự cộng dồn vào bảng trên: số lượng, đã đầu tư và giá vốn TB.
+          </div>
+        </div>
+        <StockTransactionForm stocks={stocks} onRecord={record} />
+        {loadingTx ? (
+          <p className="py-4 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải lịch sử giao dịch…</p>
+        ) : (
+          <StockTransactionList transactions={transactions} stocks={stocks} onUndo={undo} />
+        )}
+      </section>
     </div>
   );
 }
