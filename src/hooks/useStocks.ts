@@ -12,8 +12,8 @@ interface UseStocks {
   clearError: () => void;
 }
 
-// Thứ tự hiển thị các nhóm: Tấn công → Cân bằng → Phòng thủ → Dài hạn.
-const GROUP_ORDER: Record<StockGroup, number> = { attack: 0, balance: 1, defense: 2, longterm: 3 };
+// Thứ tự hiển thị các nhóm: Dài hạn → Tấn công → Cân bằng → Phòng thủ (khớp STOCK_GROUPS).
+const GROUP_ORDER: Record<StockGroup, number> = { longterm: 0, attack: 1, balance: 2, defense: 3 };
 
 function sortStocks(list: Stock[]): Stock[] {
   return [...list].sort((a, b) => {

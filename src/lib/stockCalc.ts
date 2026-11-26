@@ -1,7 +1,10 @@
 import type { RiskProfile, Stock, StockGroup } from '../types/stock';
 
-/** Thứ tự hiển thị các nhóm, dùng chung cho bảng, tổng quan và form. */
-export const STOCK_GROUPS: StockGroup[] = ['attack', 'balance', 'defense', 'longterm'];
+/**
+ * Thứ tự hiển thị các nhóm, dùng chung cho bảng và tổng quan. Dài hạn đứng ĐẦU
+ * (yêu cầu 2026-11-26): đây là phần nắm giữ chính, xem trước tiên.
+ */
+export const STOCK_GROUPS: StockGroup[] = ['longterm', 'attack', 'balance', 'defense'];
 
 export const RISK_PROFILES: RiskProfile[] = ['attack', 'balance', 'defense'];
 
