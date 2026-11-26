@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCryptos } from '../hooks/useCryptos';
 import { useCurrency } from '../hooks/useCurrency';
+import { useCryptoTransactions } from '../hooks/useCryptoTransactions';
 import { fetchCryptoPrices, fetchCryptoPeaks } from '../lib/cryptoPrice';
 import { nextPeak } from '../lib/peakDrawdown';
 import { filterCryptos } from '../lib/cryptoFilters';
@@ -8,19 +9,24 @@ import type { Currency, CryptoUpdate } from '../types/crypto';
 import { CryptoSummary } from './CryptoSummary';
 import { CryptoForm } from './CryptoForm';
 import { CryptoTable } from './CryptoTable';
+import { CryptoTransactionForm } from './CryptoTransactionForm';
+import { CryptoTransactionList } from './CryptoTransactionList';
 import { ErrorBanner } from './ErrorBanner';
 
 interface Props {
   userId: string;
 }
 
-/** Trang Crypto: tổng danh mục + cập nhật giá Binance + chuyển USD/VND + form + bảng. */
+/** Trang Crypto: tổng danh mục + cập nhật giá Binance + chuyển USD/VND + form + bảng + sổ giao dịch. */
 export function CryptoPage({ userId }: Props) {
   const { cryptos, loading, error, addCrypto, updateCrypto, deleteCrypto, clearError } = useCryptos(userId);
   const { currency, setCurrency, rate, refreshRate, loadingRate, rateError, clearRateError } = useCurrency();
   const [priceError, setPriceError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [query, setQuery] = useState('');
+  const {
+    transactions, loading: loadingTx, error: txError, record, undo, clearError: clearTxError,
+  } = useCryptoTransactions(userId);
 
   async function handleUpdatePrices() {
     setPriceError(null);
@@ -136,6 +142,7 @@ export function CryptoPage({ userId }: Props) {
       {error && <ErrorBanner message={error} onClose={clearError} />}
       {priceError && <ErrorBanner message={priceError} onClose={() => setPriceError(null)} />}
       {rateError && <ErrorBanner message={rateError} onClose={clearRateError} />}
+      {txError && <ErrorBanner message={txError} onClose={clearTxError} />}
 
       <input
         type="search"
@@ -163,6 +170,21 @@ export function CryptoPage({ userId }: Props) {
       ) : (
         <CryptoTable cryptos={visible} currency={currency} rate={rate} onUpdate={updateCrypto} onDelete={removeCrypto} />
       )}
+
+      <section className="flex flex-col gap-3">
+        <div>
+          <div className="text-[17px] font-bold tracking-tight text-text dark:text-text-dark">Sổ giao dịch</div>
+          <div className="mt-0.5 text-[13px] text-text-muted dark:text-text-muted-dark">
+            Mỗi lần mua/bán tự cộng dồn vào bảng trên: số lượng, giá mua TB (USD) và đã đầu tư (VND).
+          </div>
+        </div>
+        <CryptoTransactionForm cryptos={cryptos} onRecord={record} />
+        {loadingTx ? (
+          <p className="py-4 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải sổ giao dịch…</p>
+        ) : (
+          <CryptoTransactionList transactions={transactions} cryptos={cryptos} onUndo={undo} />
+        )}
+      </section>
     </div>
   );
 }
