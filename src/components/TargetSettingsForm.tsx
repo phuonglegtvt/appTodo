@@ -6,7 +6,8 @@ import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
 import type { AssetClass } from '../domain/types';
 import type { SettingsRow, TargetRow } from '../types/portfolio';
 
-// Màn Cấu hình: sửa 4 tỷ trọng mục tiêu + band, và số tiền góp hàng tháng.
+// Màn Cấu hình: sửa 4 tỷ trọng mục tiêu + band, số tiền góp hàng tháng, kế
+// hoạch DCA và tiền mặt đang có.
 //
 // ĐÂY LÀ ĐƯỜNG GHI THẬT ĐẦU TIÊN của module portfolio. Hệ quả: hai lỗ `NaN` mà
 // bản bàn giao 2026-08-22 mục 2 để lại vì "chưa có đường ghi nào" từ nay có
@@ -21,6 +22,7 @@ interface Props {
   onSaveTargets: (rows: TargetRow[]) => Promise<void>;
   onSaveContribution: (amountVnd: number) => Promise<void>;
   onSaveDca: (capitalVnd: number, months: number | null) => Promise<void>;
+  onSaveCash: (amountVnd: number) => Promise<void>;
 }
 
 type Nhap = Record<AssetClass, { target: string; min: string; max: string }>;
@@ -44,7 +46,7 @@ function dinhDangVnd(v: number): string {
 }
 
 export function TargetSettingsForm({
-  targets, settings, onSaveTargets, onSaveContribution, onSaveDca,
+  targets, settings, onSaveTargets, onSaveContribution, onSaveDca, onSaveCash,
 }: Props) {
   const [nhap, setNhap] = useState<Nhap>(() => toNhap(targets));
   const [z, setZ] = useState(() =>
@@ -56,6 +58,10 @@ export function TargetSettingsForm({
   );
   const [soThang, setSoThang] = useState(() =>
     settings?.dca_months == null ? '' : String(settings.dca_months),
+  );
+  const [tienMat, setTienMat] = useState(() =>
+    settings === null || settings.cash_on_hand_vnd === 0
+      ? '' : String(settings.cash_on_hand_vnd),
   );
   const [loi, setLoi] = useState<string | null>(null);
   const [xong, setXong] = useState<string | null>(null);
@@ -79,6 +85,13 @@ export function TargetSettingsForm({
     capitalVnd: Math.max(0, vonHienTai),
     months: thangHienTai,
   });
+
+  // Có tiền mặt mà mục tiêu nhóm Tiền mặt ĐÃ LƯU vẫn là 0% ⇒ engine coi toàn bộ
+  // số tiền đó là "vượt mục tiêu" và đòi bán bớt. Đọc từ `targets` (đã lưu),
+  // không phải ô đang gõ, vì đó mới là thứ engine đang dùng.
+  const tienMatHienTai = parseVndAmount(tienMat) ?? 0;
+  const mucTieuCashDaLuu = targets.find((t) => t.asset_class === 'CASH')?.target_pct ?? 0;
+  const canhBaoMucTieuCash = tienMatHienTai > 0 && mucTieuCashDaLuu === 0;
 
   function set(c: AssetClass, khoa: 'target' | 'min' | 'max', v: string) {
     setNhap((p) => ({ ...p, [c]: { ...p[c], [khoa]: v } }));
@@ -160,6 +173,28 @@ export function TargetSettingsForm({
       setXong('Đã lưu kế hoạch DCA.');
     } catch (err) {
       console.error('Lỗi lưu kế hoạch DCA:', err);
+      setLoi(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDangLuu(false);
+    }
+  }
+
+  async function luuTienMat() {
+    setLoi(null);
+    setXong(null);
+    // Ô trống = không có tiền mặt ⇒ 0, hợp lệ. Gõ chữ thì parseVndAmount trả
+    // null — phải báo, không nuốt thành 0.
+    const n = tienMat.trim() === '' ? 0 : parseVndAmount(tienMat);
+    if (n === null) {
+      setLoi('Số tiền mặt không phải số tiền hợp lệ.');
+      return;
+    }
+    setDangLuu(true);
+    try {
+      await onSaveCash(n);
+      setXong('Đã lưu số tiền mặt.');
+    } catch (err) {
+      console.error('Lỗi lưu số tiền mặt:', err);
       setLoi(err instanceof Error ? err.message : String(err));
     } finally {
       setDangLuu(false);
@@ -361,10 +396,43 @@ export function TargetSettingsForm({
         </p>
       </div>
 
+      <hr className="border-border dark:border-border-dark" />
+
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-bold text-text dark:text-text-dark">
+          Tiền mặt đang có
+        </h3>
+        <p className="text-[13px] leading-relaxed text-text-muted dark:text-text-muted-dark">
+          Đơn vị <strong>đồng</strong>. Tổng tiền mặt bạn đang giữ (ví, tài khoản
+          ngân hàng…). Số này được tính vào nhóm <strong>Tiền mặt</strong> trong tỷ
+          trọng danh mục. Nhập tay — cập nhật lại khi số dư thay đổi. Để trống = 0.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={tienMat}
+            onChange={(e) => { setTienMat(e.target.value); setXong(null); }}
+            inputMode="numeric"
+            placeholder="50.000.000"
+            aria-label="Tiền mặt đang có (đồng)"
+            className={`${oNhap} max-w-[200px]`}
+          />
+          <button onClick={luuTienMat} disabled={dangLuu} className={nut}>
+            {dangLuu ? 'Đang lưu…' : 'Lưu'}
+          </button>
+        </div>
+        {canhBaoMucTieuCash && (
+          <p role="alert" className="text-[13px] text-amber-700 dark:text-amber-400">
+            ⚠ Mục tiêu nhóm <strong>Tiền mặt</strong> đang là <strong>0%</strong> nên
+            app sẽ coi toàn bộ tiền mặt là vượt mục tiêu. Đặt % mục tiêu cho Tiền mặt
+            ở bảng “Tỷ trọng mục tiêu” phía trên rồi bấm Lưu.
+          </p>
+        )}
+      </div>
+
       <div className="rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed text-text-muted dark:border-border-dark dark:bg-surface-2dark dark:text-text-muted-dark">
-        <strong className="text-text dark:text-text-dark">App chưa theo dõi tiền mặt
-        và khoản góp thực tế.</strong> Tab này tính tỷ trọng từ cổ phiếu, crypto và
-        vàng đang giữ. Việc “tháng này đã nộp tiền chưa”, cổ tức, lãi/lỗ đã thực
+        <strong className="text-text dark:text-text-dark">App chưa theo dõi khoản
+        góp thực tế.</strong> Tab này tính tỷ trọng từ cổ phiếu, crypto, vàng đang
+        giữ và số tiền mặt nhập ở trên. Việc “tháng này đã nộp tiền chưa”, cổ tức, lãi/lỗ đã thực
         hiện và Crash Reserve đều cần sổ giao dịch — chưa làm ở đợt này, nên app
         không cảnh báo về chúng thay vì cảnh báo dựa trên số liệu không có.
       </div>

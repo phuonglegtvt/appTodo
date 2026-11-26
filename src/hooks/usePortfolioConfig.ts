@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  fetchSettings, fetchTargets, saveDcaPlan, saveMonthlyContribution, saveTargets,
+  fetchSettings, fetchTargets, saveCashOnHand, saveDcaPlan, saveMonthlyContribution,
+  saveTargets,
 } from '../data/portfolioRepo';
 import type { SettingsRow, TargetRow } from '../types/portfolio';
 
-// Cấu hình tab Danh mục: 4 tỷ trọng mục tiêu + tiền góp hàng tháng + kế hoạch DCA.
+// Cấu hình tab Danh mục: 4 tỷ trọng mục tiêu + tiền góp hàng tháng + kế hoạch DCA
+// + tiền mặt đang có.
 // Nguồn: schema `portfolio` (allocation_targets, settings).
 //
 // KHÔNG realtime: cấu hình do chính người dùng sửa trên màn này, không có
@@ -23,6 +25,7 @@ interface UsePortfolioConfig {
   saveTargetRows: (rows: TargetRow[]) => Promise<void>;
   saveContribution: (amountVnd: number) => Promise<void>;
   saveDca: (capitalVnd: number, months: number | null) => Promise<void>;
+  saveCash: (amountVnd: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -89,10 +92,15 @@ export function usePortfolioConfig(userId: string): UsePortfolioConfig {
     await taiLai();
   }, [userId, taiLai]);
 
+  const saveCash = useCallback(async (amountVnd: number) => {
+    await saveCashOnHand(userId, amountVnd);
+    await taiLai();
+  }, [userId, taiLai]);
+
   const clearError = useCallback(() => setError(null), []);
 
   return {
     targets, settings, loading, error,
-    saveTargetRows, saveContribution, saveDca, clearError,
+    saveTargetRows, saveContribution, saveDca, saveCash, clearError,
   };
 }

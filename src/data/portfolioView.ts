@@ -94,6 +94,7 @@ export function buildPortfolioView(input: PortfolioViewInput): PortfolioView {
   const { rows, missingQuantitySymbols } = toAllocationRows({
     stocks: input.stocks, cryptos: input.cryptos, golds: input.golds,
     usdVnd: input.usdVnd,
+    cashOnHandVnd: input.settings?.cash_on_hand_vnd ?? 0,
   });
 
   const snapshot = mapToSnapshot({
