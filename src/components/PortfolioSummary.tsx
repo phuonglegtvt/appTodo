@@ -1,13 +1,14 @@
-import type { Stock, StockGroup } from '../types/stock';
-import { groupWeights, compareToTarget, TARGET_PROFILES } from '../lib/stockCalc';
+import type { RiskProfile, Stock, StockGroup } from '../types/stock';
+import {
+  groupWeights, compareToTarget, RISK_PROFILES, STOCK_GROUPS, TARGET_PROFILES,
+} from '../lib/stockCalc';
 
 const GROUP_META: Record<StockGroup, { label: string; bar: string }> = {
   attack: { label: 'Tấn công', bar: 'bg-red-500 dark:bg-red-400' },
   balance: { label: 'Cân bằng', bar: 'bg-green-500 dark:bg-green-400' },
   defense: { label: 'Phòng thủ', bar: 'bg-blue-500 dark:bg-blue-400' },
+  longterm: { label: 'Dài hạn', bar: 'bg-purple-500 dark:bg-purple-400' },
 };
-
-const GROUPS: StockGroup[] = ['attack', 'balance', 'defense'];
 
 /** Kẹp phần trăm về [0, 100] để phòng dữ liệu bất thường. */
 function clampPercent(value: number): number {
@@ -28,11 +29,11 @@ const NGHIN_DONG = 1_000;
 
 interface Props {
   stocks: Stock[];
-  profile: StockGroup;
-  onProfile: (p: StockGroup) => void;
+  profile: RiskProfile;
+  onProfile: (p: RiskProfile) => void;
 }
 
-/** Tổng vốn đã đầu tư + 3 thanh tỷ trọng thực tế + so với khẩu vị rủi ro mục tiêu. */
+/** Tổng vốn đã đầu tư + 4 thanh tỷ trọng thực tế + so với khẩu vị rủi ro mục tiêu. */
 export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
   const weights = groupWeights(stocks);
   const diff = compareToTarget(weights, profile);
@@ -52,7 +53,7 @@ export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
 
         {/* Bộ chọn khẩu vị rủi ro */}
         <div className="flex gap-0.5 rounded-lg border border-border bg-surface-2 p-0.5 dark:border-border-dark dark:bg-surface-2dark">
-          {GROUPS.map((g) => (
+          {RISK_PROFILES.map((g) => (
             <button
               key={g}
               onClick={() => onProfile(g)}
@@ -69,9 +70,9 @@ export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
         </div>
       </div>
 
-      {/* 3 thanh tỷ trọng: thực tế (đậm) + mục tiêu (mờ) + chênh lệch */}
+      {/* 4 thanh tỷ trọng: thực tế (đậm) + mục tiêu (mờ) + chênh lệch */}
       <div className="flex flex-col gap-2.5">
-        {GROUPS.map((g) => {
+        {STOCK_GROUPS.map((g) => {
           const actual = weights.byGroup[g].percent;
           const d = diff[g];
           return (

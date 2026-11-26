@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Stock, StockUpdate, StockGroup } from '../types/stock';
 import { StockRow } from './StockRow';
+import { STOCK_GROUPS } from '../lib/stockCalc';
 import { SortableTh } from './SortableTh';
 import { nextSort, sortRows, type SortState } from '../lib/tableSort';
 import { STOCK_COLUMNS, stockSortValue, type StockSortKey } from '../lib/stockSort';
@@ -9,9 +10,8 @@ const GROUP_META: Record<StockGroup, { label: string; head: string }> = {
   attack: { label: 'Tấn công (rủi ro cao)', head: 'text-red-600 dark:text-red-400' },
   balance: { label: 'Cân bằng (rủi ro trung bình)', head: 'text-green-600 dark:text-green-400' },
   defense: { label: 'Phòng thủ (rủi ro thấp)', head: 'text-blue-600 dark:text-blue-400' },
+  longterm: { label: 'Đầu tư dài hạn', head: 'text-purple-600 dark:text-purple-400' },
 };
-
-const GROUPS: StockGroup[] = ['attack', 'balance', 'defense'];
 
 interface Props {
   stocks: Stock[];
@@ -21,9 +21,9 @@ interface Props {
 
 const th = 'px-2 py-2 text-left text-[11px] font-bold tracking-[0.06em] text-text-muted dark:text-text-muted-dark';
 
-/** Bảng cổ phiếu gom theo 3 nhóm rủi ro, mỗi nhóm một khối có tiêu đề màu. */
+/** Bảng cổ phiếu gom theo 4 nhóm, mỗi nhóm một khối có tiêu đề màu. */
 export function StockTable({ stocks, onUpdate, onDelete }: Props) {
-  // MỘT state sort dùng chung cho cả 3 nhóm: bấm "% so đỉnh" thì cả ba khối
+  // MỘT state sort dùng chung cho cả 4 nhóm: bấm "% so đỉnh" thì cả ba khối
   // cùng sắp theo cột đó. Mỗi nhóm một state riêng sẽ cho ra ba bảng sắp khác
   // nhau mà nhìn tiêu đề không phân biệt được.
   //
@@ -39,7 +39,7 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      {GROUPS.map((g) => {
+      {STOCK_GROUPS.map((g) => {
         const rows = sortRows(stocks.filter((s) => s.group === g), sort, stockSortValue);
         if (rows.length === 0) return null;
         return (
@@ -87,7 +87,7 @@ export function StockTable({ stocks, onUpdate, onDelete }: Props) {
         </p>
         <p>
           <strong>Sắp xếp</strong>: bấm tiêu đề cột — tăng dần → giảm dần → bỏ sắp xếp.
-          Cả 3 nhóm cùng sắp theo cột đó; ô chưa nhập (—) luôn nằm cuối.
+          Cả 4 nhóm cùng sắp theo cột đó; ô chưa nhập (—) luôn nằm cuối.
           Mặc định sắp theo <strong>% so ngưỡng</strong>, mã rẻ hơn ngưỡng nhiều nhất
           lên đầu. Hai cột phần trăm <strong>bỏ dấu trừ</strong> cho gọn — số có
           dấu <strong>+</strong> nghĩa là đang CAO hơn mốc.

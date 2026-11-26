@@ -6,8 +6,9 @@ import {
   isBelowThreshold,
   isAboveProtect,
   TARGET_PROFILES,
+  RISK_PROFILES,
 } from './stockCalc';
-import type { Stock, StockGroup } from '../types/stock';
+import type { Stock } from '../types/stock';
 
 // Tạo Stock mẫu; chỉ cần override phần liên quan cho từng test.
 function makeStock(over: Partial<Stock> = {}): Stock {
@@ -92,15 +93,14 @@ describe('groupWeights', () => {
 });
 
 describe('TARGET_PROFILES', () => {
-  it('3 khẩu vị đã chốt, mỗi khẩu vị cộng đủ 100', () => {
-    const keys: StockGroup[] = ['attack', 'balance', 'defense'];
-    for (const k of keys) {
+  it('3 khẩu vị đã chốt (4 nhóm), mỗi khẩu vị cộng đủ 100', () => {
+    for (const k of RISK_PROFILES) {
       const p = TARGET_PROFILES[k];
-      expect(p.attack + p.balance + p.defense).toBe(100);
+      expect(p.attack + p.balance + p.defense + p.longterm).toBe(100);
     }
-    expect(TARGET_PROFILES.attack).toEqual({ attack: 30, balance: 30, defense: 40 });
-    expect(TARGET_PROFILES.balance).toEqual({ attack: 20, balance: 40, defense: 40 });
-    expect(TARGET_PROFILES.defense).toEqual({ attack: 10, balance: 40, defense: 50 });
+    expect(TARGET_PROFILES.attack).toEqual({ attack: 25, balance: 25, defense: 30, longterm: 20 });
+    expect(TARGET_PROFILES.balance).toEqual({ attack: 15, balance: 35, defense: 30, longterm: 20 });
+    expect(TARGET_PROFILES.defense).toEqual({ attack: 5, balance: 35, defense: 40, longterm: 20 });
   });
 });
 
@@ -111,11 +111,21 @@ describe('compareToTarget', () => {
       makeStock({ group: 'balance', invested_amount: 30 }),
       makeStock({ group: 'defense', invested_amount: 20 }),
     ]);
-    // thực tế 50/30/20 so khẩu vị Cân bằng 20/40/40 → +30 / -10 / -20
+    // thực tế 50/30/20/0 so khẩu vị Cân bằng 15/35/30/20 → +35 / -5 / -10 / -20
     const diff = compareToTarget(weights, 'balance');
-    expect(diff.attack).toBeCloseTo(30, 5);
-    expect(diff.balance).toBeCloseTo(-10, 5);
-    expect(diff.defense).toBeCloseTo(-20, 5);
+    expect(diff.attack).toBeCloseTo(35, 5);
+    expect(diff.balance).toBeCloseTo(-5, 5);
+    expect(diff.defense).toBeCloseTo(-10, 5);
+    expect(diff.longterm).toBeCloseTo(-20, 5);
+  });
+
+  it('nhóm Dài hạn được tính vào tổng và tỷ trọng', () => {
+    const w = groupWeights([
+      makeStock({ group: 'balance', invested_amount: 60 }),
+      makeStock({ group: 'longterm', invested_amount: 40 }),
+    ]);
+    expect(w.totalThousandVnd).toBe(100);
+    expect(w.byGroup.longterm.percent).toBeCloseTo(40, 5);
   });
 });
 

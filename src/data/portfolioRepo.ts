@@ -113,7 +113,7 @@ export async function fetchWatchlist(userId: string): Promise<WatchlistItem[]> {
   throwIfError('tải watchlist cổ phiếu', error);
 
   type Row = {
-    ticker: string; company_name: string; group: 'attack' | 'balance' | 'defense';
+    ticker: string; company_name: string; group: 'attack' | 'balance' | 'defense' | 'longterm';
     current_price: number | null; price_threshold: number | null;
   };
   return ((data ?? []) as Row[]).map((r) => ({

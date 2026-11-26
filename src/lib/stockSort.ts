@@ -9,11 +9,12 @@ import type { Stock } from '../types/stock';
 import type { ColumnDef, SortValue } from './tableSort';
 import { computeYield } from './stockCalc';
 import { drawdownFromPeakPct, gapToPricePct } from './peakDrawdown';
+import { avgCostThousand } from './stockTransaction';
 
 export type StockSortKey =
   | 'ticker' | 'company_name' | 'price_threshold' | 'gap_threshold' | 'price_protect'
   | 'current_price' | 'peak_price' | 'drawdown' | 'dividend' | 'yield'
-  | 'invested_amount' | 'quantity';
+  | 'invested_amount' | 'quantity' | 'avg_cost';
 
 /**
  * Cách lấy giá trị SO SÁNH của từng cột.
@@ -38,6 +39,7 @@ const GIA_TRI: Record<StockSortKey, (s: Stock) => SortValue> = {
   yield: (s) => computeYield(s),
   invested_amount: (s) => s.invested_amount,
   quantity: (s) => s.quantity,
+  avg_cost: (s) => avgCostThousand(s),
 };
 
 /**
@@ -58,6 +60,7 @@ const NHAN: [StockSortKey, string][] = [
   ['yield', 'Tỷ suất'],
   ['invested_amount', 'Đã đầu tư'],
   ['quantity', 'Số lượng'],
+  ['avg_cost', 'Giá vốn TB'],
 ];
 
 export const STOCK_COLUMNS: ColumnDef<Stock, StockSortKey>[] = NHAN.map(([key, label]) => ({

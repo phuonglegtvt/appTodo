@@ -13,12 +13,12 @@ function stock(over: Partial<Stock> = {}): Stock {
 }
 
 describe('STOCK_COLUMNS — khai báo cột', () => {
-  test('đúng 12 cột sort được, theo đúng thứ tự ô của StockRow', () => {
+  test('đúng 13 cột sort được, theo đúng thứ tự ô của StockRow', () => {
     // Danh sách này vẽ ra tiêu đề bảng, nên thứ tự ở đây PHẢI khớp thứ tự <td>
     // trong StockRow. Lệch một ô là cả bảng lệch nhãn mà không ai báo lỗi.
     expect(STOCK_COLUMNS.map((c) => c.label)).toEqual([
       'Mã', 'Tên công ty', 'Giá ngưỡng', '% so ngưỡng', 'Giá bảo vệ', 'Giá hiện tại',
-      'Đỉnh LS', '% so đỉnh', 'Cổ tức', 'Tỷ suất', 'Đã đầu tư', 'Số lượng',
+      'Đỉnh LS', '% so đỉnh', 'Cổ tức', 'Tỷ suất', 'Đã đầu tư', 'Số lượng', 'Giá vốn TB',
     ]);
   });
 

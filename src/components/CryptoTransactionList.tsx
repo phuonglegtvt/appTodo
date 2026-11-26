@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { latestIdsBy } from '../lib/latestTx';
 import type { Crypto } from '../types/crypto';
 import type { CryptoTransaction } from '../types/cryptoTransaction';
 
@@ -14,12 +15,7 @@ interface Props {
 
 /** id giao dịch mới nhất (theo thời điểm ghi) của từng coin. */
 export function latestTxIds(list: CryptoTransaction[]): Set<string> {
-  const moiNhat = new Map<string, CryptoTransaction>();
-  for (const t of list) {
-    const cu = moiNhat.get(t.crypto_id);
-    if (!cu || t.created_at > cu.created_at) moiNhat.set(t.crypto_id, t);
-  }
-  return new Set([...moiNhat.values()].map((t) => t.id));
+  return latestIdsBy(list, (t) => t.crypto_id);
 }
 
 function vnd(v: number): string {
