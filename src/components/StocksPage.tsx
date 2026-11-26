@@ -24,7 +24,7 @@ export function StocksPage({ userId }: Props) {
   const [priceError, setPriceError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [query, setQuery] = useState('');
-  const { order, move } = useStockGroupOrder();
+  const { order, move, error: orderError, clearError: clearOrderError } = useStockGroupOrder(userId);
   const {
     transactions, loading: loadingTx, error: txError, record, undo, clearError: clearTxError,
   } = useStockTransactions(userId);
@@ -103,6 +103,7 @@ export function StocksPage({ userId }: Props) {
       {error && <ErrorBanner message={error} onClose={clearError} />}
       {priceError && <ErrorBanner message={priceError} onClose={() => setPriceError(null)} />}
       {txError && <ErrorBanner message={txError} onClose={clearTxError} />}
+      {orderError && <ErrorBanner message={orderError} onClose={clearOrderError} />}
 
       <input
         type="search"
