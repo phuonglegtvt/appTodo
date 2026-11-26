@@ -56,6 +56,8 @@ export interface SettingsRow {
   dca_capital_vnd: number;
   /** Số tháng rải hết `dca_capital_vnd`. `null` = chưa đặt. */
   dca_months: number | null;
+  /** Tiền mặt đang có, người dùng nhập tay (ĐỒNG). Tính vào nhóm CASH. */
+  cash_on_hand_vnd: number;
 }
 
 /** Một dòng của `portfolio.crash_reserve_levels`. */

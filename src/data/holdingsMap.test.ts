@@ -138,7 +138,7 @@ describe('toAllocationRows — thiếu giá thì để NULL cho engine chặn k�
 });
 
 describe('toAllocationRows — hình dạng khớp hợp đồng AllocationRow', () => {
-  it('không sinh dòng CASH nào: hồ sơ này không theo dõi tiền mặt', () => {
+  it('không nhập tiền mặt thì không sinh dòng CASH nào', () => {
     const { rows } = toAllocationRows({
       ...empty,
       stocks: [stock({ quantity: 100, current_price: 98 })],
@@ -172,5 +172,26 @@ describe('toAllocationRows — tỷ giá bất thường thì NÉM, không âm t
       ...empty, usdVnd: NaN,
       cryptos: [crypto({ quantity: 1, current_price: 60_000 })],
     })).toThrow(/tỷ giá/i);
+  });
+});
+
+describe('toAllocationRows — tiền mặt nhập tay (ĐỒNG, không quy đổi)', () => {
+  it('có tiền mặt → đúng một dòng CASH, không đặt tên cho nhóm nào', () => {
+    const { rows } = toAllocationRows({ ...empty, cashOnHandVnd: 50_000_000 });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].asset_class).toBe('CASH');
+    expect(rows[0].cash_balance_vnd).toBe(50_000_000);
+    expect(rows[0].market_value_vnd).toBe(50_000_000);
+    expect(rows[0].earmarked_for).toBeNull();
+  });
+
+  it('tiền mặt = 0 → không sinh dòng nào', () => {
+    const { rows } = toAllocationRows({ ...empty, cashOnHandVnd: 0 });
+    expect(rows).toHaveLength(0);
+  });
+
+  it('tiền mặt âm hoặc NaN → ném lỗi, không âm thầm bỏ qua', () => {
+    expect(() => toAllocationRows({ ...empty, cashOnHandVnd: -1 })).toThrow(/tiền mặt/);
+    expect(() => toAllocationRows({ ...empty, cashOnHandVnd: Number.NaN })).toThrow(/tiền mặt/);
   });
 });

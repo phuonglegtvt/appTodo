@@ -22,7 +22,7 @@ const SETTINGS: SettingsRow = {
   strong_rebalance_pp: 5, min_sell_amount_vnd: 5_000_000,
   rounding_step_vnd: 100_000, allocation_formula: 'PROPORTIONAL_GAP',
   cash_eligible_for_new_capital: true, sell_to: 'TARGET',
-  dca_capital_vnd: 0, dca_months: null,
+  dca_capital_vnd: 0, dca_months: null, cash_on_hand_vnd: 0,
 };
 
 function stock(over: Partial<Stock> = {}): Stock {
@@ -205,5 +205,28 @@ describe('buildPortfolioView — chi tiết tiền chia tháng này (cho UI gi�
     const view = buildPortfolioView({ ...base, settings: null });
     expect(view.monthlyPool.totalVnd).toBe(3_000_000);
     expect(view.monthlyPool.dcaSliceVnd).toBe(0);
+  });
+});
+
+describe('buildPortfolioView — tiền mặt nhập ở màn Cấu hình', () => {
+  // 90tr cổ phiếu (1.000 cổ × 90 nghìn) + 10tr tiền mặt ⇒ tiền mặt = 10%.
+  const view = buildPortfolioView({
+    ...base,
+    settings: { ...SETTINGS, cash_on_hand_vnd: 10_000_000 },
+    stocks: [stock({ quantity: 1_000, current_price: 90, invested_amount: 80_000 })],
+  });
+
+  it('tiền mặt vào nhóm CASH của snapshot', () => {
+    expect(view.snapshot.classValues.CASH).toBe(10_000_000);
+    expect(view.byClass.CASH.marketValueVnd).toBe(10_000_000);
+  });
+
+  it('tỷ trọng tính trên tổng có cả tiền mặt', () => {
+    const cash = view.weights.find((w) => w.assetClass === 'CASH');
+    expect(cash?.weightPct).toBeCloseTo(10, 5);
+  });
+
+  it('nhóm CASH hiện lên bảng khi đang giữ tiền mặt, dù mục tiêu 0%', () => {
+    expect(view.visibleClasses).toContain('CASH');
   });
 });

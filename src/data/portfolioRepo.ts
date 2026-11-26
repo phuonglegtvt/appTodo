@@ -67,7 +67,7 @@ export async function fetchSettings(userId: string): Promise<SettingsRow | null>
   // (chuỗi select() phải là một literal duy nhất — xem lý do ở fetchAllocation)
   const { data, error } = await portfolioSchema()
     .from('settings')
-    .select('monthly_contribution_vnd, watch_deviation_pp, strong_rebalance_pp, min_sell_amount_vnd, rounding_step_vnd, allocation_formula, cash_eligible_for_new_capital, sell_to, dca_capital_vnd, dca_months')
+    .select('monthly_contribution_vnd, watch_deviation_pp, strong_rebalance_pp, min_sell_amount_vnd, rounding_step_vnd, allocation_formula, cash_eligible_for_new_capital, sell_to, dca_capital_vnd, dca_months, cash_on_hand_vnd')
     .eq('user_id', userId)
     .maybeSingle();
   throwIfError('tải cấu hình', error);
@@ -294,4 +294,22 @@ export async function saveDcaPlan(
     .update({ dca_capital_vnd: capitalVnd, dca_months: months })
     .eq('user_id', userId);
   throwIfError('lưu kế hoạch DCA', error);
+}
+
+/**
+ * Lưu số tiền mặt đang có (ĐỒNG). Cùng luật với CHECK settings_cash_on_hand_khong_am
+ * — báo trước bằng tiếng Việt thay vì để DB trả tên constraint.
+ */
+export async function saveCashOnHand(userId: string, amountVnd: number): Promise<void> {
+  if (!Number.isFinite(amountVnd)) {
+    throw new Error('Số tiền mặt không phải số hợp lệ.');
+  }
+  if (amountVnd < 0) {
+    throw new Error(`Số tiền mặt không thể âm (đang là ${amountVnd} đ).`);
+  }
+  const { error } = await portfolioSchema()
+    .from('settings')
+    .update({ cash_on_hand_vnd: amountVnd })
+    .eq('user_id', userId);
+  throwIfError('lưu số tiền mặt', error);
 }

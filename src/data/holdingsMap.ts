@@ -30,7 +30,15 @@ export interface HoldingsInput {
   golds: Gold[];
   /** Tỷ giá USD→VND. Phải là số dương hữu hạn — 0 hay NaN sẽ bị ném lỗi. */
   usdVnd: number;
+  /**
+   * Tiền mặt đang có, ĐỒNG (`portfolio.settings.cash_on_hand_vnd`). Không truyền
+   * = 0. Chỉ `toAllocationRows` dùng; lũy kế "đã đầu tư" không tính tiền mặt.
+   */
+  cashOnHandVnd?: number;
 }
+
+/** instrument_id giả cho dòng tiền mặt nhập tay — không có bảng nguồn nào. */
+export const CASH_ON_HAND_ID = 'cash-on-hand';
 
 export interface HoldingsMapResult {
   rows: AllocationRow[];
@@ -156,6 +164,32 @@ export function toAllocationRows(input: HoldingsInput): HoldingsMapResult {
       price_as_of: g.updated_at,
       market_value_vnd: nhan(g.quantity, g.current_price),
     }));
+  }
+
+  // Tiền mặt: MỘT dòng CASH không đặt tên cho nhóm nào (earmarked_for = null),
+  // nên mapToSnapshot cộng nó vào classValues.CASH. Chặn số rác ngay đây để
+  // lỗi nói đúng nguồn ("ô tiền mặt ở màn Cấu hình") thay vì tên cột DB.
+  const tienMat = input.cashOnHandVnd ?? 0;
+  if (!Number.isFinite(tienMat) || tienMat < 0) {
+    throw new Error(
+      `Số tiền mặt không hợp lệ: ${tienMat}. Sửa lại ô "Tiền mặt đang có" ở màn Cấu hình.`,
+    );
+  }
+  if (tienMat > 0) {
+    rows.push({
+      instrument_id: CASH_ON_HAND_ID,
+      asset_class: 'CASH',
+      symbol: 'Tiền mặt',
+      earmarked_for: null,
+      quantity: null,
+      // Tiền mặt không có lãi/lỗ: vốn = giá trị ⇒ cột lãi/lỗ hiện 0 chứ không
+      // để trống như thể thiếu dữ liệu.
+      cost_basis_vnd: tienMat,
+      cash_balance_vnd: tienMat,
+      price_vnd: null,
+      price_as_of: null,
+      market_value_vnd: tienMat,
+    });
   }
 
   return { rows, missingQuantitySymbols };

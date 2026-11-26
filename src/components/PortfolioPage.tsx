@@ -43,7 +43,7 @@ export function PortfolioPage({ userId }: Props) {
   } = useGolds(userId);
   const {
     targets, settings, loading: loadingConfig, error: errConfig,
-    saveTargetRows, saveContribution, saveDca, clearError: clearConfigError,
+    saveTargetRows, saveContribution, saveDca, saveCash, clearError: clearConfigError,
   } = usePortfolioConfig(userId);
   const { rate, refreshRate, loadingRate, rateError, clearRateError } = useCurrency();
 
@@ -274,6 +274,7 @@ export function PortfolioPage({ userId }: Props) {
               onSaveTargets={saveTargetRows}
               onSaveContribution={saveContribution}
               onSaveDca={saveDca}
+              onSaveCash={saveCash}
             />
           </section>
           <section className="surface-card p-2 sm:p-4">

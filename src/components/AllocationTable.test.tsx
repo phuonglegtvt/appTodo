@@ -20,7 +20,7 @@ const SETTINGS: SettingsRow = {
   strong_rebalance_pp: 5, min_sell_amount_vnd: 5_000_000,
   rounding_step_vnd: 100_000, allocation_formula: 'PROPORTIONAL_GAP',
   cash_eligible_for_new_capital: true, sell_to: 'TARGET',
-  dca_capital_vnd: 0, dca_months: null,
+  dca_capital_vnd: 0, dca_months: null, cash_on_hand_vnd: 0,
 };
 
 const stock = (over: Partial<Stock>): Stock => ({
