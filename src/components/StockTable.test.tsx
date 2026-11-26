@@ -4,6 +4,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { StockTable } from './StockTable';
+import { STOCK_GROUPS } from '../lib/stockCalc';
 import type { Stock } from '../types/stock';
 
 function stock(over: Partial<Stock>): Stock {
@@ -24,7 +25,12 @@ function maTheoThuTu(): string[] {
 }
 
 function ve(stocks: Stock[]) {
-  render(<StockTable stocks={stocks} onUpdate={vi.fn()} onDelete={vi.fn()} />);
+  render(
+    <StockTable
+      stocks={stocks} order={STOCK_GROUPS} onMove={vi.fn()}
+      onUpdate={vi.fn()} onDelete={vi.fn()}
+    />,
+  );
 }
 
 describe('StockTable — sắp xếp mặc định', () => {

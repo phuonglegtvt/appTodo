@@ -1,6 +1,6 @@
 import type { RiskProfile, Stock, StockGroup } from '../types/stock';
 import {
-  groupWeights, compareToTarget, RISK_PROFILES, STOCK_GROUPS, TARGET_PROFILES,
+  groupWeights, compareToTarget, RISK_PROFILES, TARGET_PROFILES,
 } from '../lib/stockCalc';
 
 const GROUP_META: Record<StockGroup, { label: string; bar: string }> = {
@@ -31,10 +31,12 @@ interface Props {
   stocks: Stock[];
   profile: RiskProfile;
   onProfile: (p: RiskProfile) => void;
+  /** Cùng thứ tự với các bảng bên dưới. */
+  order: StockGroup[];
 }
 
 /** Tổng vốn đã đầu tư + 4 thanh tỷ trọng thực tế + so với khẩu vị rủi ro mục tiêu. */
-export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
+export function PortfolioSummary({ stocks, profile, onProfile, order }: Props) {
   const weights = groupWeights(stocks);
   const diff = compareToTarget(weights, profile);
   const target = TARGET_PROFILES[profile];
@@ -72,7 +74,7 @@ export function PortfolioSummary({ stocks, profile, onProfile }: Props) {
 
       {/* 4 thanh tỷ trọng: thực tế (đậm) + mục tiêu (mờ) + chênh lệch */}
       <div className="flex flex-col gap-2.5">
-        {STOCK_GROUPS.map((g) => {
+        {order.map((g) => {
           const actual = weights.byGroup[g].percent;
           const d = diff[g];
           return (

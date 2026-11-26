@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useStocks } from '../hooks/useStocks';
 import { useStockTransactions } from '../hooks/useStockTransactions';
+import { useStockGroupOrder } from '../hooks/useStockGroupOrder';
 import { fetchQuotes } from '../lib/stockPrice';
 import { nextPeak } from '../lib/peakDrawdown';
 import { filterStocks } from '../lib/stockFilters';
@@ -23,6 +24,7 @@ export function StocksPage({ userId }: Props) {
   const [priceError, setPriceError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [query, setQuery] = useState('');
+  const { order, move } = useStockGroupOrder();
   const {
     transactions, loading: loadingTx, error: txError, record, undo, clearError: clearTxError,
   } = useStockTransactions(userId);
@@ -111,7 +113,7 @@ export function StocksPage({ userId }: Props) {
         className="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text outline-none transition-colors placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/30 dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:placeholder:text-text-muted-dark dark:focus:border-primary-dark"
       />
 
-      <PortfolioSummary stocks={stocks} profile={profile} onProfile={setProfile} />
+      <PortfolioSummary stocks={stocks} profile={profile} onProfile={setProfile} order={order} />
 
       <StockForm onAdd={addStock} />
 
@@ -126,7 +128,7 @@ export function StocksPage({ userId }: Props) {
           Không có mã nào khớp "{query.trim()}".
         </p>
       ) : (
-        <StockTable stocks={visibleStocks} onUpdate={updateStock} onDelete={removeStock} />
+        <StockTable stocks={visibleStocks} order={order} onMove={move} onUpdate={updateStock} onDelete={removeStock} />
       )}
 
       <section className="flex flex-col gap-3">
