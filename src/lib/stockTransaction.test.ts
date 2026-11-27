@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyStockTx, avgCostThousand, validateStockTx } from './stockTransaction';
+import { applyStockTx, avgCostThousand, validateStockTx, planStockTxEdit, type RecordedStockTx } from './stockTransaction';
 
 describe('applyStockTx — MUA', () => {
   it('mã chưa có gì: số lượng và vốn = đúng lần mua', () => {
@@ -72,5 +72,53 @@ describe('avgCostThousand', () => {
     expect(avgCostThousand({ quantity: null, invested_amount: 100 })).toBeNull();
     expect(avgCostThousand({ quantity: 10, invested_amount: null })).toBeNull();
     expect(avgCostThousand({ quantity: 0, invested_amount: 0 })).toBeNull();
+  });
+});
+
+describe('planStockTxEdit', () => {
+  // Dây chuyền thật: 0 → mua 100 cổ (2.000) → mua 50 cổ (1.500) → bán 60 cổ (2.400).
+  const chain: RecordedStockTx[] = [
+    { id: 'a', created_at: '2026-01-01T00:00:00Z', trade_date: '2026-01-01', side: 'BUY', quantity: 100, price_thousand: 20, amount_thousand: 2000,
+      before_quantity: 0, before_invested_amount: 0, after_quantity: 100, after_invested_amount: 2000 },
+    { id: 'c', created_at: '2026-01-03T00:00:00Z', trade_date: '2026-01-03', side: 'SELL', quantity: 60, price_thousand: 40, amount_thousand: 2400,
+      before_quantity: 150, before_invested_amount: 3500, after_quantity: 90, after_invested_amount: 2100 },
+    { id: 'b', created_at: '2026-01-02T00:00:00Z', trade_date: '2026-01-02', side: 'BUY', quantity: 50, price_thousand: 30, amount_thousand: 1500,
+      before_quantity: 100, before_invested_amount: 2000, after_quantity: 150, after_invested_amount: 3500 },
+  ];
+
+  it('sửa giao dịch đầu ⇒ tính lại cả dây chuyền theo thứ tự ghi', () => {
+    const plan = planStockTxEdit(chain, 'a', { side: 'BUY', quantity: 50, price_thousand: 20, amount_thousand: 1000 });
+    expect(plan.updates.map((u) => u.id)).toEqual(['a', 'b', 'c']);
+    expect(plan.updates[0].after).toEqual({ quantity: 50, invested_amount: 1000 });
+    expect(plan.updates[1].before).toEqual({ quantity: 50, invested_amount: 1000 });
+    expect(plan.updates[1].after).toEqual({ quantity: 100, invested_amount: 2500 });
+    // Bán 60/100: vốn phần bán = 1.500 ⇒ còn 40 cổ, vốn 1.000; lãi chốt = 2.400 − 1.500.
+    expect(plan.final).toEqual({ quantity: 40, invested_amount: 1000 });
+    expect(plan.updates[2].realizedPnlThousand).toBeCloseTo(900);
+    expect(plan.expectedCurrent).toEqual({ quantity: 90, invested_amount: 2100 });
+  });
+
+  it('sửa giao dịch mới nhất ⇒ chỉ một dòng cập nhật', () => {
+    const plan = planStockTxEdit(chain, 'c', { side: 'SELL', quantity: 30, price_thousand: 40, amount_thousand: 1200 });
+    expect(plan.updates).toHaveLength(1);
+    expect(plan.final.quantity).toBe(120);
+  });
+
+  it('sửa làm lệnh bán phía sau vượt số đang có ⇒ báo rõ giao dịch nào', () => {
+    expect(() => planStockTxEdit(chain, 'a', { side: 'BUY', quantity: 5, price_thousand: 20, amount_thousand: 100 }))
+      .toThrow(/bán 60 cổ ngày 03\/01\/2026 phía sau không còn hợp lệ/);
+  });
+
+  it('dây chuyền bị sửa tay ở giữa ⇒ từ chối', () => {
+    const dut = chain.map((t) => (t.id === 'c' ? { ...t, before_quantity: 999 } : t));
+    expect(() => planStockTxEdit(dut, 'a', { side: 'BUY', quantity: 100, price_thousand: 20, amount_thousand: 2000 }))
+      .toThrow(/sửa tay/);
+    // Sửa chính giao dịch cuối thì không cần dây chuyền phía sau ⇒ vẫn được.
+    expect(() => planStockTxEdit(dut, 'c', { side: 'SELL', quantity: 10, price_thousand: 40, amount_thousand: 400 })).not.toThrow();
+  });
+
+  it('không thấy giao dịch / số liệu sai ⇒ ném lỗi', () => {
+    expect(() => planStockTxEdit(chain, 'x', { side: 'BUY', quantity: 1, price_thousand: 1, amount_thousand: 1 })).toThrow(/Không tìm thấy/);
+    expect(() => planStockTxEdit(chain, 'a', { side: 'BUY', quantity: 1.5, price_thousand: 1, amount_thousand: 1 })).toThrow(/số nguyên/);
   });
 });

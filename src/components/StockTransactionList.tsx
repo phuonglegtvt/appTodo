@@ -1,15 +1,18 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { latestIdsBy } from '../lib/latestTx';
 import type { Stock } from '../types/stock';
-import type { StockTransaction } from '../types/stockTransaction';
+import type { NewStockTransaction, StockTransaction } from '../types/stockTransaction';
+import { StockTransactionEditRow } from './StockTransactionEditRow';
 
 // Lịch sử giao dịch cổ phiếu, mới nhất trước. Chỉ giao dịch MỚI NHẤT của mỗi mã
-// có nút Hoàn tác (xem lib/latestTx.ts).
+// có nút Hoàn tác (xem lib/latestTx.ts). Mọi giao dịch đều Sửa được — sửa một
+// giao dịch cũ thì các giao dịch sau nó của cùng mã được tính lại.
 
 interface Props {
   transactions: StockTransaction[];
   stocks: Stock[];
   onUndo: (txId: string) => Promise<void>;
+  onEdit: (txId: string, input: NewStockTransaction) => Promise<void>;
 }
 
 /** Nghìn đồng → chuỗi đồng đầy đủ. */
@@ -20,9 +23,10 @@ function dong(thousand: number): string {
 const th = 'px-2 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted dark:text-text-muted-dark';
 const td = 'px-2 py-2 text-[13px] tabular-nums text-text dark:text-text-dark';
 
-export function StockTransactionList({ transactions, stocks, onUndo }: Props) {
+export function StockTransactionList({ transactions, stocks, onUndo, onEdit }: Props) {
   const [dangHoanTac, setDangHoanTac] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
+  const [dangSua, setDangSua] = useState<string | null>(null);
 
   const maCuaId = new Map(stocks.map((s) => [s.id, s.ticker]));
   const coTheHoanTac = latestIdsBy(transactions, (t) => t.stock_id);
@@ -74,7 +78,8 @@ export function StockTransactionList({ transactions, stocks, onUndo }: Props) {
             {transactions.map((t) => {
               const laiLo = t.realized_pnl_thousand === null ? null : Number(t.realized_pnl_thousand);
               return (
-                <tr key={t.id} className="border-b border-border text-right last:border-0 dark:border-border-dark">
+                <Fragment key={t.id}>
+                <tr className="border-b border-border text-right last:border-0 dark:border-border-dark">
                   <td className={`${td} text-left`}>{t.trade_date.split('-').reverse().join('/')}</td>
                   <td className={`${td} text-left font-semibold`}>{maCuaId.get(t.stock_id) ?? '?'}</td>
                   <td className={`${td} text-left`}>
@@ -97,7 +102,15 @@ export function StockTransactionList({ transactions, stocks, onUndo }: Props) {
                   <td className={`${td} max-w-[14rem] truncate text-left text-text-muted dark:text-text-muted-dark`} title={t.note}>
                     {t.note}
                   </td>
-                  <td className={td}>
+                  <td className={`${td} whitespace-nowrap`}>
+                    <button
+                      onClick={() => setDangSua(dangSua === t.id ? null : t.id)}
+                      disabled={dangHoanTac !== null}
+                      aria-expanded={dangSua === t.id}
+                      className="rounded-md px-2 py-1 text-[12px] font-semibold text-text-muted transition hover:bg-surface-2 hover:text-text disabled:opacity-50 dark:text-text-muted-dark dark:hover:bg-surface-2dark dark:hover:text-text-dark"
+                    >
+                      {dangSua === t.id ? 'Đóng' : 'Sửa'}
+                    </button>
                     {coTheHoanTac.has(t.id) && (
                       <button
                         onClick={() => hoanTac(t)}
@@ -109,6 +122,17 @@ export function StockTransactionList({ transactions, stocks, onUndo }: Props) {
                     )}
                   </td>
                 </tr>
+                {dangSua === t.id && (
+                  <StockTransactionEditRow
+                    tx={t}
+                    ticker={maCuaId.get(t.stock_id) ?? '?'}
+                    transactions={transactions}
+                    colSpan={9}
+                    onSave={onEdit}
+                    onClose={() => setDangSua(null)}
+                  />
+                )}
+                </Fragment>
               );
             })}
           </tbody>
