@@ -6,17 +6,24 @@
 // Ở đây không có múi giờ nào can thiệp được.
 
 import type { CashEntry } from '../types/cashEntry';
-import { laVongTien } from './cashCategories';
+import { laDauTu, laVongTien } from './cashCategories';
 
 export interface TongHopThang {
   /** Tổng thu trong kỳ (VND). */
   thu: number;
   /** Tổng chi THẬT — đã loại các khoản vòng tiền. */
   chi: number;
-  /** Tiền ra rồi quay về ví (đáo hạn thẻ). Theo dõi riêng, không phải chi. */
+  /** Vòng tiền (đáo hạn thẻ) — cả chiều ra lẫn chiều về. Theo dõi riêng, không phải thu/chi. */
   vongTien: number;
-  /** thu − chi. KHÔNG trừ `vongTien`. */
+  /** Tiền chuyển sang đầu tư / tiết kiệm — không phải chi tiêu, là để dành. */
+  dauTu: number;
+  /** thu − chi. KHÔNG trừ `vongTien`, KHÔNG trừ `dauTu` (đó vẫn là tiền của mình). */
   conLai: number;
+  /**
+   * Tỷ lệ tiết kiệm = (thu − chi) / thu, %. null khi tháng chưa có thu.
+   * Tiền chuyển đi đầu tư nằm TRONG phần tiết kiệm này.
+   */
+  tyLeTietKiem: number | null;
 }
 
 /** '2026-09-13' → '2026-09'. */
@@ -69,12 +76,17 @@ export function tongHop(ds: CashEntry[]): TongHopThang {
   let thu = 0;
   let chi = 0;
   let vongTien = 0;
+  let dauTu = 0;
 
   for (const e of ds) {
     if (e.kind === 'THU') {
-      thu += e.amount_vnd;
+      // Chiều VỀ của vòng tiền (đáo hạn) không phải thu nhập.
+      if (laVongTien(e.category)) vongTien += e.amount_vnd;
+      else thu += e.amount_vnd;
     } else if (laVongTien(e.category)) {
       vongTien += e.amount_vnd;
+    } else if (laDauTu(e.category)) {
+      dauTu += e.amount_vnd;
     } else {
       chi += e.amount_vnd;
     }
@@ -82,7 +94,7 @@ export function tongHop(ds: CashEntry[]): TongHopThang {
 
   // KHÔNG trừ vongTien: tiền đó đã quay về ví. Trừ nó ra sẽ báo động giả "âm
   // tiền" mỗi tháng có đáo hạn thẻ.
-  return { thu, chi, vongTien, conLai: thu - chi };
+  return { thu, chi, vongTien, dauTu, conLai: thu - chi, tyLeTietKiem: thu > 0 ? ((thu - chi) / thu) * 100 : null };
 }
 
 /**

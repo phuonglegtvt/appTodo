@@ -13,6 +13,8 @@ interface UseCashEntries {
   addEntry: (input: NewCashEntry) => Promise<void>;
   updateEntry: (id: string, patch: CashEntryUpdate) => Promise<void>;
   deleteEntry: (id: string) => Promise<void>;
+  /** Ghi nhiều khoản một lần (khoản định kỳ). NÉM lỗi để nút bấm báo tại chỗ. */
+  addMany: (inputs: NewCashEntry[]) => Promise<void>;
   clearError: () => void;
 }
 
@@ -113,7 +115,24 @@ export function useCashEntries(userId: string): UseCashEntries {
     }
   }, []);
 
+  const addMany = useCallback(async (inputs: NewCashEntry[]) => {
+    if (inputs.length === 0) return;
+    const { data, error: err } = await supabase.from('cash_entries').insert(inputs.map((i) => ({
+      user_id: userId, occurred_on: i.occurred_on, kind: i.kind, category: i.category,
+      amount_vnd: i.amount_vnd, note: i.note ?? '', recurring_id: i.recurring_id ?? null,
+    }))).select();
+    if (err) {
+      if (/recurring_id/i.test(err.message)) {
+        throw new Error('Chưa chạy migration khoản định kỳ. Vào Supabase → SQL Editor, chạy file '
+          + `supabase/migrations/2026-11-27-cash-budget-recurring.sql. (Chi tiết: ${err.message})`);
+      }
+      throw new Error(err.message);
+    }
+    // Không đợi realtime: gộp ngay, bỏ trùng theo id.
+    setEntries((prev) => moiNhatTruoc([...prev, ...((data ?? []) as CashEntry[]).filter((r) => !prev.some((p) => p.id === r.id))]));
+  }, [userId]);
+
   const clearError = useCallback(() => setError(null), []);
 
-  return { entries, loading, error, addEntry, updateEntry, deleteEntry, clearError };
+  return { entries, loading, error, addEntry, updateEntry, deleteEntry, addMany, clearError };
 }

@@ -112,7 +112,7 @@ describe('tongHop — đáo hạn thẻ KHÔNG vào tổng chi', () => {
   });
 
   test('tháng trắng cho ra 0 hết, không phải NaN', () => {
-    expect(tongHop([])).toEqual({ thu: 0, chi: 0, vongTien: 0, conLai: 0 });
+    expect(tongHop([])).toEqual({ thu: 0, chi: 0, vongTien: 0, dauTu: 0, conLai: 0, tyLeTietKiem: null });
   });
 
   test('chi nhiều hơn thu thì còn lại âm', () => {
@@ -141,4 +141,25 @@ describe('moiNhatTruoc', () => {
     moiNhatTruoc(ds);
     expect(ds.map((e) => e.occurred_on)).toEqual(goc);
   });
+});
+
+describe('tongHop — chuyển sang đầu tư là để dành, không phải chi', () => {
+  test('DAU_TU tách riêng, không trừ vào còn lại; tỷ lệ tiết kiệm = (thu − chi)/thu', () => {
+    const mk = (kind: 'THU' | 'CHI', category: string, amount_vnd: number) =>
+      ({ id: category, user_id: 'u', occurred_on: '2026-11-05', kind, category, amount_vnd, note: '', created_at: '', updated_at: '' });
+    const t = tongHop([mk('THU', 'LUONG', 40_000_000), mk('CHI', 'AN_UONG', 10_000_000), mk('CHI', 'DAU_TU', 15_000_000)]);
+    expect(t.chi).toBe(10_000_000);
+    expect(t.dauTu).toBe(15_000_000);
+    expect(t.conLai).toBe(30_000_000);
+    expect(t.tyLeTietKiem).toBeCloseTo(75);
+  });
+});
+
+test('tiền đáo hạn quay về (THU vòng tiền) không cộng vào tổng thu', () => {
+  const mk = (kind: 'THU' | 'CHI', category: string, amount_vnd: number) =>
+    ({ id: category + kind, user_id: 'u', occurred_on: '2026-10-28', kind, category, amount_vnd, note: '', created_at: '', updated_at: '' });
+  const t = tongHop([mk('THU', 'LUONG', 30_000_000), mk('THU', 'DAO_HAN_VE', 100_000_000), mk('CHI', 'DAO_HAN_THE', 100_000_000)]);
+  expect(t.thu).toBe(30_000_000);
+  expect(t.vongTien).toBe(200_000_000);
+  expect(t.conLai).toBe(30_000_000);
 });

@@ -4,11 +4,16 @@ import {
 } from './cashCategories';
 
 describe('CASH_CATEGORIES — danh sách cố định', () => {
-  test('có đủ các mục NewPL liệt kê', () => {
-    expect(CASH_CATEGORIES.map((c) => c.key)).toEqual([
-      'LUONG', 'THUONG', 'THU_KHAC',
-      'TRA_NO_THE', 'DAO_HAN_THE', 'PHI_DAO_HAN', 'TRA_VAY', 'GIA_DINH', 'CHI_KHAC',
-    ]);
+  test('vẫn giữ mọi khoá cũ (bản ghi cũ phải hiện đúng tên)', () => {
+    const keys = CASH_CATEGORIES.map((c) => c.key);
+    for (const k of ['LUONG', 'THUONG', 'THU_KHAC', 'TRA_NO_THE', 'DAO_HAN_THE', 'PHI_DAO_HAN', 'TRA_VAY', 'GIA_DINH', 'CHI_KHAC']) {
+      expect(keys).toContain(k);
+    }
+  });
+
+  test('có danh mục chi tiêu chi tiết + chuyển sang đầu tư (thêm 2026-11-27)', () => {
+    const keys = CASH_CATEGORIES.map((c) => c.key);
+    for (const k of ['AN_UONG', 'NHA_CUA', 'DI_LAI', 'CON_CAI', 'SUC_KHOE', 'DAU_TU', 'CO_TUC_LAI']) expect(keys).toContain(k);
   });
 
   test('không có khoá trùng', () => {
@@ -18,14 +23,10 @@ describe('CASH_CATEGORIES — danh sách cố định', () => {
 });
 
 describe('danhMucTheoLoai', () => {
-  test('lọc đúng nhóm Thu', () => {
-    expect(danhMucTheoLoai('THU').map((c) => c.key)).toEqual(['LUONG', 'THUONG', 'THU_KHAC']);
-  });
-
-  test('lọc đúng nhóm Chi', () => {
-    expect(danhMucTheoLoai('CHI').map((c) => c.key)).toEqual([
-      'TRA_NO_THE', 'DAO_HAN_THE', 'PHI_DAO_HAN', 'TRA_VAY', 'GIA_DINH', 'CHI_KHAC',
-    ]);
+  test('lọc đúng nhóm: Thu chỉ có mục Thu, Chi chỉ có mục Chi', () => {
+    expect(danhMucTheoLoai('THU').every((c) => c.kind === 'THU')).toBe(true);
+    expect(danhMucTheoLoai('CHI').every((c) => c.kind === 'CHI')).toBe(true);
+    expect(danhMucTheoLoai('THU').length + danhMucTheoLoai('CHI').length).toBe(CASH_CATEGORIES.length);
   });
 });
 
@@ -48,10 +49,8 @@ describe('laVongTien — đáo hạn thẻ là tiền ra rồi quay về', () =>
     expect(laVongTien('KHONG_TON_TAI')).toBe(false);
   });
 
-  test('không có mục THU nào là vòng tiền', () => {
-    for (const c of danhMucTheoLoai('THU')) {
-      expect(laVongTien(c.key)).toBe(false);
-    }
+  test('bên THU chỉ có đúng một mục vòng tiền: tiền đáo hạn / vay quay về', () => {
+    expect(danhMucTheoLoai('THU').filter((c) => laVongTien(c.key)).map((c) => c.key)).toEqual(['DAO_HAN_VE']);
   });
 });
 

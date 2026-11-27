@@ -63,6 +63,11 @@ Tab `cashflow` trong sidebar (dưới "Danh mục"): sổ thu–chi cá nhân th
   bảng riêng. Cờ `laVongTien` ở đó quyết định khoản nào là "vòng tiền".
 - **Đáo hạn thẻ = vòng tiền**: tiền ra rồi quay về ví ⇒ KHÔNG cộng vào tổng chi,
   KHÔNG trừ khỏi "còn lại". Riêng *phí* đáo hạn là danh mục khác và LÀ chi thật.
+  Chiều VỀ của vòng tiền (`DAO_HAN_VE`, bên Thu) cũng KHÔNG cộng vào tổng thu.
+- `DAU_TU` (chuyển sang đầu tư/tiết kiệm) = để dành, KHÔNG phải chi tiêu (cờ
+  `laDauTu`). Tỷ lệ tiết kiệm = (thu − chi) / thu.
+- Ngân sách tháng (`cash_budgets`) và khoản định kỳ (`cash_recurring` +
+  `cash_entries.recurring_id` để không ghi trùng) — logic ở `src/lib/cashPlanning.ts`.
 - Khối "Lũy kế đã đầu tư" **chỉ đọc**, tự động từ `stocks`/`cryptos`/`golds` qua
   `tongVonDaBo` (`src/data/holdingsMap.ts`). Là số lũy kế, KHÔNG theo tháng, nên
   không trừ vào cân đối tháng.

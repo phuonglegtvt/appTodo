@@ -13,6 +13,10 @@ import { CashEntryForm } from './CashEntryForm';
 import { CashEntryList } from './CashEntryList';
 import { InvestedTotals } from './InvestedTotals';
 import { ErrorBanner } from './ErrorBanner';
+import { useCashPlanning } from '../hooks/useCashPlanning';
+import { CashBudgetSection } from './CashBudgetSection';
+import { CashRecurringSection } from './CashRecurringSection';
+import { CashYearReport } from './CashYearReport';
 
 // Tab Thu–Chi: sổ thu–chi cá nhân theo tháng + khối lũy kế đã đầu tư.
 //
@@ -36,10 +40,15 @@ const NHAN_TONG = 'text-[11px] font-bold tracking-[0.06em] text-text-muted dark:
 export function CashFlowPage({ userId }: Props) {
   const homNay = homNayLocal();
   const [thang, setThang] = useState(() => thangCua(homNay));
+  const [che, setChe] = useState<'thang' | 'nam'>('thang');
 
   const {
-    entries, loading, error, addEntry, updateEntry, deleteEntry, clearError,
+    entries, loading, error, addEntry, updateEntry, deleteEntry, addMany, clearError,
   } = useCashEntries(userId);
+  const {
+    budgets, recurring, error: errPlan, setBudget, addRecurring, updateRecurring, deleteRecurring,
+    clearError: clearPlan,
+  } = useCashPlanning(userId);
 
   // Ba nguồn dưới đây CHỈ để dựng khối "Lũy kế đã đầu tư" — chỉ đọc.
   const { stocks, error: errStocks, clearError: clearStocks } = useStocks(userId);
@@ -81,6 +90,15 @@ export function CashFlowPage({ userId }: Props) {
         </div>
 
         <div className="flex items-center gap-1">
+          <div className="mr-2 flex gap-0.5 rounded-lg border border-border bg-surface p-0.5 dark:border-border-dark dark:bg-surface-dark">
+            {(['thang', 'nam'] as const).map((k) => (
+              <button key={k} onClick={() => setChe(k)} aria-pressed={che === k}
+                className={`rounded-md px-2.5 py-1 text-[12.5px] font-semibold ${che === k ? 'bg-primary text-white dark:bg-primary-dark dark:text-bg-dark' : 'text-text-muted dark:text-text-muted-dark'}`}>
+                {k === 'thang' ? 'Sổ tháng' : 'Báo cáo năm'}
+              </button>
+            ))}
+          </div>
+          {che === 'thang' && (<>
           <button
             onClick={() => setThang(thangTruoc(thang))}
             aria-label="Tháng trước"
@@ -106,6 +124,7 @@ export function CashFlowPage({ userId }: Props) {
               Về tháng này
             </button>
           )}
+          </>)}
         </div>
       </div>
 
@@ -114,9 +133,14 @@ export function CashFlowPage({ userId }: Props) {
       {errCryptos && <ErrorBanner message={errCryptos} onClose={clearCryptos} />}
       {errGolds && <ErrorBanner message={errGolds} onClose={clearGolds} />}
       {rateError && <ErrorBanner message={rateError} onClose={clearRateError} />}
+      {errPlan && <ErrorBanner message={errPlan} onClose={clearPlan} />}
+
+      {che === 'nam' ? (
+        <CashYearReport entries={entries} namHienTai={Number(homNay.slice(0, 4))} />
+      ) : (<>
 
       {/* Ba số của tháng. Vòng tiền đứng riêng bên dưới, không lẫn vào đây. */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className={O_TONG}>
           <span className={NHAN_TONG}>TỔNG THU</span>
           <span className="font-mono text-[20px] font-bold tabular-nums text-green-600 dark:text-green-400">
@@ -141,12 +165,21 @@ export function CashFlowPage({ userId }: Props) {
             {formatVnd(tong.conLai)}
           </span>
         </div>
+        <div className={O_TONG}>
+          <span className={NHAN_TONG}>TỶ LỆ TIẾT KIỆM</span>
+          <span className="font-mono text-[20px] font-bold tabular-nums text-text dark:text-text-dark">
+            {tong.tyLeTietKiem === null ? '—' : `${tong.tyLeTietKiem.toLocaleString('vi-VN', { maximumFractionDigits: 0 })}%`}
+          </span>
+          {tong.dauTu > 0 && (
+            <span className="text-[11px] text-text-muted dark:text-text-muted-dark">trong đó chuyển đầu tư {formatVnd(tong.dauTu)}</span>
+          )}
+        </div>
       </div>
 
       {tong.vongTien > 0 && (
         <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-300">
-          ⟳ <strong>Vòng tiền {formatVnd(tong.vongTien)}</strong> (đáo hạn thẻ) — tiền ra
-          rồi quay về ví nên <strong>không</strong> tính vào tổng chi. Riêng phí đáo hạn
+          ⟳ <strong>Vòng tiền {formatVnd(tong.vongTien)}</strong> (đáo hạn thẻ, gồm cả tiền ra lẫn tiền quay về) —
+          <strong> không</strong> tính vào tổng thu hay tổng chi. Riêng phí đáo hạn
           là chi thật, ghi bằng danh mục "Phí đáo hạn thẻ".
         </p>
       )}
@@ -158,6 +191,19 @@ export function CashFlowPage({ userId }: Props) {
       ) : (
         <CashEntryList entries={cuaThang} onUpdate={updateEntry} onDelete={xoaKhoan} />
       )}
+
+      <CashBudgetSection entries={entries} thang={thang} budgets={budgets} onSet={setBudget} />
+
+      <CashRecurringSection
+        recurring={recurring}
+        entries={entries}
+        thang={thang}
+        onAdd={addRecurring}
+        onUpdate={updateRecurring}
+        onDelete={deleteRecurring}
+        onGhi={addMany}
+      />
+      </>)}
 
       <InvestedTotals von={von} dangChoTyGia={coCrypto && rate === null && rateError === null} />
     </div>

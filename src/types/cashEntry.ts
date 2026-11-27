@@ -16,6 +16,8 @@ export interface CashEntry {
   category: string;
   amount_vnd: number;
   note: string;
+  /** Sinh từ khoản định kỳ nào (cash_recurring.id); null = ghi tay. */
+  recurring_id?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -27,6 +29,7 @@ export interface NewCashEntry {
   category: string;
   amount_vnd: number;
   note?: string;
+  recurring_id?: string | null;
 }
 
 /** Các trường được phép sửa. */
