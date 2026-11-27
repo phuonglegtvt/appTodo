@@ -161,62 +161,35 @@ describe('tongVonDaBo — tổng và tỷ giá', () => {
   });
 });
 
-describe('tongVonDaBo — cột invested_amount mới của crypto và vàng (VND đồng)', () => {
-  it('crypto: dùng THẲNG số VND đã nhập, KHÔNG nhân tỷ giá', () => {
-    // Cột này là đồng tuyệt đối, khác mọi cột giá của bảng cryptos (USD).
-    // Nhân tỷ giá vào đây là làm con số phồng lên 26.000 lần.
+describe('tongVonDaBo — crypto = số lượng × giá TB × tỷ giá (chốt 2026-11-27)', () => {
+  it('crypto: BỎ QUA invested_amount nhập tay, luôn lấy số lượng × giá TB', () => {
+    // Đây là ca thật đã gây lệch: BTC nhập tay 80tr nhưng 0,1846 × $90.000 ≈ 430tr.
     const r = tongVonDaBo({
       ...rong,
-      cryptos: [crypto({ invested_amount: 42_000_000 })],
+      cryptos: [crypto({ invested_amount: 42_000_000, quantity: 0.5, avg_buy_price: 40_000 })],
     });
-    expect(r.cryptoVnd).toBe(42_000_000);
+    expect(r.cryptoVnd).toBe(0.5 * 40_000 * rong.usdVnd);
   });
 
-  it('crypto: có invested_amount thì KHÔNG cộng thêm quantity × giá mua nữa', () => {
-    // Hai nguồn cùng nói về một khoản tiền — cộng cả hai là tính đôi.
+  it('crypto: thiếu số lượng thì báo bỏ sót, dù có nhập invested_amount', () => {
     const r = tongVonDaBo({
       ...rong,
-      cryptos: [crypto({ invested_amount: 42_000_000, quantity: 1, avg_buy_price: 40_000 })],
-    });
-    expect(r.cryptoVnd).toBe(42_000_000);
-  });
-
-  it('crypto: có invested_amount thì chưa nhập số lượng cũng KHÔNG còn bị bỏ sót', () => {
-    // Đây chính là lý do thêm cột này.
-    const r = tongVonDaBo({
-      ...rong,
-      cryptos: [crypto({ symbol: 'ETH', invested_amount: 10_000_000, quantity: null })],
-    });
-    expect(r.cryptoVnd).toBe(10_000_000);
-    expect(r.boSotSymbols).toEqual([]);
-  });
-
-  it('crypto: mọi coin đã nhập invested_amount thì tỷ giá hỏng cũng không sao', () => {
-    // Không còn phép quy đổi nào ⇒ không còn phụ thuộc tỷ giá.
-    const r = tongVonDaBo({
-      ...rong,
-      cryptos: [crypto({ invested_amount: 42_000_000 })],
-      usdVnd: Number.NaN,
-    });
-    expect(r.cryptoVnd).toBe(42_000_000);
-    expect(r.tongVnd).toBe(42_000_000);
-  });
-
-  it('crypto: chưa nhập invested_amount thì vẫn suy từ số lượng × giá mua như cũ', () => {
-    const r = tongVonDaBo({
-      ...rong,
-      cryptos: [crypto({ invested_amount: null, quantity: 0.5, avg_buy_price: 40_000 })],
-    });
-    expect(r.cryptoVnd).toBe(520_000_000);
-  });
-
-  it('crypto: invested_amount = 0 là ĐÃ NHẬP rõ ràng, không phải bỏ sót', () => {
-    const r = tongVonDaBo({
-      ...rong,
-      cryptos: [crypto({ symbol: 'DOGE', invested_amount: 0, quantity: null, avg_buy_price: 1 })],
+      cryptos: [crypto({ symbol: 'ETH', invested_amount: 10_000_000, quantity: null, avg_buy_price: 3_000 })],
     });
     expect(r.cryptoVnd).toBe(0);
-    expect(r.boSotSymbols).toEqual([]);
+    expect(r.boSotSymbols).toEqual(['ETH']);
+  });
+
+  it('crypto: tỷ giá hỏng ⇒ phần crypto là null, cổ phiếu vẫn ra số', () => {
+    const r = tongVonDaBo({
+      ...rong,
+      stocks: [stock({ invested_amount: 1_000 })],
+      cryptos: [crypto({ quantity: 1, avg_buy_price: 100 })],
+      usdVnd: Number.NaN,
+    });
+    expect(r.cryptoVnd).toBeNull();
+    expect(r.stocksVnd).toBe(1_000_000);
+    expect(r.tongVnd).toBeNull();
   });
 
   it('vàng: dùng thẳng số VND đã nhập', () => {

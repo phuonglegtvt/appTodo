@@ -7,7 +7,7 @@
 
 import type { Crypto } from '../types/crypto';
 import type { ColumnDef, SortValue } from './tableSort';
-import { pnl, value } from './cryptoCalc';
+import { cost, pnl, value } from './cryptoCalc';
 import { drawdownFromPeakPct } from './peakDrawdown';
 
 export type CryptoSortKey =
@@ -27,7 +27,7 @@ const GIA_TRI: Record<CryptoSortKey, (c: Crypto) => SortValue> = {
   // VND đồng tuyệt đối, KHÔNG quy đổi — khác mọi cột giá của bảng này (USD).
   // Chưa nhập ⇒ null (xuống cuối), KHÔNG suy ra từ quantity × giá mua: cột
   // hiển thị '—' nên sort phải khớp thứ mắt nhìn thấy.
-  invested_amount: (c) => c.invested_amount,
+  invested_amount: (c) => cost(c),
   value: (c) => value(c),
   pnl: (c) => pnl(c),
 };
@@ -41,7 +41,7 @@ const NHAN: [CryptoSortKey, string][] = [
   ['current_price', 'Giá hiện tại'],
   ['peak_price', 'Đỉnh LS'],
   ['drawdown', '% so đỉnh'],
-  ['invested_amount', 'Đã đầu tư (đ)'],
+  ['invested_amount', 'Đã đầu tư'],
   ['value', 'Giá trị'],
   ['pnl', 'Lời/Lỗ'],
 ];

@@ -15,14 +15,8 @@ describe('CRYPTO_COLUMNS — khai báo cột', () => {
   test('đúng 10 cột sort được, theo đúng thứ tự ô của CryptoRow', () => {
     expect(CRYPTO_COLUMNS.map((c) => c.label)).toEqual([
       'Mã', 'Tên', 'Số lượng', 'Giá mua TB', 'Giá hiện tại',
-      'Đỉnh LS', '% so đỉnh', 'Đã đầu tư (đ)', 'Giá trị', 'Lời/Lỗ',
+      'Đỉnh LS', '% so đỉnh', 'Đã đầu tư', 'Giá trị', 'Lời/Lỗ',
     ]);
-  });
-
-  test('nhãn cột vốn ghi rõ "(đ)" vì cả bảng còn lại là USD', () => {
-    // Không ghi đơn vị thì rất dễ gõ 1.600 (USD) vào ô cần 42.000.000 (đồng).
-    const cot = CRYPTO_COLUMNS.find((c) => c.key === 'invested_amount');
-    expect(cot?.label).toContain('(đ)');
   });
 });
 
@@ -37,15 +31,14 @@ describe('cryptoSortValue', () => {
     expect(cryptoSortValue(coin({ name: '' }), 'name')).toBeNull();
   });
 
-  test('Đã đầu tư lấy thẳng số VND đã nhập, không quy đổi', () => {
-    expect(cryptoSortValue(coin({ invested_amount: 42_000_000 }), 'invested_amount'))
-      .toBe(42_000_000);
+  test('Đã đầu tư = số lượng × giá TB (USD), bỏ qua số VND nhập tay', () => {
+    // Chốt 2026-11-27: cột này tự tính, cùng công thức với tab Danh mục.
+    expect(cryptoSortValue(coin({ invested_amount: 42_000_000, quantity: 0.5, avg_buy_price: 40_000 }), 'invested_amount'))
+      .toBe(20_000);
   });
 
-  test('chưa nhập Đã đầu tư trả null để xuống cuối, KHÔNG suy ra từ giá mua', () => {
-    // Cột này hiển thị "—" khi chưa nhập; sort phải khớp thứ mắt nhìn thấy.
-    expect(cryptoSortValue(coin({ invested_amount: null, quantity: 1, avg_buy_price: 40_000 }), 'invested_amount'))
-      .toBeNull();
+  test('thiếu số lượng hoặc giá TB ⇒ null để xuống cuối (bảng hiện "—")', () => {
+    expect(cryptoSortValue(coin({ quantity: null, avg_buy_price: 40_000 }), 'invested_amount')).toBeNull();
   });
 
   test('Giá trị = số lượng × giá hiện tại (USD)', () => {

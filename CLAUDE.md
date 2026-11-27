@@ -89,6 +89,10 @@ Module cân bằng danh mục đầu tư, sẽ nằm ở tab `portfolio` (đợt
   các cột giá của chính bảng `cryptos` (USD). Hai cột này nhập thẳng số tiền đã
   bỏ ra nên không phụ thuộc tỷ giá; `public.cash_entries.amount_vnd` cũng là
   **đồng tuyệt đối**.
+  ⚠️ Chốt 2026-11-27: **vốn crypto ở MỌI tab = `quantity × avg_buy_price` (USD) ×
+  tỷ giá** (`cryptoCalc.cost`). Cột `cryptos.invested_amount` KHÔNG còn được dùng
+  để hiển thị/tính vốn (nó lệch với số lượng × giá TB). Vàng vẫn ưu tiên
+  `golds.invested_amount`.
 - Mỗi module một trách nhiệm, mỗi module một file test cạnh nó.
 
 ### Sổ giao dịch bất biến
