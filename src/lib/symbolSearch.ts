@@ -72,11 +72,11 @@ export function parseBinanceUsdtBases(json: unknown): string[] {
  * Xếp hạng: mã trùng khít → mã bắt đầu bằng chuỗi gõ (ngắn trước) → tên chứa
  * chuỗi gõ. Không khớp gì thì loại. Trả tối đa `gioiHan` phần tử.
  */
-export function xepHang(query: string, options: SymbolOption[], gioiHan = 8): SymbolOption[] {
+export function xepHang<T extends { symbol: string; name: string }>(query: string, options: T[], gioiHan = 8): T[] {
   const q = query.trim().toUpperCase();
   if (!q) return [];
   const qName = boDau(query.trim());
-  const diem = (o: SymbolOption): number | null => {
+  const diem = (o: T): number | null => {
     if (o.symbol === q) return 0;
     if (o.symbol.startsWith(q)) return 1 + o.symbol.length / 100;
     if (qName.length >= 2 && boDau(o.name).includes(qName)) return 2;
@@ -84,7 +84,7 @@ export function xepHang(query: string, options: SymbolOption[], gioiHan = 8): Sy
   };
   return options
     .map((o) => ({ o, d: diem(o) }))
-    .filter((x): x is { o: SymbolOption; d: number } => x.d !== null)
+    .filter((x): x is { o: T; d: number } => x.d !== null)
     .sort((a, b) => a.d - b.d || a.o.symbol.localeCompare(b.o.symbol))
     .slice(0, gioiHan)
     .map((x) => x.o);

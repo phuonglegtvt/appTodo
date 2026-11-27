@@ -4,6 +4,7 @@ import { parseVnNumber } from '../lib/parseNumber';
 import type { TxSide } from '../lib/cryptoTransaction';
 import type { StockTxResult } from '../lib/stockTransaction';
 import type { Stock } from '../types/stock';
+import { SearchSelect } from './SearchSelect';
 import type { NewStockTransaction } from '../types/stockTransaction';
 
 // Form ghi một giao dịch MUA / BÁN cổ phiếu. Giá và tiền theo NGHÌN ĐỒNG như cả
@@ -131,20 +132,17 @@ export function StockTransactionForm({ stocks, onRecord }: Props) {
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
-        <label className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <span className={nhanClass}>Mã</span>
-          <select
+          <SearchSelect
+            options={stocks.map((s) => ({ value: s.id, symbol: s.ticker, name: s.company_name }))}
             value={stockId}
-            onChange={(e) => doi(setStockId)(e.target.value)}
-            aria-label="Mã cổ phiếu"
+            onChange={doi(setStockId)}
+            ariaLabel="Mã cổ phiếu"
+            placeholder="Gõ mã / tên…"
             className={`w-40 ${inputClass}`}
-          >
-            <option value="">Chọn…</option>
-            {stocks.map((s) => (
-              <option key={s.id} value={s.id}>{s.ticker}{s.company_name ? ` — ${s.company_name}` : ''}</option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
         <label className="flex flex-col gap-1">
           <span className={nhanClass}>Ngày</span>
           <input
