@@ -14,6 +14,7 @@ import { ErrorBanner } from './ErrorBanner';
 import { StockTransactionForm } from './StockTransactionForm';
 import { StockTransactionList } from './StockTransactionList';
 import { LongtermAllocation } from './LongtermAllocation';
+import { TriggeredRulesBanner } from './TriggeredRulesBanner';
 
 interface Props {
   userId: string;
@@ -112,6 +113,11 @@ export function StocksPage({ userId }: Props) {
       {txError && <ErrorBanner message={txError} onClose={clearTxError} />}
       {orderError && <ErrorBanner message={orderError} onClose={clearOrderError} />}
       {targetsError && <ErrorBanner message={targetsError} onClose={clearTargetsError} />}
+      <TriggeredRulesBanner
+        userId={userId}
+        kind="STOCK"
+        gia={new Map(stocks.map((s) => [s.ticker.toUpperCase(), { gia: s.current_price, soLuong: s.quantity }]))}
+      />
 
       <input
         type="search"

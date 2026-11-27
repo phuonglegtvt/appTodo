@@ -12,6 +12,7 @@ import { CryptoTable } from './CryptoTable';
 import { CryptoTransactionForm } from './CryptoTransactionForm';
 import { CryptoTransactionList } from './CryptoTransactionList';
 import { ErrorBanner } from './ErrorBanner';
+import { TriggeredRulesBanner } from './TriggeredRulesBanner';
 
 interface Props {
   userId: string;
@@ -143,6 +144,11 @@ export function CryptoPage({ userId }: Props) {
       {priceError && <ErrorBanner message={priceError} onClose={() => setPriceError(null)} />}
       {rateError && <ErrorBanner message={rateError} onClose={clearRateError} />}
       {txError && <ErrorBanner message={txError} onClose={clearTxError} />}
+      <TriggeredRulesBanner
+        userId={userId}
+        kind="CRYPTO"
+        gia={new Map(cryptos.map((c) => [c.symbol.toUpperCase(), { gia: c.current_price, soLuong: c.quantity }]))}
+      />
 
       <input
         type="search"
