@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nhapTien } from '../lib/moneyTyping';
 import { applyTx } from '../lib/cryptoTransaction';
 import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
 import type { TxSide, TxResult } from '../lib/cryptoTransaction';
@@ -185,9 +186,9 @@ export function CryptoTransactionForm({ cryptos, onRecord }: Props) {
           <span className={nhanClass}>{side === 'BUY' ? 'Số tiền đã chi (VND)' : 'Số tiền nhận (VND)'}</span>
           <input
             value={tien}
-            onChange={(e) => doi(setTien)(e.target.value)}
+            onChange={nhapTien(doi(setTien))}
             inputMode="numeric"
-            placeholder="85.000.000"
+            placeholder="85,000,000"
             aria-label={side === 'BUY' ? 'Số tiền đã chi (VND)' : 'Số tiền nhận về (VND)'}
             className={`w-44 ${inputClass}`}
           />

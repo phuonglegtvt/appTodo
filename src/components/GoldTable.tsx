@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nhapTien, dinhDangSoTien } from '../lib/moneyTyping';
 import { parseVnNumber, parseVndAmount } from '../lib/parseNumber';
 import { SortableTh } from './SortableTh';
 import { nextSort, sortRows, type SortState } from '../lib/tableSort';
@@ -117,21 +118,24 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
                   </td>
                   <td className="w-40 px-2 py-2">
                     <input
-                      defaultValue={hienSo(g.avg_buy_price)}
+                      defaultValue={dinhDangSoTien(g.avg_buy_price)}
+                      onChange={nhapTien()}
                       onBlur={(e) => suaSo(g, 'avg_buy_price', e.target.value)}
                       inputMode="numeric" aria-label={`${g.label} — giá mua trung bình`} className={O_SO}
                     />
                   </td>
                   <td className="w-40 px-2 py-2">
                     <input
-                      defaultValue={hienSo(g.current_price)}
+                      defaultValue={dinhDangSoTien(g.current_price)}
+                      onChange={nhapTien()}
                       onBlur={(e) => suaSo(g, 'current_price', e.target.value)}
                       inputMode="numeric" aria-label={`${g.label} — giá hiện tại`} className={O_SO}
                     />
                   </td>
                   <td className="w-40 px-2 py-2">
                     <input
-                      defaultValue={hienSo(g.invested_amount)}
+                      defaultValue={dinhDangSoTien(g.invested_amount)}
+                      onChange={nhapTien()}
                       onBlur={(e) => suaSo(g, 'invested_amount', e.target.value)}
                       inputMode="numeric" aria-label={`${g.label} — đã đầu tư`} className={O_SO}
                     />
@@ -167,20 +171,20 @@ export function GoldTable({ golds, onAdd, onUpdate, onDelete }: Props) {
               </td>
               <td className="px-2 py-2">
                 <input
-                  value={giaMua} onChange={(e) => setGiaMua(e.target.value)}
-                  placeholder="75.000.000" inputMode="numeric" aria-label="Giá mua trung bình" className={O_SO}
+                  value={giaMua} onChange={nhapTien(setGiaMua)}
+                  placeholder="75,000,000" inputMode="numeric" aria-label="Giá mua trung bình" className={O_SO}
                 />
               </td>
               <td className="px-2 py-2">
                 <input
-                  value={giaNay} onChange={(e) => setGiaNay(e.target.value)}
-                  placeholder="90.000.000" inputMode="numeric" aria-label="Giá hiện tại" className={O_SO}
+                  value={giaNay} onChange={nhapTien(setGiaNay)}
+                  placeholder="90,000,000" inputMode="numeric" aria-label="Giá hiện tại" className={O_SO}
                 />
               </td>
               <td className="px-2 py-2">
                 <input
-                  value={daDauTu} onChange={(e) => setDaDauTu(e.target.value)}
-                  placeholder="150.000.000" inputMode="numeric" aria-label="Đã đầu tư" className={O_SO}
+                  value={daDauTu} onChange={nhapTien(setDaDauTu)}
+                  placeholder="150,000,000" inputMode="numeric" aria-label="Đã đầu tư" className={O_SO}
                 />
               </td>
               <td colSpan={2} className="px-2 py-2">

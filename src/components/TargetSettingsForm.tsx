@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nhapTien, dinhDangSoTien } from '../lib/moneyTyping';
 import { monthlyPool } from '../domain/dcaPool';
 import { ASSET_CLASSES } from '../domain/types';
 import { CLASS_META } from '../lib/portfolioClassMeta';
@@ -50,18 +51,18 @@ export function TargetSettingsForm({
 }: Props) {
   const [nhap, setNhap] = useState<Nhap>(() => toNhap(targets));
   const [z, setZ] = useState(() =>
-    settings === null ? '' : String(settings.monthly_contribution_vnd),
+    settings === null ? '' : dinhDangSoTien(settings.monthly_contribution_vnd),
   );
   const [von, setVon] = useState(() =>
     settings === null || settings.dca_capital_vnd === 0
-      ? '' : String(settings.dca_capital_vnd),
+      ? '' : dinhDangSoTien(settings.dca_capital_vnd),
   );
   const [soThang, setSoThang] = useState(() =>
     settings?.dca_months == null ? '' : String(settings.dca_months),
   );
   const [tienMat, setTienMat] = useState(() =>
     settings === null || settings.cash_on_hand_vnd === 0
-      ? '' : String(settings.cash_on_hand_vnd),
+      ? '' : dinhDangSoTien(settings.cash_on_hand_vnd),
   );
   const [loi, setLoi] = useState<string | null>(null);
   const [xong, setXong] = useState<string | null>(null);
@@ -305,9 +306,9 @@ export function TargetSettingsForm({
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={z}
-            onChange={(e) => { setZ(e.target.value); setXong(null); }}
+            onChange={nhapTien((t) => { setZ(t); setXong(null); })}
             inputMode="numeric"
-            placeholder="3.000.000"
+            placeholder="3,000,000"
             aria-label="Số tiền góp hàng tháng (đồng)"
             className={`${oNhap} max-w-[200px]`}
           />
@@ -337,9 +338,9 @@ export function TargetSettingsForm({
             </span>
             <input
               value={von}
-              onChange={(e) => { setVon(e.target.value); setXong(null); }}
+              onChange={nhapTien((t) => { setVon(t); setXong(null); })}
               inputMode="numeric"
-              placeholder="120.000.000"
+              placeholder="120,000,000"
               aria-label="Vốn có sẵn để rải (đồng)"
               className={`${oNhap} w-[190px]`}
             />
@@ -410,9 +411,9 @@ export function TargetSettingsForm({
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={tienMat}
-            onChange={(e) => { setTienMat(e.target.value); setXong(null); }}
+            onChange={nhapTien((t) => { setTienMat(t); setXong(null); })}
             inputMode="numeric"
-            placeholder="50.000.000"
+            placeholder="50,000,000"
             aria-label="Tiền mặt đang có (đồng)"
             className={`${oNhap} max-w-[200px]`}
           />

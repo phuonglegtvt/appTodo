@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nhapTien, dinhDangSoTien } from '../lib/moneyTyping';
 import type { Crypto, CryptoUpdate, Currency } from '../types/crypto';
 import { value, pnl, pnlPercent } from '../lib/cryptoCalc';
 import { drawdownFromPeakPct } from '../lib/peakDrawdown';
@@ -56,7 +57,7 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
     setQuantity(crypto.quantity?.toString() ?? '');
     setAvgBuy(crypto.avg_buy_price?.toString() ?? '');
     setPeak(crypto.peak_price?.toString() ?? '');
-    setInvested(crypto.invested_amount?.toString() ?? '');
+    setInvested(dinhDangSoTien(crypto.invested_amount));
     setEditing(true);
   }
 
@@ -99,8 +100,8 @@ export function CryptoRow({ crypto, currency, rate, onUpdate, onDelete }: Props)
         <td className={cell}>
           <input
             value={invested}
-            onChange={(e) => setInvested(e.target.value)}
-            placeholder="42.000.000"
+            onChange={nhapTien(setInvested)}
+            placeholder="42,000,000"
             inputMode="numeric"
             className={editInput}
             aria-label="Đã đầu tư (đồng)"

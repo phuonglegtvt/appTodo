@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nhapTien, dinhDangSoTien } from '../lib/moneyTyping';
 import { danhMucTheoLoai, laVongTien, nhanDanhMuc } from '../lib/cashCategories';
 import { kiemTraKhoan } from '../lib/cashEntryInput';
 import { formatVnd } from '../lib/portfolioClassMeta';
@@ -32,7 +33,7 @@ export function CashEntryRow({ entry, onUpdate, onDelete }: Props) {
     setNgay(entry.occurred_on);
     setKind(entry.kind);
     setCategory(entry.category);
-    setSoTien(String(entry.amount_vnd));
+    setSoTien(dinhDangSoTien(Number(entry.amount_vnd)));
     setNote(entry.note);
     setLoi(null);
     setEditing(true);
@@ -89,7 +90,7 @@ export function CashEntryRow({ entry, onUpdate, onDelete }: Props) {
         <td className={`${cell} text-right`}>
           <input
             value={soTien}
-            onChange={(e) => setSoTien(e.target.value)}
+            onChange={nhapTien(setSoTien)}
             inputMode="numeric"
             aria-label="Số tiền"
             className={`${O} w-36 text-right font-mono tabular-nums`}

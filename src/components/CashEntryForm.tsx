@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { nhapTien } from '../lib/moneyTyping';
 import { danhMucTheoLoai } from '../lib/cashCategories';
 import { kiemTraKhoan } from '../lib/cashEntryInput';
 import type { CashKind, NewCashEntry } from '../types/cashEntry';
@@ -101,8 +102,8 @@ export function CashEntryForm({ homNay, onAdd }: Props) {
 
         <input
           value={soTien}
-          onChange={(e) => setSoTien(e.target.value)}
-          placeholder="12.000.000"
+          onChange={nhapTien(setSoTien)}
+          placeholder="12,000,000"
           inputMode="numeric"
           aria-label="Số tiền (đồng)"
           className={`${O} w-40 text-right font-mono tabular-nums`}
