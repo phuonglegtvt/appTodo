@@ -7,6 +7,7 @@ import { formatVnd, formatVndShort } from '../lib/portfolioClassMeta';
 import type { PortfolioView } from '../data/portfolioView';
 import { ErrorBanner } from './ErrorBanner';
 import { LineChart } from './LineChart';
+import { EmergencyFundCard } from './EmergencyFundCard';
 
 // Mục "Tài sản ròng" của tab Danh mục: tài sản (từ cùng số liệu tỷ trọng) − nợ
 // (tab Nợ & thẻ), và lịch sử theo tháng.
@@ -102,6 +103,8 @@ export function NetWorthPanel({ userId, view, asOf }: Props) {
           tránh ghi một con số thiếu phần. Bổ sung dữ liệu rồi mở lại.
         </p>
       )}
+
+      <EmergencyFundCard userId={userId} tienMat={parts.cash_vnd} homNay={asOf} />
 
       <section className="surface-card flex flex-col gap-2 p-4">
         <div className="text-[13px] font-semibold text-text dark:text-text-dark">Tài sản ròng theo tháng</div>
