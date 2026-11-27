@@ -14,6 +14,10 @@ import { ErrorBanner } from './ErrorBanner';
 import { CompoundCalculator } from './CompoundCalculator';
 import { DcaSimulator } from './DcaSimulator';
 import { NetWorthPanel } from './NetWorthPanel';
+import { PriceRulesPanel } from './PriceRulesPanel';
+import { MonthlyPlanPanel } from './MonthlyPlanPanel';
+import { FinancialGoalsPanel } from './FinancialGoalsPanel';
+import { BackupSection } from './BackupSection';
 import type { PortfolioView } from '../data/portfolioView';
 
 // Tab Danh mục: tỷ trọng thực tế vs mục tiêu + cần bổ sung bao nhiêu vốn.
@@ -25,7 +29,7 @@ import type { PortfolioView } from '../data/portfolioView';
 // thuần, có test). Ở đây chỉ có: gọi dữ liệu, xử lý trạng thái, và vẽ.
 
 // 'lai-kep' và 'dca' là công cụ tính độc lập, KHÔNG cần dữ liệu danh mục.
-type Muc = 'ty-trong' | 'tai-san-rong' | 'cau-hinh' | 'lai-kep' | 'dca';
+type Muc = 'ty-trong' | 'ke-hoach' | 'tai-san-rong' | 'muc-tieu' | 'canh-bao' | 'cau-hinh' | 'lai-kep' | 'dca';
 
 interface Props {
   userId: string;
@@ -116,8 +120,17 @@ export function PortfolioPage({ userId }: Props) {
         <button onClick={() => setMuc('ty-trong')} className={tabBtn('ty-trong')}>
           Tỷ trọng
         </button>
+        <button onClick={() => setMuc('ke-hoach')} className={tabBtn('ke-hoach')}>
+          Kế hoạch tháng
+        </button>
         <button onClick={() => setMuc('tai-san-rong')} className={tabBtn('tai-san-rong')}>
           Tài sản ròng
+        </button>
+        <button onClick={() => setMuc('muc-tieu')} className={tabBtn('muc-tieu')}>
+          Mục tiêu
+        </button>
+        <button onClick={() => setMuc('canh-bao')} className={tabBtn('canh-bao')}>
+          Cảnh báo giá
         </button>
         <button onClick={() => setMuc('cau-hinh')} className={tabBtn('cau-hinh')}>
           Cấu hình
@@ -157,7 +170,7 @@ export function PortfolioPage({ userId }: Props) {
       )}
       {viewError !== null && <ErrorBanner message={viewError} />}
 
-      {dangTai && (muc === 'ty-trong' || muc === 'cau-hinh' || muc === 'tai-san-rong') && (
+      {dangTai && (muc === 'ty-trong' || muc === 'cau-hinh' || muc === 'tai-san-rong' || muc === 'ke-hoach') && (
         <p className="text-sm text-text-muted dark:text-text-muted-dark">
           {thieuTyGia ? 'Đang lấy tỷ giá USD→VND để quy đổi giá trị crypto…' : 'Đang tải…'}
         </p>
@@ -278,8 +291,22 @@ export function PortfolioPage({ userId }: Props) {
         </>
       )}
 
+      {muc === 'ke-hoach' && view !== null && (
+        <MonthlyPlanPanel
+          userId={userId}
+          view={view}
+          input={{ asOf: homNay(), stocks, cryptos, golds, targets, settings, usdVnd: rate ?? 0 }}
+        />
+      )}
+
       {muc === 'tai-san-rong' && view !== null && (
         <NetWorthPanel userId={userId} view={view} asOf={homNay()} />
+      )}
+
+      {muc === 'muc-tieu' && <FinancialGoalsPanel userId={userId} homNay={homNay()} />}
+
+      {muc === 'canh-bao' && !loadingStocks && !loadingCryptos && (
+        <PriceRulesPanel userId={userId} stocks={stocks} cryptos={cryptos} />
       )}
 
       {muc === 'lai-kep' && (
@@ -314,6 +341,7 @@ export function PortfolioPage({ userId }: Props) {
               onDelete={deleteGold}
             />
           </section>
+          <BackupSection />
         </>
       )}
     </div>
