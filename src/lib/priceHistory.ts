@@ -210,3 +210,30 @@ export async function fetchPriceHistory(
   }
   return h;
 }
+
+// ---------------------------------------------------------------------------
+// Giới hạn lịch sử của từng nguồn (đo ngày 2026-11-27 bằng from=0 / startTime=0):
+// VNDirect dchart chỉ có cổ phiếu/ETF từ 02/01/2013 và chỉ số từ 24/08/2017;
+// Binance có BTCUSDT từ 17/08/2017. Mã lên sàn TRƯỚC các mốc này sẽ bắt đầu từ
+// mốc, không phải từ ngày lên sàn — UI phải nói ra, không để người dùng tưởng
+// "lâu nhất" là từ ngày lên sàn.
+// ---------------------------------------------------------------------------
+
+const MOC_NGUON: { kind: AssetKind; laChiSo?: boolean; ngay: string; nguon: string }[] = [
+  { kind: 'vn', laChiSo: false, ngay: '2013-01-02', nguon: 'VNDirect chỉ có giá cổ phiếu/ETF từ 02/01/2013' },
+  { kind: 'vn', laChiSo: true, ngay: '2017-08-24', nguon: 'VNDirect chỉ có giá chỉ số từ 24/08/2017' },
+  { kind: 'crypto', ngay: '2017-08-17', nguon: 'Binance chỉ có giá từ 17/08/2017' },
+];
+
+/**
+ * Nếu ngày dữ liệu đầu tiên của mã trùng (±7 ngày) với mốc giới hạn của nguồn
+ * ⇒ nhiều khả năng mã có lịch sử dài hơn mà nguồn không có. Trả câu giải thích,
+ * ngược lại null (ngày đầu tiên chính là ngày lên sàn / ra mắt).
+ */
+export function gioiHanNguon(kind: AssetKind, symbol: string, ngayDau: string): string | null {
+  const laChiSo = isVnIndex(symbol);
+  const moc = MOC_NGUON.find((m) => m.kind === kind && (m.laChiSo === undefined || m.laChiSo === laChiSo));
+  if (!moc) return null;
+  const lech = (Date.parse(ngayDau) - Date.parse(moc.ngay)) / 86_400_000;
+  return lech <= 7 ? moc.nguon : null;
+}

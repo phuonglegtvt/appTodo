@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { chayDca, luiNam, soNgay, type DcaResult } from '../lib/dcaBacktest';
-import { fetchPriceHistory, type AssetKind, type PriceHistory } from '../lib/priceHistory';
+import { fetchPriceHistory, gioiHanNguon, type AssetKind, type PriceHistory } from '../lib/priceHistory';
 import { SymbolPicker } from './SymbolPicker';
 import { parseVnNumber } from '../lib/parseNumber';
 import { formatVnd, formatVndShort } from '../lib/portfolioClassMeta';
@@ -44,6 +44,22 @@ const MAU = ['var(--viz-stocks)', 'var(--viz-crypto)', 'var(--viz-gold)'];
 const MAU_VON = '#8a8a94';
 const MAU_GUI = 'var(--viz-cash)';
 const TOI_DA = 3;
+/**
+ * "Lâu nhất có thể": đặt Từ ngày thật sớm, chayDca tự bắt đầu từ tháng đầu
+ * tiên có dữ liệu của mã (= ngày lên sàn nếu nguồn có đủ lịch sử).
+ */
+const MOC_SOM_NHAT = '2000-01-01';
+
+/** Thông tin về điểm bắt đầu của lần chạy, để giải thích dưới kết quả. */
+interface BatDauInfo {
+  lauNhat: boolean;
+  /** Ngày bắt đầu chung (đầu tháng) khi muộn hơn Từ ngày; null nếu không. */
+  chung: string | null;
+  /** Mã có dữ liệu muộn nhất (quyết định điểm bắt đầu chung). */
+  muonNhat: { symbol: string; ngay: string };
+  /** Câu giới hạn nguồn của từng mã chạm mốc (đã gộp trùng). */
+  gioiHan: string[];
+}
 
 const oNhap = 'w-full rounded-md border border-border bg-surface px-3 py-2 font-mono text-[14px] tabular-nums text-text outline-none focus:border-primary dark:border-border-dark dark:bg-surface-2dark dark:text-text-dark dark:focus:border-primary-dark';
 const nhan = 'text-[13px] font-semibold text-text dark:text-text-dark';
@@ -81,7 +97,7 @@ export function DcaSimulator() {
   const today = homNay();
   const [assets, setAssets] = useState<Asset[]>([GOI_Y[0]]);
   const [soTien, setSoTien] = useState<number | null>(3_000_000);
-  const [soNamChon, setSoNamChon] = useState<number | null>(5);
+  const [soNamChon, setSoNamChon] = useState<number | 'max' | null>(5);
   const [tuNgay, setTuNgay] = useState(luiNam(today, 5));
   const [denNgay, setDenNgay] = useState(today);
   const [ngayText, setNgayText] = useState('5');
@@ -91,7 +107,7 @@ export function DcaSimulator() {
   const [dangChay, setDangChay] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [runs, setRuns] = useState<AssetRun[] | null>(null);
-  const [batDauChung, setBatDauChung] = useState<string | null>(null);
+  const [batDauInfo, setBatDauInfo] = useState<BatDauInfo | null>(null);
   const lanChay = useRef(0);
 
   function themMa(a: Asset) {
@@ -105,9 +121,9 @@ export function DcaSimulator() {
     setAssets([...assets, { kind: a.kind, symbol, typeLabel: a.typeLabel }]);
   }
 
-  function chonSoNam(n: number) {
+  function chonSoNam(n: number | 'max') {
     setSoNamChon(n);
-    setTuNgay(luiNam(denNgay, n));
+    setTuNgay(n === 'max' ? MOC_SOM_NHAT : luiNam(denNgay, n));
   }
 
   async function chay() {
@@ -136,9 +152,9 @@ export function DcaSimulator() {
 
       // So sánh công bằng: mọi mã bắt đầu cùng một tháng. Mã nào lên sàn muộn
       // nhất quyết định điểm bắt đầu chung — báo rõ cho người dùng.
-      const dauDuLieuMuonNhat = histories
-        .map((h) => h.prices.find((p) => p.date >= tuNgay)?.date ?? h.prices[0].date)
-        .reduce((a, b) => (a > b ? a : b));
+      const ngayDau = histories.map((h) => h.prices.find((p) => p.date >= tuNgay)?.date ?? h.prices[0].date);
+      const iMuon = ngayDau.reduce((im, d, i) => (d > ngayDau[im] ? i : im), 0);
+      const dauDuLieuMuonNhat = ngayDau[iMuon];
       const batDau = dauDuLieuMuonNhat.slice(0, 7) > tuNgay.slice(0, 7) ? `${dauDuLieuMuonNhat.slice(0, 7)}-01` : tuNgay;
 
       const ketQua = histories.map((history, i) => ({
@@ -155,7 +171,17 @@ export function DcaSimulator() {
         }),
       }));
       setRuns(ketQua);
-      setBatDauChung(batDau > tuNgay ? batDau : null);
+      setBatDauInfo({
+        lauNhat: soNamChon === 'max',
+        chung: batDau > tuNgay ? batDau : null,
+        muonNhat: { symbol: histories[iMuon].symbol, ngay: dauDuLieuMuonNhat },
+        gioiHan: [...new Set(histories.flatMap((h, i) => {
+          const g = gioiHanNguon(h.kind, h.symbol, h.prices[0].date);
+          // Chỉ đáng nói khi mốc nguồn của mã này THỰC SỰ quyết định ngày bắt
+          // đầu (mã có dữ liệu muộn nhất) và cắt mất phần đầu khoảng đã chọn.
+          return g !== null && h.prices[0].date > tuNgay && ngayDau[i] === dauDuLieuMuonNhat ? [g] : [];
+        }))],
+      });
     } catch (e) {
       if (id !== lanChay.current) return;
       console.error('Lỗi giả lập DCA:', e);
@@ -168,6 +194,7 @@ export function DcaSimulator() {
 
   const dau = runs?.[0]?.result;
   const coCrypto = runs?.some((r) => r.asset.kind === 'crypto') ?? false;
+  const coChiSo = runs?.some((r) => r.history.unit === 'điểm') ?? false;
   const laiGuiHienThi = parseVnNumber(laiGuiText) ?? 0;
 
   const series: LineSeries[] = runs === null || !dau ? [] : [
@@ -246,10 +273,16 @@ export function DcaSimulator() {
                   {n} năm
                 </button>
               ))}
+              <button type="button" onClick={() => chonSoNam('max')} className={nutPhu(soNamChon === 'max')}
+                title="Bắt đầu từ ngày sớm nhất có dữ liệu giá của mã (ngày lên sàn, nếu nguồn có đủ lịch sử)">
+                Lâu nhất có thể
+              </button>
             </div>
             <div className="mt-1 grid grid-cols-2 gap-2">
               <label className="flex flex-col gap-0.5">
-                <span className={`text-[12px] ${muted}`}>Từ ngày</span>
+                <span className={`text-[12px] ${muted}`}>
+                  Từ ngày{soNamChon === 'max' && ' (sớm nhất có dữ liệu)'}
+                </span>
                 <input type="date" value={tuNgay} max={denNgay}
                   onChange={(e) => { setTuNgay(e.target.value); setSoNamChon(null); }} className={oNhap} />
               </label>
@@ -303,11 +336,25 @@ export function DcaSimulator() {
                 {formatVndShort(Math.abs(dau.giaTriCuoi - dau.giaTriGuiTietKiem))}).
               </div>
 
-              {batDauChung !== null && (
-                <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-                  Có mã chưa có dữ liệu giá ở “Từ ngày” nên mọi mã cùng bắt đầu từ tháng{' '}
-                  {viDate(batDauChung).slice(3)} để so sánh công bằng.
-                </p>
+              {batDauInfo !== null && (batDauInfo.lauNhat || batDauInfo.chung !== null || batDauInfo.gioiHan.length > 0) && (
+                <div className="flex flex-col gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+                  {batDauInfo.lauNhat ? (
+                    <div>
+                      <strong>Lâu nhất có thể:</strong> bắt đầu từ {viDate(dau.buys[0].date)}
+                      {runs.length > 1
+                        ? <> — mã có dữ liệu muộn nhất là <strong>{batDauInfo.muonNhat.symbol}</strong> (từ {viDate(batDauInfo.muonNhat.ngay)}), mọi mã cùng bắt đầu từ tháng đó để so sánh công bằng.</>
+                        : <> — ngày đầu tiên có dữ liệu giá của {runs[0].asset.symbol} ({viDate(batDauInfo.muonNhat.ngay)}).</>}
+                    </div>
+                  ) : batDauInfo.chung !== null && (
+                    <div>
+                      Có mã chưa có dữ liệu giá ở “Từ ngày” ({batDauInfo.muonNhat.symbol} chỉ có từ {viDate(batDauInfo.muonNhat.ngay)})
+                      nên mọi mã cùng bắt đầu từ tháng {viDate(batDauInfo.chung).slice(3)} để so sánh công bằng.
+                    </div>
+                  )}
+                  {batDauInfo.gioiHan.map((g) => (
+                    <div key={g}>⚠ {g} — mã lên sàn trước mốc này được tính từ mốc đó, không phải từ ngày lên sàn.</div>
+                  ))}
+                </div>
               )}
 
               <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
@@ -330,6 +377,7 @@ export function DcaSimulator() {
                 Giá khớp = giá đóng cửa phiên đầu tiên từ ngày mua trở đi (ngày nghỉ dời sang phiên sau).
                 Giá cổ phiếu/ETF từ VNDirect đã điều chỉnh theo chia tách và cổ tức, nên cổ tức coi như
                 được tái đầu tư. Chưa tính thuế bán.
+                {coChiSo && ' VNINDEX/VN30… là chỉ số GIÁ, không gồm cổ tức, nên lợi nhuận thấp hơn đầu tư thật (ví dụ qua ETF) khoảng phần cổ tức.'}
                 {coCrypto && ' Crypto quy theo giá USD với tỷ giá USD/VND cố định suốt kỳ — chưa tính biến động tỷ giá.'}
                 {' '}Kết quả quá khứ không đảm bảo cho tương lai.
               </p>

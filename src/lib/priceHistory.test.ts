@@ -44,3 +44,13 @@ it('isVnIndex', () => {
   expect(isVnIndex('vnindex')).toBe(true);
   expect(isVnIndex('FPT')).toBe(false);
 });
+
+it('gioiHanNguon: chỉ báo khi ngày đầu trùng mốc giới hạn của nguồn', async () => {
+  const { gioiHanNguon } = await import('./priceHistory');
+  expect(gioiHanNguon('vn', 'FPT', '2013-01-02')).toMatch(/02\/01\/2013/);
+  expect(gioiHanNguon('vn', 'FUESSVFL', '2020-03-18')).toBeNull();
+  expect(gioiHanNguon('vn', 'VNINDEX', '2017-08-24')).toMatch(/chỉ số/);
+  expect(gioiHanNguon('crypto', 'BTC', '2017-08-17')).toMatch(/Binance/);
+  expect(gioiHanNguon('crypto', 'SOL', '2020-08-11')).toBeNull();
+  expect(gioiHanNguon('fund', 'VESAF', '2017-04-25')).toBeNull();
+});
