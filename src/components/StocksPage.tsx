@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStocks } from '../hooks/useStocks';
 import { useStockTransactions } from '../hooks/useStockTransactions';
 import { useStockGroupOrder } from '../hooks/useStockGroupOrder';
+import { useLongtermTargets } from '../hooks/useLongtermTargets';
 import { fetchQuotes } from '../lib/stockPrice';
 import { nextPeak } from '../lib/peakDrawdown';
 import { filterStocks } from '../lib/stockFilters';
@@ -12,6 +13,7 @@ import { StockTable } from './StockTable';
 import { ErrorBanner } from './ErrorBanner';
 import { StockTransactionForm } from './StockTransactionForm';
 import { StockTransactionList } from './StockTransactionList';
+import { LongtermAllocation } from './LongtermAllocation';
 
 interface Props {
   userId: string;
@@ -28,6 +30,11 @@ export function StocksPage({ userId }: Props) {
   const {
     transactions, loading: loadingTx, error: txError, record, remove, edit, clearError: clearTxError,
   } = useStockTransactions(userId);
+  const {
+    targets: longtermTargets, loading: loadingTargets, error: targetsError, save: saveTargets,
+    clearError: clearTargetsError,
+  } = useLongtermTargets(userId);
+  const longtermStocks = stocks.filter((s) => s.group === 'longterm');
 
   async function handleUpdatePrices() {
     setPriceError(null);
@@ -104,6 +111,7 @@ export function StocksPage({ userId }: Props) {
       {priceError && <ErrorBanner message={priceError} onClose={() => setPriceError(null)} />}
       {txError && <ErrorBanner message={txError} onClose={clearTxError} />}
       {orderError && <ErrorBanner message={orderError} onClose={clearOrderError} />}
+      {targetsError && <ErrorBanner message={targetsError} onClose={clearTargetsError} />}
 
       <input
         type="search"
@@ -130,6 +138,18 @@ export function StocksPage({ userId }: Props) {
         </p>
       ) : (
         <StockTable stocks={visibleStocks} order={order} onMove={move} onUpdate={updateStock} onDelete={removeStock} />
+      )}
+
+      {/* Vẽ sau khi tải xong cả mã lẫn tỷ trọng đã lưu: form khởi tạo ô nhập từ
+          hai nguồn này đúng MỘT lần, vẽ sớm sẽ khởi tạo bằng số mặc định. Key
+          đổi khi danh sách mã đổi ⇒ khởi tạo lại cho mã mới thêm / bớt. */}
+      {!loading && !loadingTargets && longtermStocks.length > 0 && (
+        <LongtermAllocation
+          key={longtermStocks.map((s) => s.id).join(',')}
+          stocks={longtermStocks}
+          saved={longtermTargets}
+          onSave={saveTargets}
+        />
       )}
 
       <section className="flex flex-col gap-3">
