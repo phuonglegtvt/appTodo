@@ -11,6 +11,8 @@ import { AllocationTable } from './AllocationTable';
 import { TargetSettingsForm } from './TargetSettingsForm';
 import { GoldTable } from './GoldTable';
 import { ErrorBanner } from './ErrorBanner';
+import { CompoundCalculator } from './CompoundCalculator';
+import { DcaSimulator } from './DcaSimulator';
 import type { PortfolioView } from '../data/portfolioView';
 
 // Tab Danh mục: tỷ trọng thực tế vs mục tiêu + cần bổ sung bao nhiêu vốn.
@@ -21,7 +23,8 @@ import type { PortfolioView } from '../data/portfolioView';
 // Trang này KHÔNG tính gì. Mọi phép tính nằm trong buildPortfolioView (hàm
 // thuần, có test). Ở đây chỉ có: gọi dữ liệu, xử lý trạng thái, và vẽ.
 
-type Muc = 'ty-trong' | 'cau-hinh';
+// 'lai-kep' và 'dca' là công cụ tính độc lập, KHÔNG cần dữ liệu danh mục.
+type Muc = 'ty-trong' | 'cau-hinh' | 'lai-kep' | 'dca';
 
 interface Props {
   userId: string;
@@ -115,6 +118,12 @@ export function PortfolioPage({ userId }: Props) {
         <button onClick={() => setMuc('cau-hinh')} className={tabBtn('cau-hinh')}>
           Cấu hình
         </button>
+        <button onClick={() => setMuc('lai-kep')} className={tabBtn('lai-kep')}>
+          Lãi kép
+        </button>
+        <button onClick={() => setMuc('dca')} className={tabBtn('dca')}>
+          Giả lập DCA
+        </button>
         {/* Hiện cả khi rate = null: đúng lúc lấy tỷ giá thất bại là lúc cần nút
             thử lại nhất. Ẩn nút ở ca đó thì thông báo lỗi bảo "bấm cập nhật"
             mà không có gì để bấm. */}
@@ -144,7 +153,7 @@ export function PortfolioPage({ userId }: Props) {
       )}
       {viewError !== null && <ErrorBanner message={viewError} />}
 
-      {dangTai && (
+      {dangTai && (muc === 'ty-trong' || muc === 'cau-hinh') && (
         <p className="text-sm text-text-muted dark:text-text-muted-dark">
           {thieuTyGia ? 'Đang lấy tỷ giá USD→VND để quy đổi giá trị crypto…' : 'Đang tải…'}
         </p>
@@ -263,6 +272,18 @@ export function PortfolioPage({ userId }: Props) {
             </section>
           )}
         </>
+      )}
+
+      {muc === 'lai-kep' && (
+        <section className="surface-card p-5">
+          <CompoundCalculator />
+        </section>
+      )}
+
+      {muc === 'dca' && (
+        <section className="surface-card p-4 sm:p-5">
+          <DcaSimulator />
+        </section>
       )}
 
       {muc === 'cau-hinh' && !dangTai && (
