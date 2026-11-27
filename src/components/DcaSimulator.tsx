@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { chayDca, luiNam, soNgay, type DcaResult } from '../lib/dcaBacktest';
-import { fetchPriceHistory, fetchFundList, type AssetKind, type FundInfo, type PriceHistory } from '../lib/priceHistory';
+import { fetchPriceHistory, type AssetKind, type PriceHistory } from '../lib/priceHistory';
+import { SymbolPicker } from './SymbolPicker';
 import { parseVnNumber } from '../lib/parseNumber';
 import { formatVnd, formatVndShort } from '../lib/portfolioClassMeta';
 import { MoneyInput } from './MoneyInput';
@@ -14,6 +15,8 @@ import { ErrorBanner } from './ErrorBanner';
 interface Asset {
   kind: AssetKind;
   symbol: string;
+  /** Nhãn loại cụ thể từ ô tìm mã ("ETF", "Chỉ số"…); thiếu thì dùng KIND_LABEL. */
+  typeLabel?: string;
 }
 
 interface AssetRun {
@@ -29,12 +32,12 @@ const KIND_LABEL: Record<AssetKind, string> = {
 };
 
 const GOI_Y: Asset[] = [
-  { kind: 'vn', symbol: 'VNINDEX' },
-  { kind: 'vn', symbol: 'E1VFVN30' },
-  { kind: 'vn', symbol: 'FPT' },
-  { kind: 'crypto', symbol: 'BTC' },
-  { kind: 'fund', symbol: 'VESAF' },
-  { kind: 'fund', symbol: 'DCDS' },
+  { kind: 'vn', symbol: 'VNINDEX', typeLabel: 'Chỉ số' },
+  { kind: 'vn', symbol: 'E1VFVN30', typeLabel: 'ETF' },
+  { kind: 'vn', symbol: 'FPT', typeLabel: 'Cổ phiếu' },
+  { kind: 'crypto', symbol: 'BTC', typeLabel: 'Crypto' },
+  { kind: 'fund', symbol: 'VESAF', typeLabel: 'Quỹ mở' },
+  { kind: 'fund', symbol: 'DCDS', typeLabel: 'Quỹ mở' },
 ];
 
 const MAU = ['var(--viz-stocks)', 'var(--viz-crypto)', 'var(--viz-gold)'];
@@ -76,9 +79,7 @@ function formatDonVi(v: number): string {
 
 export function DcaSimulator() {
   const today = homNay();
-  const [assets, setAssets] = useState<Asset[]>([{ kind: 'vn', symbol: 'VNINDEX' }]);
-  const [kindMoi, setKindMoi] = useState<AssetKind>('vn');
-  const [maMoi, setMaMoi] = useState('');
+  const [assets, setAssets] = useState<Asset[]>([GOI_Y[0]]);
   const [soTien, setSoTien] = useState<number | null>(3_000_000);
   const [soNamChon, setSoNamChon] = useState<number | null>(5);
   const [tuNgay, setTuNgay] = useState(luiNam(today, 5));
@@ -93,18 +94,6 @@ export function DcaSimulator() {
   const [batDauChung, setBatDauChung] = useState<string | null>(null);
   const lanChay = useRef(0);
 
-  // Danh sách quỹ mở chỉ tải khi người dùng chọn loại "Quỹ mở" — để gợi ý mã.
-  const [quy, setQuy] = useState<FundInfo[]>([]);
-  useEffect(() => {
-    if (kindMoi !== 'fund' || quy.length > 0) return;
-    fetchFundList()
-      .then(setQuy)
-      .catch((e: unknown) => {
-        console.error('Lỗi tải danh sách quỹ Fmarket:', e);
-        setLoi(`Không tải được danh sách quỹ mở: ${e instanceof Error ? e.message : String(e)}`);
-      });
-  }, [kindMoi, quy.length]);
-
   function themMa(a: Asset) {
     const symbol = a.symbol.trim().toUpperCase();
     if (!symbol) return;
@@ -113,8 +102,7 @@ export function DcaSimulator() {
       return;
     }
     if (assets.some((x) => x.kind === a.kind && x.symbol === symbol)) return;
-    setAssets([...assets, { kind: a.kind, symbol }]);
-    setMaMoi('');
+    setAssets([...assets, { kind: a.kind, symbol, typeLabel: a.typeLabel }]);
   }
 
   function chonSoNam(n: number) {
@@ -218,28 +206,18 @@ export function DcaSimulator() {
                   className="flex items-center gap-1.5 rounded-lg border border-border px-2 py-1 text-[13px] dark:border-border-dark">
                   <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: MAU[i] }} />
                   <strong className="text-text dark:text-text-dark">{a.symbol}</strong>
-                  <span className={`text-[11px] ${muted}`}>{KIND_LABEL[a.kind]}</span>
+                  <span className={`text-[11px] ${muted}`}>{a.typeLabel ?? KIND_LABEL[a.kind]}</span>
                   <button type="button" aria-label={`Bỏ ${a.symbol}`}
                     onClick={() => setAssets(assets.filter((_, j) => j !== i))}
                     className={`ml-1 ${muted} hover:text-priority-high`}>×</button>
                 </li>
               ))}
             </ul>
-            {assets.length < TOI_DA && (
-              <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); themMa({ kind: kindMoi, symbol: maMoi }); }}>
-                <select value={kindMoi} onChange={(e) => setKindMoi(e.target.value as AssetKind)}
-                  aria-label="Loại tài sản" className={`${oNhap} w-auto font-sans text-[13px]`}>
-                  {(Object.keys(KIND_LABEL) as AssetKind[]).map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
-                </select>
-                <input value={maMoi} onChange={(e) => setMaMoi(e.target.value)} list={kindMoi === 'fund' ? 'ds-quy-mo' : undefined}
-                  placeholder={kindMoi === 'crypto' ? 'BTC, ETH…' : kindMoi === 'fund' ? 'VESAF, DCDS…' : 'FPT, VNINDEX…'}
-                  aria-label="Mã" className={`${oNhap} min-w-0 flex-1 uppercase`} />
-                <button type="submit" className={nutPhu(false)}>Thêm</button>
-              </form>
-            )}
-            <datalist id="ds-quy-mo">
-              {quy.map((q) => <option key={q.id} value={q.shortName}>{q.name}</option>)}
-            </datalist>
+            <SymbolPicker
+              onPick={(o) => themMa(o)}
+              disabled={assets.length >= TOI_DA}
+              daChon={assets}
+            />
             <div className="flex flex-wrap gap-1.5">
               {GOI_Y.filter((g) => !assets.some((a) => a.symbol === g.symbol)).map((g) => (
                 <button key={g.symbol} type="button" onClick={() => themMa(g)} disabled={assets.length >= TOI_DA}
@@ -332,7 +310,7 @@ export function DcaSimulator() {
                 </p>
               )}
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
                 {runs.map((r, i) => <KetQuaCard key={`${r.asset.kind}-${r.asset.symbol}`} run={r} color={MAU[i]} />)}
               </div>
 
@@ -376,7 +354,7 @@ function KetQuaCard({ run, color }: { run: AssetRun; color: string }) {
       <div className="flex items-center gap-2">
         <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: color }} />
         <strong className="text-text dark:text-text-dark">{asset.symbol}</strong>
-        <span className={`text-[11px] ${muted}`}>{KIND_LABEL[asset.kind]}</span>
+        <span className={`text-[11px] ${muted}`}>{asset.typeLabel ?? KIND_LABEL[asset.kind]}</span>
       </div>
       <div className="text-[22px] font-bold tracking-tight text-text dark:text-text-dark">{formatVnd(r.giaTriCuoi)}</div>
       <div className={`text-[12px] ${muted}`}>Giá trị ngày {viDate(r.ngayDinhGia)}</div>
