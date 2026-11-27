@@ -29,6 +29,7 @@ const PAGES: { key: Props['page']; label: string; icon: string }[] = [
   { key: 'stocks', label: 'Cổ phiếu', icon: '▤' },
   { key: 'crypto', label: 'Crypto', icon: '₿' },
   { key: 'portfolio', label: 'Danh mục', icon: '◍' },
+  { key: 'debts', label: 'Nợ & thẻ', icon: '▭' },
   { key: 'cashflow', label: 'Thu – Chi', icon: '⇅' },
 ];
 

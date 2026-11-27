@@ -24,6 +24,7 @@ import { StocksPage } from '../components/StocksPage';
 import { CryptoPage } from '../components/CryptoPage';
 import { PortfolioPage } from '../components/PortfolioPage';
 import { CashFlowPage } from '../components/CashFlowPage';
+import { DebtsPage } from '../components/DebtsPage';
 import { recurringToggle } from './recurringToggle';
 import type { Page } from '../types/page';
 
@@ -168,6 +169,8 @@ export function AppPage({ userId, userEmail, theme, toggleTheme }: AppPageProps)
       <main className="flex min-w-0 flex-1 flex-col">
         {page === 'cashflow' ? (
           <CashFlowPage userId={userId} />
+        ) : page === 'debts' ? (
+          <DebtsPage userId={userId} />
         ) : page === 'portfolio' ? (
           <div className="flex flex-1 flex-col overflow-auto p-5 sm:p-6">
             <PortfolioPage userId={userId} />
