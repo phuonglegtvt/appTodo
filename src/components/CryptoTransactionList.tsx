@@ -1,21 +1,17 @@
-import { useState } from 'react';
-import { latestIdsBy } from '../lib/latestTx';
+import { Fragment, useState } from 'react';
 import type { Crypto } from '../types/crypto';
-import type { CryptoTransaction } from '../types/cryptoTransaction';
+import type { CryptoTransaction, NewCryptoTransaction } from '../types/cryptoTransaction';
+import { CryptoTransactionEditRow } from './CryptoTransactionEditRow';
 
-// Danh sách giao dịch, mới nhất trước. Chỉ giao dịch MỚI NHẤT của mỗi coin có
-// nút Hoàn tác: hoàn tác = trả coin về trạng thái TRƯỚC giao dịch, mà trạng thái
-// đó chỉ còn đúng khi không có giao dịch nào chồng lên sau (DB cũng chặn lại).
+// Sổ giao dịch crypto, mới nhất trước. Mọi giao dịch đều Sửa / Xoá được (kể cả
+// đổi coin): các giao dịch ghi sau nó của cùng coin được tính lại
+// (lib/txChain.ts). Xoá giao dịch mới nhất của một coin = hoàn tác nó.
 
 interface Props {
   transactions: CryptoTransaction[];
   cryptos: Crypto[];
-  onUndo: (txId: string) => Promise<void>;
-}
-
-/** id giao dịch mới nhất (theo thời điểm ghi) của từng coin. */
-export function latestTxIds(list: CryptoTransaction[]): Set<string> {
-  return latestIdsBy(list, (t) => t.crypto_id);
+  onDelete: (txId: string) => Promise<void>;
+  onEdit: (txId: string, coin: Crypto, input: NewCryptoTransaction) => Promise<void>;
 }
 
 function vnd(v: number): string {
@@ -25,25 +21,30 @@ function vnd(v: number): string {
 const th = 'px-2 py-2 text-[11px] font-bold uppercase tracking-[0.06em] text-text-muted dark:text-text-muted-dark';
 const td = 'px-2 py-2 text-[13px] tabular-nums text-text dark:text-text-dark';
 
-export function CryptoTransactionList({ transactions, cryptos, onUndo }: Props) {
-  const [dangHoanTac, setDangHoanTac] = useState<string | null>(null);
+export function CryptoTransactionList({ transactions, cryptos, onDelete, onEdit }: Props) {
+  const [dangXoa, setDangXoa] = useState<string | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
+  const [dangSua, setDangSua] = useState<string | null>(null);
 
   const kyHieu = new Map(cryptos.map((c) => [c.id, c.symbol]));
-  const coTheHoanTac = latestTxIds(transactions);
 
-  async function hoanTac(t: CryptoTransaction) {
+  async function xoa(t: CryptoTransaction) {
     const ten = kyHieu.get(t.crypto_id) ?? 'coin';
-    if (!confirm(`Hoàn tác giao dịch ${t.side === 'BUY' ? 'mua' : 'bán'} ${t.quantity} ${ten}? Số liệu coin sẽ về như trước giao dịch.`)) return;
+    const ngay = t.trade_date.split('-').reverse().join('/');
+    if (!confirm(
+      `Xoá giao dịch ${t.side === 'BUY' ? 'mua' : 'bán'} ${Number(t.quantity).toLocaleString('vi-VN', { maximumFractionDigits: 8 })} ${ten} ngày ${ngay}?\n\n`
+      + `Số lượng, giá mua TB và vốn của ${ten} sẽ tính lại như thể giao dịch này chưa từng được ghi. Không khôi phục lại được.`,
+    )) return;
     setLoi(null);
-    setDangHoanTac(t.id);
+    setDangXoa(t.id);
     try {
-      await onUndo(t.id);
+      await onDelete(t.id);
+      if (dangSua === t.id) setDangSua(null);
     } catch (err) {
-      console.error('Lỗi hoàn tác giao dịch crypto:', err);
+      console.error('Lỗi xoá giao dịch crypto:', err);
       setLoi(err instanceof Error ? err.message : String(err));
     } finally {
-      setDangHoanTac(null);
+      setDangXoa(null);
     }
   }
 
@@ -77,7 +78,8 @@ export function CryptoTransactionList({ transactions, cryptos, onUndo }: Props) 
           </thead>
           <tbody>
             {transactions.map((t) => (
-              <tr key={t.id} className="border-b border-border text-right last:border-0 dark:border-border-dark">
+              <Fragment key={t.id}>
+              <tr className="border-b border-border text-right last:border-0 dark:border-border-dark">
                 <td className={`${td} text-left`}>{t.trade_date.split('-').reverse().join('/')}</td>
                 <td className={`${td} text-left font-semibold`}>{kyHieu.get(t.crypto_id) ?? '?'}</td>
                 <td className={`${td} text-left`}>
@@ -100,18 +102,35 @@ export function CryptoTransactionList({ transactions, cryptos, onUndo }: Props) 
                 <td className={`${td} max-w-[14rem] truncate text-left text-text-muted dark:text-text-muted-dark`} title={t.note}>
                   {t.note}
                 </td>
-                <td className={td}>
-                  {coTheHoanTac.has(t.id) && (
-                    <button
-                      onClick={() => hoanTac(t)}
-                      disabled={dangHoanTac !== null}
-                      className="rounded-md px-2 py-1 text-[12px] font-semibold text-text-muted transition hover:bg-surface-2 hover:text-text disabled:opacity-50 dark:text-text-muted-dark dark:hover:bg-surface-2dark dark:hover:text-text-dark"
-                    >
-                      {dangHoanTac === t.id ? 'Đang hoàn tác…' : 'Hoàn tác'}
-                    </button>
-                  )}
+                <td className={`${td} whitespace-nowrap`}>
+                  <button
+                    onClick={() => setDangSua(dangSua === t.id ? null : t.id)}
+                    disabled={dangXoa !== null}
+                    aria-expanded={dangSua === t.id}
+                    className="rounded-md px-2 py-1 text-[12px] font-semibold text-text-muted transition hover:bg-surface-2 hover:text-text disabled:opacity-50 dark:text-text-muted-dark dark:hover:bg-surface-2dark dark:hover:text-text-dark"
+                  >
+                    {dangSua === t.id ? 'Đóng' : 'Sửa'}
+                  </button>
+                  <button
+                    onClick={() => xoa(t)}
+                    disabled={dangXoa !== null}
+                    className="rounded-md px-2 py-1 text-[12px] font-semibold text-text-muted transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-text-muted-dark dark:hover:bg-red-950 dark:hover:text-red-400"
+                  >
+                    {dangXoa === t.id ? 'Đang xoá…' : 'Xoá'}
+                  </button>
                 </td>
               </tr>
+              {dangSua === t.id && (
+                <CryptoTransactionEditRow
+                  tx={t}
+                  cryptos={cryptos}
+                  transactions={transactions}
+                  colSpan={9}
+                  onSave={onEdit}
+                  onClose={() => setDangSua(null)}
+                />
+              )}
+              </Fragment>
             ))}
           </tbody>
         </table>

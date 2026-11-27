@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyTx, holdingMatches, validateTx } from './cryptoTransaction';
+import { applyTx, holdingMatches, validateTx, planCryptoTxEdit, planCryptoTxDelete, type RecordedCryptoTx } from './cryptoTransaction';
 import type { Holding } from './cryptoTransaction';
 
 const trong: Holding = { quantity: null, avg_buy_price: null, invested_amount: null };
@@ -116,5 +116,35 @@ describe('holdingMatches', () => {
       { quantity: 1, avg_buy_price: 10, invested_amount: null },
       { quantity: 1, avg_buy_price: 10, invested_amount: 0 },
     )).toBe(false);
+  });
+});
+
+describe('planCryptoTxEdit', () => {
+  const h = (quantity: number, avg: number, invested: number) => ({ quantity, avg_buy_price: avg, invested_amount: invested });
+  // BTC: mua 1 @100 (2.500.000đ) → mua 1 @200 (5.000.000đ). ETH: chưa có giao dịch, đang giữ 0.
+  const all: RecordedCryptoTx[] = [
+    { id: 'a', crypto_id: 'BTC', created_at: '2026-01-01T00:00:00Z', trade_date: '2026-01-01', side: 'BUY', quantity: 1, price_usd: 100, amount_vnd: 2_500_000,
+      before: { quantity: 0, avg_buy_price: null, invested_amount: 0 }, after: h(1, 100, 2_500_000) },
+    { id: 'b', crypto_id: 'BTC', created_at: '2026-01-02T00:00:00Z', trade_date: '2026-01-02', side: 'BUY', quantity: 1, price_usd: 200, amount_vnd: 5_000_000,
+      before: h(1, 100, 2_500_000), after: h(2, 150, 7_500_000) },
+  ];
+
+  it('sửa giá lần mua đầu ⇒ giá mua TB của lần sau tính lại', () => {
+    const { source } = planCryptoTxEdit(all, 'a', { side: 'BUY', quantity: 1, price_usd: 300, amount_vnd: 7_500_000 });
+    expect(source.updates.map((u) => u.id)).toEqual(['a', 'b']);
+    expect(source.final).toEqual(h(2, 250, 12_500_000));
+    expect(source.expected).toEqual(h(2, 150, 7_500_000));
+  });
+
+  it('xoá lần mua đầu ⇒ giá mua TB chỉ còn của lần sau', () => {
+    const plan = planCryptoTxDelete(all, 'a');
+    expect(plan.final).toEqual(h(1, 200, 5_000_000));
+  });
+
+  it('chuyển lần mua mới nhất sang ETH', () => {
+    const plan = planCryptoTxEdit(all, 'b', { side: 'BUY', quantity: 1, price_usd: 200, amount_vnd: 5_000_000 },
+      { cryptoId: 'ETH', current: { quantity: 0, avg_buy_price: null, invested_amount: null } });
+    expect(plan.source.final).toEqual(h(1, 100, 2_500_000));
+    expect(plan.target?.final).toEqual(h(1, 200, 5_000_000));
   });
 });

@@ -25,7 +25,7 @@ export function CryptoPage({ userId }: Props) {
   const [updating, setUpdating] = useState(false);
   const [query, setQuery] = useState('');
   const {
-    transactions, loading: loadingTx, error: txError, record, undo, clearError: clearTxError,
+    transactions, loading: loadingTx, error: txError, record, remove, edit, clearError: clearTxError,
   } = useCryptoTransactions(userId);
 
   async function handleUpdatePrices() {
@@ -182,7 +182,7 @@ export function CryptoPage({ userId }: Props) {
         {loadingTx ? (
           <p className="py-4 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải sổ giao dịch…</p>
         ) : (
-          <CryptoTransactionList transactions={transactions} cryptos={cryptos} onUndo={undo} />
+          <CryptoTransactionList transactions={transactions} cryptos={cryptos} onDelete={remove} onEdit={edit} />
         )}
       </section>
     </div>

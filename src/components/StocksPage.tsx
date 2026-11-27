@@ -26,7 +26,7 @@ export function StocksPage({ userId }: Props) {
   const [query, setQuery] = useState('');
   const { order, move, error: orderError, clearError: clearOrderError } = useStockGroupOrder(userId);
   const {
-    transactions, loading: loadingTx, error: txError, record, undo, edit, clearError: clearTxError,
+    transactions, loading: loadingTx, error: txError, record, remove, edit, clearError: clearTxError,
   } = useStockTransactions(userId);
 
   async function handleUpdatePrices() {
@@ -143,7 +143,7 @@ export function StocksPage({ userId }: Props) {
         {loadingTx ? (
           <p className="py-4 text-center text-sm text-text-muted dark:text-text-muted-dark">Đang tải lịch sử giao dịch…</p>
         ) : (
-          <StockTransactionList transactions={transactions} stocks={stocks} onUndo={undo} onEdit={edit} />
+          <StockTransactionList transactions={transactions} stocks={stocks} onDelete={remove} onEdit={edit} />
         )}
       </section>
     </div>

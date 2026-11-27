@@ -14,6 +14,9 @@
 //   · giao dịch: price_usd = USD / coin, amount_vnd = đồng (đã chi khi MUA,
 //     đã nhận khi BÁN)
 
+import type { CryptoTransaction } from '../types/cryptoTransaction';
+import { planDelete, planEdit, type AssetPlan, type ChainEntry, type ChainOps, type EditPlan } from './txChain';
+
 export type TxSide = 'BUY' | 'SELL';
 
 /** Ba cột của `public.cryptos` mà sổ giao dịch được phép thay đổi. */
@@ -147,4 +150,71 @@ export function holdingMatches(current: Holding, expected: Holding): boolean {
   return gan(current.quantity, expected.quantity)
     && gan(current.avg_buy_price, expected.avg_buy_price)
     && gan(current.invested_amount, expected.invested_amount);
+}
+
+// ---------------------------------------------------------------------------
+// SỬA một giao dịch đã ghi (kể cả đổi sang coin khác) — lõi tính ở lib/txChain.ts.
+// ---------------------------------------------------------------------------
+
+/** Phần của một giao dịch crypto đã ghi mà phép tính lại cần đến (dạng số). */
+export interface RecordedCryptoTx extends TxInput {
+  id: string;
+  crypto_id: string;
+  created_at: string;
+  trade_date: string;
+  before: Holding;
+  after: Holding;
+}
+
+const CRYPTO_OPS: ChainOps<Holding, TxInput> = {
+  apply: (h, i) => {
+    const r = applyTx(h, i);
+    return { after: r.after, realized: r.realizedPnlVnd };
+  },
+  same: holdingMatches,
+  describe: (i) => `${i.side === 'BUY' ? 'mua' : 'bán'} ${i.quantity} coin`,
+};
+
+function cryptoChain(all: RecordedCryptoTx[], cryptoId: string): ChainEntry<Holding, TxInput>[] {
+  return all
+    .filter((t) => t.crypto_id === cryptoId)
+    .map((t) => ({
+      id: t.id, created_at: t.created_at, trade_date: t.trade_date,
+      input: { side: t.side, quantity: t.quantity, price_usd: t.price_usd, amount_vnd: t.amount_vnd },
+      before: t.before, after: t.after,
+    }));
+}
+
+/** Như `planStockTxEdit` nhưng cho sổ crypto. */
+export function planCryptoTxEdit(
+  all: RecordedCryptoTx[],
+  editId: string,
+  input: TxInput,
+  move?: { cryptoId: string; current: Holding },
+): EditPlan<Holding> {
+  validateTx(input);
+  const x = all.find((t) => t.id === editId);
+  if (!x) throw new Error('Không tìm thấy giao dịch cần sửa.');
+  const cung = (id: string) => cryptoChain(all, id);
+  const doiCoin = move !== undefined && move.cryptoId !== x.crypto_id;
+  return planEdit(CRYPTO_OPS, cung(x.crypto_id), editId, input,
+    doiCoin ? { chain: cung(move.cryptoId), current: move.current } : undefined);
+}
+
+/** Lập kế hoạch XOÁ giao dịch `deleteId`; các giao dịch sau của cùng coin tính lại. */
+export function planCryptoTxDelete(all: RecordedCryptoTx[], deleteId: string): AssetPlan<Holding> {
+  const x = all.find((t) => t.id === deleteId);
+  if (!x) throw new Error('Không tìm thấy giao dịch cần xoá.');
+  return planDelete(CRYPTO_OPS, cryptoChain(all, x.crypto_id), deleteId);
+}
+
+/** Giao dịch từ DB → dạng số (cột numeric có thể về dạng chuỗi tuỳ driver). */
+export function toRecordedCryptoTxs(transactions: CryptoTransaction[]): RecordedCryptoTx[] {
+  const so = (v: number | string | null) => (v === null ? null : Number(v));
+  return transactions.map((t) => ({
+    id: t.id, crypto_id: t.crypto_id, created_at: t.created_at, trade_date: t.trade_date, side: t.side,
+    quantity: Number(t.quantity), price_usd: Number(t.price_usd), amount_vnd: Number(t.amount_vnd),
+    before: { quantity: so(t.before_quantity), avg_buy_price: so(t.before_avg_buy_price), invested_amount: so(t.before_invested_amount) },
+    after: { quantity: so(t.after_quantity), avg_buy_price: so(t.after_avg_buy_price), invested_amount: so(t.after_invested_amount) },
+  }));
 }
